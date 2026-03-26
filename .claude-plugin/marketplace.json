@@ -1,0 +1,19 @@
+{
+  "name": "bmad-builder",
+  "owner": {
+    "name": "Brian (BMad) Madison"
+  },
+  "plugins": [
+    {
+      "name": "bmad-builder",
+      "source": "./",
+      "description": "BMad AI agent and workflow factory — build, edit, optimize, and validate agents and workflows through conversational discovery.",
+      "version": "1.1.0",
+      "skills": [
+        "./skills/bmad-agent-builder",
+        "./skills/bmad-builder-setup",
+        "./skills/bmad-workflow-builder"
+      ]
+    }
+  ]
+}
