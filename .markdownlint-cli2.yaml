@@ -7,7 +7,7 @@ ignores:
   - CODE_OF_CONDUCT.md
   - _bmad/**
   - _bmad*/**
-  - src/skills/**
+  - skills/**
   - .*/**
   - z*/**
 
