@@ -8,11 +8,5 @@
   "license": "MIT",
   "homepage": "https://github.com/bmad-code-org/bmad-builder",
   "repository": "https://github.com/bmad-code-org/bmad-builder",
-  "keywords": [
-    "bmad",
-    "agent-builder",
-    "workflow-builder",
-    "skill-factory",
-    "ai-agents"
-  ]
+  "keywords": ["bmad", "agent-builder", "workflow-builder", "skill-factory", "ai-agents"]
 }
