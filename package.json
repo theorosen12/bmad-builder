@@ -16,7 +16,7 @@
   "type": "module",
   "main": "",
   "files": [
-    "skills/",
+    "src/",
     ".claude-plugin/",
     "CHANGELOG.md"
   ],
