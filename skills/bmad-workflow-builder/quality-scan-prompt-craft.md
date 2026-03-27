@@ -207,6 +207,26 @@ The right balance depends on the type of skill:
 
 **Don't flag procedural detail when:** The procedure IS the value (e.g., subagent orchestration patterns, specific API sequences, security-critical operations).
 
+### Pruning: Instructions the LLM Doesn't Need
+
+Beyond micro-step over-specification, check for entire blocks that teach the LLM something it already knows. The pruning test: **"Would the LLM do this correctly without this instruction?"** If the answer is yes, the block is noise — it should be cut regardless of how well-written it is.
+
+**Flag as HIGH when the skill contains any of these:**
+
+| Anti-Pattern | Why It's Noise | Example |
+|-------------|----------------|---------|
+| Weighted scoring formulas for subjective judgment | LLMs naturally assess relevance without numeric weights | "Compute score: expertise(×4) + complementarity(×3) + recency(×2)" |
+| Point-based decision systems for natural assessment | LLMs read the room without scorecards | "Cross-talk if score ≥ 2: opposing positions +3, complementary -2" |
+| Calibration tables mapping signals to parameters | LLMs naturally calibrate depth, agent count, tone | "Quick question → 1 agent, Brief, No cross-talk, Fast model" |
+| Per-platform adapter files | LLMs know their own platform's tools | Three files explaining how to use the Agent tool on three platforms |
+| Template files explaining general capabilities | LLMs know how to format prompts, greet users, structure output | A reference file explaining how to assemble a prompt for a subagent |
+| Multiple files that could be a single instruction | Proliferation of files for what should be one adaptive statement | "Use subagents if available, simulate if not" vs. 3 adapter files |
+
+**Don't flag as over-specified:**
+- Domain-specific knowledge the LLM genuinely wouldn't know (BMad config paths, module conventions)
+- Design rationale that prevents the LLM from undermining non-obvious constraints
+- Fragile operations where deviation has consequences (script invocations, exact CLI commands)
+
 ### Structural Anti-Patterns
 
 | Pattern | Threshold | Fix |
@@ -222,72 +242,26 @@ The right balance depends on the type of skill:
 | Severity | When to Apply |
 |----------|---------------|
 | **Critical** | Missing progression conditions, self-containment failures, intelligence leaks into scripts |
-| **High** | Pervasive defensive padding, SKILL.md exceeds size guidelines with no progressive disclosure, over-optimized/under-contextualized complex workflow (empty Overview, no domain context, no design rationale), large data tables or schemas inline |
-| **Medium** | Moderate token waste (repeated instructions, some filler), over-specified procedures for simple tasks |
+| **High** | Pervasive over-specification (scoring algorithms, calibration tables, adapter proliferation — see Pruning section), SKILL.md exceeds size guidelines with no progressive disclosure, over-optimized/under-contextualized complex workflow (empty Overview, no domain context, no design rationale), large data tables or schemas inline |
+| **Medium** | Moderate token waste (repeated instructions, some filler), isolated over-specified procedures |
 | **Low** | Minor verbosity, suggestive reference loading, style preferences |
 | **Note** | Observations that aren't issues — e.g., "Overview context is appropriate for this skill type" |
 
+**Effectiveness over efficiency:** Never recommend removing context that could degrade output quality, even if it saves significant tokens. A skill that works correctly but uses extra tokens is always better than one that's lean but fails edge cases. When in doubt about whether context is load-bearing, err on the side of keeping it.
+
 ---
 
-## Output Format
+## Output
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis as a natural document. Include:
 
-Write JSON findings to: `{quality-report-dir}/prompt-craft-temp.json`
+- **Assessment** — overall craft verdict: skill type assessment, Overview quality, progressive disclosure, and a 2-3 sentence synthesis
+- **Prompt health summary** — how many prompts have config headers, progression conditions, are self-contained
+- **Key findings** — each with severity (critical/high/medium/low), affected file:line, what's wrong, why it matters, and how to fix it. Distinguish genuine waste from load-bearing context.
+- **Strengths** — what's well-crafted (worth preserving)
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Write findings in order of severity. Be specific about file paths and line numbers. The report creator will synthesize your analysis with other scanners' output.
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+Write your analysis to: `{quality-report-dir}/prompt-craft-analysis.md`
 
-**Field mapping for this scanner:**
-- `title` — Brief description of the issue (was `issue`)
-- `detail` — Why this matters and any nuance about whether it might be intentional (merges `rationale` + `nuance`)
-- `action` — Specific action to resolve (was `fix`)
-
-```json
-{
-  "scanner": "prompt-craft",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md",
-      "line": 42,
-      "severity": "medium",
-      "category": "token-waste",
-      "title": "Defensive padding in activation instructions",
-      "detail": "Three instances of 'Make sure to...' and 'Don't forget to...' add tokens without value. These are genuine waste, not contextual framing.",
-      "action": "Replace with direct imperatives: 'Load config first' instead of 'Make sure to load config first.'"
-    }
-  ],
-  "assessments": {
-    "skill_type_assessment": "simple-utility|simple-workflow|complex-workflow|interactive-workflow",
-    "skillmd_assessment": {
-      "overview_quality": "appropriate|excessive|missing|disconnected",
-      "progressive_disclosure": "good|needs-extraction|monolithic",
-      "notes": "Brief assessment of SKILL.md craft"
-    },
-    "prompts_scanned": 0,
-    "prompt_health": {
-      "prompts_with_config_header": 0,
-      "prompts_with_progression_conditions": 0,
-      "prompts_self_contained": 0,
-      "total_prompts": 0
-    }
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"critical": 0, "high": 0, "medium": 0, "low": 0, "note": 0},
-    "assessment": "Brief 1-2 sentence overall assessment of prompt craft quality"
-  }
-}
-```
-
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
-
-## Process
-
-Read pre-pass JSON and all prompt files. Evaluate using the criteria in Parts 1-3 above. Write JSON to `{quality-report-dir}/prompt-craft-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify all files were read, token-waste findings are genuine (not load-bearing context), and suggestions would improve the skill holistically.
+Return only the filename when complete.

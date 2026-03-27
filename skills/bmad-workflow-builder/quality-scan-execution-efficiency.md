@@ -10,7 +10,7 @@ This is a unified scan covering both *how work is distributed* (subagent delegat
 
 ## Your Role
 
-Read the skill's SKILL.md and all prompt files. Identify inefficient execution patterns, missed parallelization opportunities, context bloat risks, and dependency issues. Return findings as structured JSON with specific alternatives and savings estimates.
+Read the skill's SKILL.md and all prompt files. Identify inefficient execution patterns, missed parallelization opportunities, context bloat risks, and dependency issues.
 
 ## Scan Targets
 
@@ -218,69 +218,17 @@ GOOD: Validate first, then invest
 
 ---
 
-## Output Format
+## Output
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis as a natural document. Include:
 
-Write JSON findings to: `{quality-report-dir}/execution-efficiency-temp.json`
+- **Assessment** — overall efficiency verdict in 2-3 sentences
+- **Key findings** — each with severity (critical/high/medium/low), affected file:line, current pattern, efficient alternative, and estimated token/time savings. Critical = circular deps or subagent-from-subagent. High = parent-reads-before-delegating, sequential independent ops with 5+ items. Medium = missed batching, stage ordering issues. Low = minor parallelization opportunities.
+- **Optimization opportunities** — larger structural changes that would improve efficiency, with estimated impact
+- **What's already efficient** — patterns worth preserving
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Be specific about file paths, line numbers, and savings estimates. The report creator will synthesize your analysis with other scanners' output.
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+Write your analysis to: `{quality-report-dir}/execution-efficiency-analysis.md`
 
-**Field mapping for this scanner:**
-
-For issues (formerly in `issues[]`):
-- `title` — Brief description (was `issue`)
-- `detail` — Current pattern and estimated savings combined (merges `current_pattern` + `estimated_savings`)
-- `action` — What it should do instead (was `efficient_alternative`)
-
-For opportunities (formerly in separate `opportunities[]`):
-- `title` — What could be improved (was `description`)
-- `detail` — Details and estimated savings
-- `action` — Specific improvement (was `recommendation`)
-- Use severity like `medium-opportunity` to distinguish from issues
-
-Both issues and opportunities go into a single `findings[]` array.
-
-```json
-{
-  "scanner": "execution-efficiency",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md",
-      "line": 42,
-      "severity": "high",
-      "category": "parent-reads-first",
-      "title": "Parent reads 3 source files before delegating analysis to subagents",
-      "detail": "Parent context bloats by ~6000 tokens reading doc1.md, doc2.md, doc3.md before spawning subagents to analyze them. Estimated savings: ~6000 tokens per invocation.",
-      "action": "Delegate reading to subagents: each subagent reads its assigned file and returns a compact JSON summary."
-    },
-    {
-      "file": "SKILL.md",
-      "line": 15,
-      "severity": "medium-opportunity",
-      "category": "parallelization",
-      "title": "Stages 2 and 3 could run in parallel",
-      "detail": "Stages 2 (validate inputs) and 3 (scan resources) have no data dependency. Running in parallel would save ~1 round-trip.",
-      "action": "Mark stages 2 and 3 as parallel-eligible in the dependency graph."
-    }
-  ],
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"critical": 0, "high": 0, "medium": 0, "low": 0},
-    "assessment": "Brief 1-2 sentence overall assessment of execution efficiency"
-  }
-}
-```
-
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
-
-## Process
-
-Read pre-pass JSON and all prompt files. Evaluate against all checks in Parts 1-3 above. Write JSON to `{quality-report-dir}/execution-efficiency-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify findings target genuine inefficiencies with measurable impact.
+Return only the filename when complete.

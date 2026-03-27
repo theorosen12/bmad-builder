@@ -168,7 +168,7 @@ For each script opportunity found, also assess:
 | Dimension | Question |
 |-----------|----------|
 | **Pre-pass potential** | Could this script feed structured data to an existing LLM scanner? |
-| **Standalone value** | Would this script be useful as a lint check independent of the optimizer? |
+| **Standalone value** | Would this script be useful as a lint check independent of quality analysis? |
 | **Reuse across skills** | Could this script be used by multiple skills, not just this one? |
 | **--help self-documentation** | Prompts that invoke this script can use `--help` instead of inlining the interface — note the token savings |
 
@@ -184,49 +184,17 @@ For each script opportunity found, also assess:
 
 ---
 
-## Output Format
+## Output
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Write your analysis as a natural document. Include:
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+- **Existing scripts inventory** — what scripts already exist in the agent
+- **Assessment** — overall verdict on intelligence placement in 2-3 sentences
+- **Key findings** — deterministic operations found in prompts. Each with severity (high/medium/low based on LLM Tax: high = 500+ tokens, medium = 100-500, low = <100), affected file:line, what the LLM is currently doing, what a script would do instead, estimated token savings, and whether it could serve as a pre-pass
+- **Aggregate savings** — total estimated token savings across all opportunities
 
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
+Be specific about file paths and line numbers. Think broadly about what scripts can accomplish. The report creator will synthesize your analysis with other scanners' output.
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis to: `{quality-report-dir}/script-opportunities-analysis.md`
 
-Write JSON findings to: `{quality-report-dir}/script-opportunities-temp.json`
-
-```json
-{
-  "scanner": "script-opportunities",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md|{name}.md",
-      "line": 42,
-      "severity": "high|medium|low",
-      "category": "validation|extraction|transformation|counting|comparison|structure|graph|preprocessing|postprocessing",
-      "title": "What the LLM is currently doing",
-      "detail": "Determinism confidence: certain|high|moderate. Estimated token savings: N per invocation. Implementation complexity: trivial|moderate|complex. Language: python|bash|either. Could be prepass: yes/no. Feeds scanner: name if applicable. Reusable across skills: yes/no. Help pattern savings: additional prompt tokens saved by using --help instead of inlining interface.",
-      "action": "What a script would do instead"
-    }
-  ],
-  "assessments": {
-    "existing_scripts": ["list of scripts that already exist in the agent's scripts/ folder"]
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"high": 0, "medium": 0, "low": 0},
-    "by_category": {},
-    "assessment": "Brief assessment including total estimated token savings, the single highest-value opportunity, and how many findings could become pre-pass scripts for LLM scanners"
-  }
-}
-```
-
-## Process
-
-Read all agent files and the scripts/ directory. Apply the determinism test and category analysis described above. Write findings to `{quality-report-dir}/script-opportunities-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify flagged operations are truly deterministic, existing scripts aren't duplicated, and you stayed in your lane.
+Return only the filename when complete.

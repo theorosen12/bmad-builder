@@ -302,9 +302,9 @@ When creating validation scripts:
 
 ---
 
-## Integration with Quality Optimizer
+## Integration with Quality Analysis
 
-The Quality Optimizer should:
+The Quality Analysis skill should:
 
 1. **First**: Run available scripts for fast, deterministic checks
 2. **Then**: Use sub-agents for semantic analysis (requires judgment)

@@ -135,6 +135,26 @@ Do NOT flag these:
 | Companion/interactive agent | Outcome + persona + communication guidance | Needs to read user and adapt |
 | Workflow facilitator agent | Outcome + rationale + selective HOW | Needs to understand WHY for routing |
 
+### Pruning: Instructions the Agent Doesn't Need
+
+Beyond micro-step over-specification, check for entire blocks that teach the LLM something it already knows — or that repeat what the agent's persona context already establishes. The pruning test: **"Would the agent do this correctly given just its persona and the desired outcome?"** If yes, the block is noise.
+
+**Flag as HIGH when a capability prompt contains any of these:**
+
+| Anti-Pattern | Why It's Noise | Example |
+|-------------|----------------|---------|
+| Scoring formulas for subjective judgment | LLMs naturally assess relevance without numeric weights | "Score each option: relevance(×4) + novelty(×3)" |
+| Capability prompt repeating identity/style from SKILL.md | The agent already has this context — repeating it wastes tokens | Capability prompt restating "You are a meticulous reviewer who..." |
+| Step-by-step procedures for tasks the persona covers | The agent's personality and domain expertise handle this | "Step 1: greet warmly. Step 2: ask about their day. Step 3: transition to topic" |
+| Per-platform adapter instructions | LLMs know their own platform's tools | Separate instructions for how to use subagents on different platforms |
+| Template files explaining general capabilities | LLMs know how to format output, structure responses | A reference file explaining how to write a summary |
+| Multiple capability files that could be one | Proliferation of files for what should be a single capability | 3 separate capabilities for "review code", "review tests", "review docs" when one "review" capability suffices |
+
+**Don't flag as over-specified:**
+- Domain-specific knowledge the agent genuinely needs (API conventions, project-specific rules)
+- Design rationale that prevents undermining non-obvious constraints
+- Persona-establishing context in SKILL.md (identity, style, principles — this is load-bearing, not waste)
+
 ### Structural Anti-Patterns
 | Pattern | Threshold | Fix |
 |---------|-----------|-----|
@@ -156,69 +176,27 @@ Do NOT flag these:
 | Severity | When to Apply |
 |----------|---------------|
 | **Critical** | Missing progression conditions, self-containment failures, intelligence leaks into scripts |
-| **High** | Pervasive defensive padding, SKILL.md over size guidelines with no progressive disclosure, over-optimized complex agent (empty Overview, no persona context), persona voice stripped to bare skeleton |
-| **Medium** | Moderate token waste, over-specified procedures, minor voice inconsistency |
+| **High** | Pervasive over-specification (scoring algorithms, capability prompts repeating persona context, adapter proliferation — see Pruning section), SKILL.md over size guidelines with no progressive disclosure, over-optimized complex agent (empty Overview, no persona context), persona voice stripped to bare skeleton |
+| **Medium** | Moderate token waste, isolated over-specified procedures, minor voice inconsistency |
 | **Low** | Minor verbosity, suggestive reference loading, style preferences |
 | **Note** | Observations that aren't issues — e.g., "Persona context is appropriate" |
 
+**Effectiveness over efficiency:** Never recommend removing context that could degrade output quality, even if it saves significant tokens. Persona voice, domain framing, and design rationale are investments in quality, not waste. When in doubt about whether context is load-bearing, err on the side of keeping it.
+
 ---
 
-## Output Format
+## Output
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Write your analysis as a natural document. Include:
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+- **Assessment** — overall craft verdict: skill type assessment, Overview quality, persona context quality, progressive disclosure, and a 2-3 sentence synthesis
+- **Prompt health summary** — how many prompts have config headers, progression conditions, are self-contained
+- **Per-capability craft** — for each capability file referenced in the routing table, briefly assess whether it follows outcome-driven principles and whether its voice aligns with the agent's persona. Flag capabilities that are over-specified or under-contextualized.
+- **Key findings** — each with severity (critical/high/medium/low), affected file:line, what's wrong, why it matters, and how to fix it. Distinguish genuine waste from persona-serving context.
+- **Strengths** — what's well-crafted (worth preserving)
 
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
+Write findings in order of severity. Be specific about file paths and line numbers. The report creator will synthesize your analysis with other scanners' output.
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis to: `{quality-report-dir}/prompt-craft-analysis.md`
 
-Write JSON findings to: `{quality-report-dir}/prompt-craft-temp.json`
-
-```json
-{
-  "scanner": "prompt-craft",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md|{name}.md",
-      "line": 42,
-      "severity": "critical|high|medium|low|note",
-      "category": "token-waste|anti-pattern|outcome-balance|progression|self-containment|intelligence-placement|overview-quality|progressive-disclosure|under-contextualized|persona-voice|communication-consistency|inline-data",
-      "title": "Brief description",
-      "detail": "Why this matters for prompt craft. Include any nuance about why this might be intentional.",
-      "action": "Specific action to resolve"
-    }
-  ],
-  "assessments": {
-    "skill_type_assessment": "simple-utility|domain-expert|companion-interactive|workflow-facilitator",
-    "skillmd_assessment": {
-      "overview_quality": "appropriate|excessive|missing|disconnected",
-      "progressive_disclosure": "good|needs-extraction|monolithic",
-      "persona_context": "appropriate|excessive|missing",
-      "notes": "Brief assessment of SKILL.md craft"
-    },
-    "prompts_scanned": 0,
-    "prompt_health": {
-      "prompts_with_config_header": 0,
-      "prompts_with_progression_conditions": 0,
-      "prompts_self_contained": 0,
-      "total_prompts": 0
-    }
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"critical": 0, "high": 0, "medium": 0, "low": 0, "note": 0},
-    "assessment": "Brief 1-2 sentence assessment",
-    "top_improvement": "Highest-impact improvement"
-  }
-}
-```
-
-## Process
-
-Read pre-pass JSON and all prompt files. Evaluate using the criteria in Parts 1-3 above. Write JSON to `{quality-report-dir}/prompt-craft-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify all files were read, token-waste findings are genuine (not persona context), and suggestions would improve the agent holistically.
+Return only the filename when complete.

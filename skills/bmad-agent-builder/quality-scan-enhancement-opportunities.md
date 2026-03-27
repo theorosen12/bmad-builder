@@ -29,7 +29,6 @@ Find and read:
 - `SKILL.md` — Understand the agent's purpose, persona, audience, and flow
 - `*.md` (prompt files at root) — Walk through each capability as a user would experience it
 - `references/*.md` — Understand what supporting material exists
-- `references/*.json` — See what supporting schemas exist
 
 ## Creative Analysis Lenses
 
@@ -157,84 +156,19 @@ For each journey, note:
 
 Explore creatively, then distill each idea into a concrete, actionable suggestion. Prioritize by user impact. Stay in your lane.
 
-## Output Format
+## Output
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Write your analysis as a natural document. Include:
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+- **Agent understanding** — purpose, primary user, key assumptions (2-3 sentences)
+- **User journeys** — for each archetype (first-timer, expert, confused, edge-case, hostile-environment, automator): brief narrative, friction points, bright spots
+- **Headless assessment** — potential level, which interactions could auto-resolve, what headless invocation would need
+- **Key findings** — edge cases, experience gaps, delight opportunities. Each with severity (high-opportunity/medium-opportunity/low-opportunity), affected area, what you noticed, and concrete suggestion
+- **Top insights** — 2-3 most impactful creative observations
+- **Facilitative patterns check** — which patterns are present/missing and which would add most value
 
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
+Go wild first, then temper. Prioritize by user impact. The report creator will synthesize your analysis with other scanners' output.
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis to: `{quality-report-dir}/enhancement-opportunities-analysis.md`
 
-Write JSON findings to: `{quality-report-dir}/enhancement-opportunities-temp.json`
-
-```json
-{
-  "scanner": "enhancement-opportunities",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md|{name}.md",
-      "severity": "high-opportunity|medium-opportunity|low-opportunity",
-      "category": "edge-case|experience-gap|delight-opportunity|assumption-risk|journey-friction|autonomous-potential|facilitative-pattern",
-      "title": "The specific situation or user story that reveals this opportunity",
-      "detail": "What you noticed, why it matters, and how this would change the user's experience",
-      "action": "Concrete, actionable improvement — the tempered version of the wild idea"
-    }
-  ],
-  "assessments": {
-    "skill_understanding": {
-      "purpose": "What this agent is trying to do",
-      "primary_user": "Who this agent is for",
-      "key_assumptions": ["assumption 1", "assumption 2"]
-    },
-    "user_journeys": [
-      {
-        "archetype": "first-timer|expert|confused|edge-case|hostile-environment|automator",
-        "summary": "Brief narrative of this user's experience with the agent",
-        "friction_points": ["moment 1", "moment 2"],
-        "bright_spots": ["what works well for this user"]
-      }
-    ],
-    "autonomous_assessment": {
-      "potential": "headless-ready|easily-adaptable|partially-adaptable|fundamentally-interactive",
-      "hitl_points": 0,
-      "auto_resolvable": 0,
-      "needs_input": 0,
-      "suggested_output_contract": "What a headless invocation would return",
-      "required_inputs": ["parameters needed upfront for headless mode"],
-      "notes": "Brief assessment of autonomous viability"
-    },
-    "top_insights": [
-      {
-        "title": "The single most impactful creative observation",
-        "detail": "The user experience impact",
-        "action": "What to do about it"
-      }
-    ]
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"high-opportunity": 0, "medium-opportunity": 0, "low-opportunity": 0},
-    "by_category": {
-      "edge_case": 0,
-      "experience_gap": 0,
-      "delight_opportunity": 0,
-      "assumption_risk": 0,
-      "journey_friction": 0,
-      "autonomous_potential": 0,
-      "facilitative_pattern": 0
-    },
-    "assessment": "Brief creative assessment of the agent's user experience, including the boldest practical idea"
-  }
-}
-```
-
-## Process
-
-Read all agent files. Analyze through each creative lens above. Write findings to `{quality-report-dir}/enhancement-opportunities-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify findings are realistic, actionable, and honest about what the agent already does well.
+Return only the filename when complete.

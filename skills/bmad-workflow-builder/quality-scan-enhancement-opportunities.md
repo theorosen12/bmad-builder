@@ -29,7 +29,6 @@ Find and read:
 - `SKILL.md` — Understand the skill's purpose, audience, and flow
 - `*.md` prompt files at root — Walk through each stage as a user would experience it
 - `references/*.md` — Understand what supporting material exists
-- `references/*.json` — See what supporting schemas exist
 
 ## Creative Analysis Lenses
 
@@ -163,80 +162,19 @@ For each journey, note:
 
 4. **Stay in your lane.** Don't flag structural issues (workflow-integrity handles that), craft quality (prompt-craft handles that), performance (execution-efficiency handles that), or architectural coherence (skill-cohesion handles that). Your findings should be things *only a creative thinker would notice*.
 
-## Output Format
+## Output
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis as a natural document. Include:
 
-Write JSON findings to: `{quality-report-dir}/enhancement-opportunities-temp.json`
+- **Skill understanding** — purpose, primary user, key assumptions (2-3 sentences)
+- **User journeys** — for each archetype (first-timer, expert, confused, edge-case, hostile-environment, automator): a brief narrative, friction points, and bright spots
+- **Headless assessment** — potential level (headless-ready/easily-adaptable/partially-adaptable/fundamentally-interactive), which interaction points could auto-resolve, what a headless invocation would need
+- **Key findings** — edge cases, experience gaps, delight opportunities. Each with severity (high-opportunity/medium-opportunity/low-opportunity), affected area, what you noticed, and a concrete suggestion
+- **Top insights** — the 2-3 most impactful creative observations, distilled
+- **Facilitative patterns check** — which of the 7 patterns are present/missing and which would be most valuable to add
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Go wild first, then temper. Prioritize by user impact. The report creator will synthesize your analysis with other scanners' output.
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+Write your analysis to: `{quality-report-dir}/enhancement-opportunities-analysis.md`
 
-**Field mapping for this scanner:**
-- `title` — The specific situation or user story (was `scenario`)
-- `detail` — What you noticed, why it matters, and user impact combined (merges `insight` + `user_impact`)
-- `action` — Concrete, actionable improvement (was `suggestion`)
-
-```json
-{
-  "scanner": "enhancement-opportunities",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md",
-      "severity": "high-opportunity",
-      "category": "experience-gap",
-      "title": "First-time user with no project config hits a dead end at stage 2",
-      "detail": "Stage 2 assumes a config exists at _bmad/config.yaml. A first-timer who invokes this skill directly gets a cryptic error with no guidance on how to recover. This would frustrate new users and create abandonment.",
-      "action": "Add a graceful fallback in stage 2: detect missing config, explain how to run the module-init skill, and offer to proceed with defaults."
-    }
-  ],
-  "assessments": {
-    "skill_understanding": {
-      "purpose": "What this skill is trying to do",
-      "primary_user": "Who this skill is for",
-      "key_assumptions": ["assumption 1", "assumption 2"]
-    },
-    "user_journeys": [
-      {
-        "archetype": "first-timer|expert|confused|edge-case|hostile-environment|automator",
-        "summary": "Brief narrative of this user's experience with the skill",
-        "friction_points": ["moment 1", "moment 2"],
-        "bright_spots": ["what works well for this user"]
-      }
-    ],
-    "autonomous_assessment": {
-      "potential": "headless-ready|easily-adaptable|partially-adaptable|fundamentally-interactive",
-      "hitl_points": 0,
-      "auto_resolvable": 0,
-      "needs_input": 0,
-      "suggested_output_contract": "What a headless invocation would return",
-      "required_inputs": ["parameters needed upfront for headless mode"],
-      "notes": "Brief assessment of headless viability"
-    },
-    "top_insights": [
-      {
-        "title": "The single most impactful creative observation",
-        "detail": "The user experience impact",
-        "action": "What to do about it"
-      }
-    ]
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"high-opportunity": 0, "medium-opportunity": 0, "low-opportunity": 0},
-    "assessment": "Brief creative assessment of the skill's user experience, including the boldest practical idea"
-  }
-}
-```
-
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
-
-## Process
-
-Read all skill files. Analyze through each creative lens above. Write JSON to `{quality-report-dir}/enhancement-opportunities-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify findings are realistic, actionable, and honest about what the skill already does well.
+Return only the filename when complete.

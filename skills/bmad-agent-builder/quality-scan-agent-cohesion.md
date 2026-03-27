@@ -113,102 +113,19 @@ Find and read:
 | Entry points are clear | User knows where to start |
 | Exit points provide value | User gets something useful, not just internal state |
 
-## Output Format
+## Output
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Write your analysis as a natural document. This is an opinionated, advisory assessment. Include:
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+- **Assessment** — overall cohesion verdict in 2-3 sentences. Does this agent feel authentic and purposeful?
+- **Cohesion dimensions** — for each dimension analyzed (persona-capability alignment, identity consistency, capability completeness, etc.), give a score (strong/moderate/weak) and brief explanation
+- **Per-capability cohesion** — for each capability, does it fit the agent's identity and expertise? Would this agent naturally have this capability? Flag misalignments.
+- **Key findings** — gaps, redundancies, misalignments. Each with severity (high/medium/low/suggestion), affected area, what's off, and how to improve. High = glaring persona contradiction or missing core capability. Medium = clear gap. Low = minor. Suggestion = creative idea.
+- **Strengths** — what works well about this agent's coherence
+- **Creative suggestions** — ideas that could make the agent more compelling
 
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
+Be opinionated but fair. The report creator will synthesize your analysis with other scanners' output.
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis to: `{quality-report-dir}/agent-cohesion-analysis.md`
 
-Write JSON findings to: `{quality-report-dir}/agent-cohesion-temp.json`
-
-```json
-{
-  "scanner": "agent-cohesion",
-  "agent_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md|{name}.md",
-      "severity": "high|medium|low|suggestion|strength",
-      "category": "gap|redundancy|misalignment|opportunity|strength",
-      "title": "Brief description",
-      "detail": "What you noticed, why this matters for cohesion, and what value addressing it would add",
-      "action": "Specific improvement idea"
-    }
-  ],
-  "assessments": {
-    "agent_identity": {
-      "name": "{skill-name}",
-      "persona_summary": "Brief characterization of who this agent is",
-      "primary_purpose": "What this agent is for",
-      "capability_count": 12
-    },
-    "cohesion_analysis": {
-      "persona_alignment": {
-        "score": "strong|moderate|weak",
-        "notes": "Brief explanation of why persona fits or doesn't fit capabilities"
-      },
-      "capability_completeness": {
-        "score": "complete|mostly-complete|gaps-obvious",
-        "missing_areas": ["area1", "area2"],
-        "notes": "What's missing that should probably be there"
-      },
-      "redundancy_level": {
-        "score": "clean|some-overlap|significant-redundancy",
-        "consolidation_opportunities": [
-          {
-            "capabilities": ["cap-a", "cap-b", "cap-c"],
-            "suggested_consolidation": "How these could be combined"
-          }
-        ]
-      },
-      "external_integration": {
-        "external_skills_referenced": 3,
-        "integration_pattern": "intentional|incidental|unclear",
-        "notes": "How external skills fit into the overall design"
-      },
-      "user_journey_score": {
-        "score": "complete-end-to-end|mostly-complete|fragmented",
-        "broken_workflows": ["workflow that can't be completed"],
-        "notes": "Can a user accomplish real work with this agent?"
-      }
-    }
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"high": 0, "medium": 0, "low": 0, "suggestion": 0, "strength": 0},
-    "by_category": {"gap": 0, "redundancy": 0, "misalignment": 0, "opportunity": 0, "strength": 0},
-    "overall_cohesion": "cohesive|mostly-cohesive|fragmented|confused",
-    "single_most_important_fix": "The ONE thing that would most improve this agent"
-  }
-}
-```
-
-Merge all findings into the single `findings[]` array:
-- Former `findings[]` items: map `issue` to `title`, merge `observation`+`rationale`+`impact` into `detail`, map `suggestion` to `action`
-- Former `strengths[]` items: use `severity: "strength"`, `category: "strength"`
-- Former `creative_suggestions[]` items: use `severity: "suggestion"`, map `idea` to `title`, `rationale` to `detail`, merge `type` and `estimated_impact` context into `detail`, map actionable recommendation to `action`
-
-## Severity Guidelines
-
-| Severity | When to Use |
-|----------|-------------|
-| **high** | Glaring omission that would obviously confuse users OR capability that completely contradicts persona |
-| **medium** | Clear gap in core workflow OR significant redundancy OR moderate misalignment |
-| **low** | Minor enhancement opportunity OR edge case not covered |
-| **suggestion** | Creative idea, nice-to-have, speculative improvement |
-
-## Process
-
-Read all agent files. Evaluate cohesion across all 6 dimensions above. Write findings to `{quality-report-dir}/agent-cohesion-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify completeness across all dimensions and that findings tell a coherent story.
-
-## Key Principle
-
-You are NOT checking for syntax errors or missing fields. You are evaluating whether this agent makes sense as a coherent tool. Think like a product designer reviewing a feature set: Is this useful? Is it complete? Does it fit together? Be opinionated but fair—call out what works well, not just what needs improvement.
+Return only the filename when complete.

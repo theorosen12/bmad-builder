@@ -10,7 +10,7 @@ This is a single unified scan that checks both the skill's skeleton (SKILL.md st
 
 ## Your Role
 
-Read the skill's SKILL.md and all stage prompts. Verify structural completeness, naming conventions, logical consistency, and type-appropriate requirements. Return findings as structured JSON.
+Read the skill's SKILL.md and all stage prompts. Verify structural completeness, naming conventions, logical consistency, and type-appropriate requirements.
 
 ## Scan Targets
 
@@ -58,9 +58,25 @@ Workflows may include Identity, Communication Style, or Principles sections if p
 | Check | Why It Matters |
 |-------|----------------|
 | No "you should" or "please" language | Direct commands work better than polite requests |
-| No over-specification of obvious things | Wastes tokens, AI already knows basics |
+| No over-specification of LLM general capabilities (see below) | Wastes tokens, creates brittle mechanical procedures for things the LLM handles naturally |
 | Instructions address the AI directly | "When activated, this workflow..." is meta — better: "When activated, load config..." |
 | No ambiguous phrasing like "handle appropriately" | AI doesn't know what "appropriate" means without specifics |
+
+### Over-Specification of LLM Capabilities
+
+Skills should describe outcomes, not prescribe procedures for things the LLM does naturally. Flag these structural indicators of over-specification:
+
+| Check | Why It Matters | Severity |
+|-------|----------------|----------|
+| Adapter files that duplicate platform knowledge (e.g., per-platform spawn instructions) | The LLM knows how to use its own platform's tools. Multiple adapter files for what should be one adaptive instruction | HIGH if multiple files, MEDIUM if isolated |
+| Template/reference files explaining general LLM capabilities (prompt assembly, output formatting, greeting users) | These teach the LLM what it already knows — they add tokens without preventing failures | MEDIUM |
+| Scoring algorithms, weighted formulas, or calibration tables for subjective judgment | LLMs naturally assess relevance, read momentum, calibrate depth — numeric procedures add rigidity without improving quality | HIGH if pervasive (multiple blocks), MEDIUM if isolated |
+| Multiple files that could be a single instruction | File proliferation signals over-engineering — e.g., 3 adapter files + 1 template that should be "use subagents if available, simulate if not" | HIGH |
+
+**Don't flag as over-specification:**
+- Domain-specific patterns the LLM wouldn't know (BMad config conventions, module metadata)
+- Design rationale for non-obvious choices
+- Fragile operations where deviation has consequences
 
 ### Template Artifacts (Incomplete Build Detection)
 
@@ -177,60 +193,16 @@ These checks verify that the skill's parts agree with each other — catching mi
 
 ---
 
-## Output Format
+## Output
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis as a natural document. Include:
 
-Write JSON findings to: `{quality-report-dir}/workflow-integrity-temp.json`
+- **Assessment** — overall structural verdict in 2-3 sentences
+- **Key findings** — each with severity (critical/high/medium/low), affected file:line, what's wrong, and how to fix it
+- **Strengths** — what's structurally sound (worth preserving)
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Write findings in order of severity. Be specific about file paths and line numbers. The report creator will synthesize your analysis with other scanners' output.
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+Write your analysis to: `{quality-report-dir}/workflow-integrity-analysis.md`
 
-**Field mapping for this scanner:**
-- `title` — Brief description of the issue (was `issue`)
-- `detail` — Why this is a problem (was `rationale`)
-- `action` — Specific action to resolve (was `fix`)
-
-```json
-{
-  "scanner": "workflow-integrity",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md",
-      "line": 42,
-      "severity": "critical",
-      "category": "progression",
-      "title": "Stage 03 has no progression conditions",
-      "detail": "Without explicit conditions, the AI does not know when to advance to the next stage, causing stalls or premature transitions.",
-      "action": "Add progression conditions: 'Advance when all required fields are populated and user confirms.'"
-    }
-  ],
-  "assessments": {
-    "workflow_type": "complex|simple-workflow|simple-utility",
-    "stage_summary": {
-      "total_stages": 0,
-      "missing_stages": [],
-      "orphaned_stages": [],
-      "stages_without_progression": [],
-      "stages_without_config_header": []
-    }
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"critical": 0, "high": 0, "medium": 0, "low": 0},
-    "assessment": "Brief 1-2 sentence overall assessment of workflow integrity"
-  }
-}
-```
-
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
-
-## Process
-
-Read SKILL.md and all prompt files. For complex workflows, also read all stage prompt files. Evaluate against all checks in Parts 1-3 above. Write JSON to `{quality-report-dir}/workflow-integrity-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify findings are complete, severity ratings are honest, and you stayed within structural validation.
+Return only the filename when complete.

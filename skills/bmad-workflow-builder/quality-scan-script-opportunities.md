@@ -160,7 +160,7 @@ For each script opportunity found, also assess:
 | Dimension | Question |
 |-----------|----------|
 | **Pre-pass potential** | Could this script feed structured data to an existing LLM scanner? |
-| **Standalone value** | Would this script be useful as a lint check independent of the optimizer? |
+| **Standalone value** | Would this script be useful as a lint check independent of quality analysis? |
 | **Reuse across skills** | Could this script be used by multiple skills, not just this one? |
 | **--help self-documentation** | Prompts that invoke this script can use `--help` instead of inlining the interface — note the token savings |
 
@@ -176,55 +176,17 @@ For each script opportunity found, also assess:
 
 ---
 
-## Output Format
+## Output
 
-You will receive `{skill-path}` and `{quality-report-dir}` as inputs.
+Write your analysis as a natural document. Include:
 
-Write JSON findings to: `{quality-report-dir}/script-opportunities-temp.json`
+- **Existing scripts inventory** — what scripts already exist in the skill
+- **Assessment** — overall verdict on intelligence placement in 2-3 sentences
+- **Key findings** — deterministic operations found in prompts. Each with severity (high/medium/low based on LLM Tax: high = 500+ tokens, medium = 100-500, low = <100), affected file:line, what the LLM is currently doing, what a script would do instead, estimated token savings, implementation language, and whether it could serve as a pre-pass for an LLM scanner
+- **Aggregate savings** — total estimated token savings across all opportunities
 
-Output your findings using the universal schema defined in `references/universal-scan-schema.md`.
+Be specific about file paths and line numbers. Think broadly about what scripts can accomplish. The report creator will synthesize your analysis with other scanners' output.
 
-Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, `detail`, `action`. Do not rename, restructure, or add fields to findings.
+Write your analysis to: `{quality-report-dir}/script-opportunities-analysis.md`
 
-**Field mapping for this scanner:**
-- `title` — What the LLM is currently doing (was `current_behavior`)
-- `detail` — Narrative combining determinism confidence, implementation complexity, estimated token savings, language, pre-pass potential, reusability, and help pattern savings. Weave the specifics into a readable paragraph rather than separate fields.
-- `action` — What a script would do instead (was `script_alternative`)
-
-```json
-{
-  "scanner": "script-opportunities",
-  "skill_path": "{path}",
-  "findings": [
-    {
-      "file": "SKILL.md",
-      "line": 42,
-      "severity": "high",
-      "category": "validation",
-      "title": "LLM validates frontmatter has required fields on every invocation",
-      "detail": "Determinism: certain. A Python script with pyyaml could validate frontmatter fields in <10ms. Estimated savings: ~500 tokens/invocation. Implementation: trivial (Python). This is reusable across all skills and could serve as a pre-pass feeding the workflow-integrity scanner. Using --help self-documentation would save an additional ~200 prompt tokens.",
-      "action": "Create a Python script that parses YAML frontmatter and checks required fields (name, description), returning JSON pass/fail with details."
-    }
-  ],
-  "assessments": {
-    "existing_scripts": ["list of scripts that already exist in skills/scripts/"]
-  },
-  "summary": {
-    "total_findings": 0,
-    "by_severity": {"high": 0, "medium": 0, "low": 0},
-    "by_category": {},
-    "total_estimated_token_savings": "aggregate estimate across all findings",
-    "assessment": "Brief overall assessment including the single biggest win and how many findings could become pre-pass scripts"
-  }
-}
-```
-
-Before writing output, verify: Is your array called `findings`? Does every item have `title`, `detail`, `action`? Is `assessments` an object, not items in the findings array?
-
-## Process
-
-Read all skill files and the scripts/ directory. Apply the determinism test and category analysis described above. Write JSON to `{quality-report-dir}/script-opportunities-temp.json`. Return only the filename.
-
-## Critical After Draft Output
-
-Before finalizing, verify flagged operations are truly deterministic, existing scripts aren't duplicated, and you stayed in your lane.
+Return only the filename when complete.
