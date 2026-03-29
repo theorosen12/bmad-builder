@@ -88,8 +88,8 @@ If these cover your discoverability needs, you can skip the setup skill entirely
 The CSV asset registers the module's capabilities with the help system. Each row describes one capability that users can discover and invoke.
 
 ```csv
-module,agent-name,skill-name,display-name,menu-code,capability,args,description,...
-mymod,,my-skill,My Skill,MS,build-process,,"Does something useful.",...
+module,skill,display-name,menu-code,description,action,args,phase,after,before,required,output-location,outputs
+mymod,my-skill,My Skill,MS,"Does something useful.",build-process,,anytime,,,false,,
 ```
 
 When the setup skill runs, it merges these rows into the project-wide `_bmad/module-help.csv`, replacing any existing rows for this module. This is how users find your module's commands through the help system.

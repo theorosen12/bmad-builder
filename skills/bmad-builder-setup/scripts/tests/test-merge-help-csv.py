@@ -32,8 +32,8 @@ HEADER = merge_help_csv_mod.HEADER
 
 
 SAMPLE_ROWS = [
-    ["bmb", "", "bmad-bmb-module-init", "Install Module", "IM", "install", "", "Install BMad Builder.", "anytime", "", "", "false", "", "config", ""],
-    ["bmb", "", "bmad-agent-builder", "Build Agent", "BA", "build-process", "", "Create an agent.", "anytime", "", "", "false", "output_folder", "agent skill", ""],
+    ["bmb", "bmad-bmb-module-init", "Install Module", "IM", "Install BMad Builder.", "install", "", "anytime", "", "", "false", "", "config"],
+    ["bmb", "bmad-agent-builder", "Build Agent", "BA", "Create an agent.", "build-process", "", "anytime", "", "", "false", "output_folder", "agent skill"],
 ]
 
 
@@ -44,7 +44,7 @@ class TestExtractModuleCodes(unittest.TestCase):
 
     def test_multiple_codes(self):
         rows = SAMPLE_ROWS + [
-            ["cis", "", "cis-skill", "CIS Skill", "CS", "run", "", "A skill.", "anytime", "", "", "false", "", "", ""],
+            ["cis", "cis-skill", "CIS Skill", "CS", "A skill.", "run", "", "anytime", "", "", "false", "", ""],
         ]
         codes = extract_module_codes(rows)
         self.assertEqual(codes, {"bmb", "cis"})
@@ -61,7 +61,7 @@ class TestFilterRows(unittest.TestCase):
 
     def test_preserves_non_matching_rows(self):
         mixed_rows = SAMPLE_ROWS + [
-            ["cis", "", "cis-skill", "CIS Skill", "CS", "run", "", "A skill.", "anytime", "", "", "false", "", "", ""],
+            ["cis", "cis-skill", "CIS Skill", "CS", "A skill.", "run", "", "anytime", "", "", "false", "", ""],
         ]
         result = filter_rows(mixed_rows, "bmb")
         self.assertEqual(len(result), 1)
@@ -86,7 +86,7 @@ class TestReadWriteCSV(unittest.TestCase):
             header, rows = read_csv_rows(path)
             self.assertEqual(len(rows), 2)
             self.assertEqual(rows[0][0], "bmb")
-            self.assertEqual(rows[0][2], "bmad-bmb-module-init")
+            self.assertEqual(rows[0][1], "bmad-bmb-module-init")
 
     def test_creates_parent_dirs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -125,7 +125,7 @@ class TestEndToEnd(unittest.TestCase):
     def test_merge_into_existing_with_other_module(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             other_rows = [
-                ["cis", "", "cis-skill", "CIS Skill", "CS", "run", "", "A skill.", "anytime", "", "", "false", "", "", ""],
+                ["cis", "cis-skill", "CIS Skill", "CS", "A skill.", "run", "", "anytime", "", "", "false", "", ""],
             ]
             target_path = self._write_target(tmpdir, other_rows)
             source_path = self._write_source(tmpdir, SAMPLE_ROWS)
@@ -150,11 +150,11 @@ class TestEndToEnd(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             # Existing target has old bmb entries + cis entry
             old_bmb_rows = [
-                ["bmb", "", "old-skill", "Old Skill", "OS", "run", "", "Old.", "anytime", "", "", "false", "", "", ""],
-                ["bmb", "", "another-old", "Another", "AO", "run", "", "Old too.", "anytime", "", "", "false", "", "", ""],
+                ["bmb", "old-skill", "Old Skill", "OS", "Old.", "run", "", "anytime", "", "", "false", "", ""],
+                ["bmb", "another-old", "Another", "AO", "Old too.", "run", "", "anytime", "", "", "false", "", ""],
             ]
             cis_rows = [
-                ["cis", "", "cis-skill", "CIS Skill", "CS", "run", "", "A skill.", "anytime", "", "", "false", "", "", ""],
+                ["cis", "cis-skill", "CIS Skill", "CS", "A skill.", "run", "", "anytime", "", "", "false", "", ""],
             ]
             target_path = self._write_target(tmpdir, old_bmb_rows + cis_rows)
             source_path = self._write_source(tmpdir, SAMPLE_ROWS)
@@ -179,7 +179,7 @@ class TestEndToEnd(unittest.TestCase):
             self.assertEqual(module_codes.count("bmb"), 2)
             self.assertEqual(module_codes.count("cis"), 1)
             # Old skills should be gone
-            skill_names = [r[2] for r in result_rows]
+            skill_names = [r[1] for r in result_rows]
             self.assertNotIn("old-skill", skill_names)
             self.assertNotIn("another-old", skill_names)
 
