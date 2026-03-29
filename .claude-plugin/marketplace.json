@@ -6,17 +6,22 @@
   "license": "MIT",
   "homepage": "https://github.com/bmad-code-org/bmad-builder",
   "repository": "https://github.com/bmad-code-org/bmad-builder",
-  "keywords": ["bmad", "agent-builder", "workflow-builder", "skill-factory", "ai-agents"],
+  "keywords": ["bmad", "agent-builder", "workflow-builder", "module-builder", "skill-factory", "ai-agents"],
   "plugins": [
     {
       "name": "bmad-builder",
       "source": "./",
-      "description": "Build AI agents and workflows from a conversation. Three skills — Agent Builder, Workflow Builder, and Setup — guide you from idea to production-ready skill structure with built-in quality optimization. Part of the BMad Method ecosystem.",
+      "description": "Build AI agents, workflows, and modules from a conversation. Four skills — Agent Builder, Workflow Builder, Module Builder, and Setup — guide you from idea to production-ready skill structure with built-in quality optimization. Part of the BMad Method ecosystem.",
       "version": "1.2.0",
       "author": {
         "name": "Brian (BMad) Madison"
       },
-      "skills": ["./skills/bmad-agent-builder", "./skills/bmad-builder-setup", "./skills/bmad-workflow-builder"]
+      "skills": [
+        "./skills/bmad-agent-builder",
+        "./skills/bmad-builder-setup",
+        "./skills/bmad-module-builder",
+        "./skills/bmad-workflow-builder"
+      ]
     }
   ]
 }
