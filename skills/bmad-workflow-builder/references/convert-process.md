@@ -84,7 +84,7 @@ Not every conversion is about bloat — some skills are well-intentioned but non
 | **Progressive Disclosure** | Monolithic content split into SKILL.md routing + references |
 | **Outcome-Driven Rewrite** | Prescriptive instructions reframed as outcomes |
 | **Frontmatter/Description** | Added or fixed BMad-compliant frontmatter and trigger phrases |
-| **Path Convention Fixes** | Corrected file references to use `./references/`, `{project-root}/_bmad/`, etc. |
+| **Path Convention Fixes** | Corrected file references to use `./` for skill-internal, `{project-root}/` for project-scope |
 
 Severity: **high** = significant impact on quality or compliance, **medium** = notable improvement, **low** = minor or stylistic.
 
