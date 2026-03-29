@@ -1,6 +1,6 @@
 # Validate Module
 
-**Language:** Use `{communication_language}` for all output.
+**Language:** Use `{communication_language}` for all output. **Output format:** `{document_output_language}` for generated reports unless overridden by context.
 
 ## Your Role
 
@@ -26,7 +26,7 @@ If the script cannot execute, perform equivalent checks by reading the files dir
 
 ### 3. Quality Assessment
 
-This is where LLM judgment matters. Read every SKILL.md in the module thoroughly, then review each CSV entry against what you learned:
+This is where LLM judgment matters. For 4 or fewer skills, read all SKILL.md files in a single parallel batch (one message, multiple Read calls). For 5+ skills, spawn parallel subagents — one per skill — each returning structured findings: `{ name, capabilities_found: [...], quality_notes: [...], issues: [...] }`. Then review each CSV entry against what you learned:
 
 **Completeness** — Does every distinct capability of every skill have its own CSV row? A skill with multiple modes or actions should have multiple entries. Look for capabilities described in SKILL.md overviews that aren't registered.
 
@@ -52,3 +52,23 @@ Combine script findings and quality assessment into a clear report:
 - **Overall assessment** — is this module ready for use, or does it need fixes?
 
 For each finding, explain what's wrong and suggest the fix. Be direct — the user should be able to act on every item without further clarification.
+
+After presenting the report, offer to save findings to a durable file: "Save validation report to `{bmad_builder_reports}/module-validation-{module-code}-{date}.md`?" This gives the user a reference they can share, track as a checklist, and review in future sessions.
+
+**Completion:** After presenting results, explicitly state: "Validation complete." If findings exist, offer to walk through fixes. If the module passes cleanly, confirm it's ready for use. Do not continue the conversation beyond what the user requests — the session is done once results are delivered and any follow-up questions are answered.
+
+## Headless Mode
+
+When `--headless` is set, run the full validation (script + quality assessment) without user interaction and return structured JSON:
+
+```json
+{
+  "status": "pass|fail",
+  "module_code": "...",
+  "structural_issues": [{ "severity": "...", "message": "...", "file": "..." }],
+  "quality_findings": [{ "severity": "...", "skill": "...", "message": "...", "suggestion": "..." }],
+  "summary": "Module is ready for use.|Module has N issues requiring attention."
+}
+```
+
+This enables CI pipelines to gate on module quality before release.

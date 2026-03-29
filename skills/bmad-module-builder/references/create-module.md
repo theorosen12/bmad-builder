@@ -1,6 +1,6 @@
 # Create Module
 
-**Language:** Use `{communication_language}` for all output.
+**Language:** Use `{communication_language}` for all output. **Output format:** `{document_output_language}` for generated files unless overridden by context.
 
 ## Your Role
 
@@ -10,9 +10,11 @@ You are a module packaging specialist. The user has built their skills — your 
 
 ### 1. Discover the Skills
 
-Ask the user for the folder path containing their built skills. Also ask: do they have a plan document from an Ideate Module (IM) session? If so, read it — it provides valuable context for ordering, relationships, and design intent.
+Ask the user for the folder path containing their built skills. Also ask: do they have a plan document from an Ideate Module (IM) session? If they do, this is the recommended path — a plan document lets you auto-extract module identity, capability ordering, config variables, and design rationale, dramatically improving the quality of the scaffolded module. Read it first, focusing on the structured sections (frontmatter, Skills, Configuration, Build Roadmap) — skip Ideas Captured and other freeform sections that don't inform scaffolding.
 
-**Read every SKILL.md in the folder thoroughly.** Understand each skill's:
+**Read every SKILL.md in the folder.** For 4 or fewer skills, read all SKILL.md files in a single parallel batch (one message, multiple Read calls). For 5+ skills, spawn parallel subagents — one per skill — each returning compact JSON: `{ name, description, capabilities: [{ name, args, outputs }], dependencies }`. This keeps the parent context lean while still understanding the full ecosystem.
+
+For each skill, understand:
 
 - Name, purpose, and capabilities
 - Arguments and interaction model
@@ -91,15 +93,15 @@ Iterate until the user confirms everything is correct.
 
 ### 7. Scaffold
 
-Write the confirmed module.yaml and module-help.csv content to temporary files. Run the scaffold script:
+Write the confirmed module.yaml and module-help.csv content to temporary files at `{bmad_builder_reports}/{module-code}-temp-module.yaml` and `{bmad_builder_reports}/{module-code}-temp-help.csv`. Run the scaffold script:
 
 ```bash
 python3 ./scripts/scaffold-setup-skill.py \
   --target-dir "{skills-folder}" \
   --module-code "{code}" \
   --module-name "{name}" \
-  --module-yaml "{temp-yaml-path}" \
-  --module-csv "{temp-csv-path}"
+  --module-yaml "{bmad_builder_reports}/{module-code}-temp-module.yaml" \
+  --module-csv "{bmad_builder_reports}/{module-code}-temp-help.csv"
 ```
 
 This creates `bmad-{code}-setup/` in the user's skills folder containing:
@@ -124,4 +126,30 @@ When `--headless` is set, the skill requires either:
 - A **plan document path** — extract all module identity, capabilities, and config from it
 - A **skills folder path** — read skills and infer sensible defaults for module identity
 
-In headless mode: skip interactive questions, scaffold immediately, present a summary of what was created at the end. If critical information is missing and cannot be inferred (like module code), exit with an error explaining what's needed.
+**Required inputs** (must be provided or extractable — exit with error if missing):
+
+- Module code (cannot be safely inferred)
+- Skills folder path
+
+**Inferrable inputs** (will use defaults if not provided — flag as inferred in output):
+
+- Module name (inferred from folder name or skill themes)
+- Description (synthesized from skills)
+- Version (defaults to 1.0.0)
+- Capability ordering (inferred from skill dependencies)
+
+In headless mode: skip interactive questions, scaffold immediately, and return structured JSON:
+
+```json
+{
+  "status": "success|error",
+  "module_code": "...",
+  "setup_skill": "bmad-{code}-setup",
+  "location": "/path/to/bmad-{code}-setup/",
+  "files_created": ["SKILL.md", "scripts/...", "assets/module.yaml", "assets/module-help.csv"],
+  "inferred": { "module_name": "...", "description": "..." },
+  "warnings": []
+}
+```
+
+The `inferred` object lists every value that was not explicitly provided, so the caller can spot wrong inferences. If critical information is missing and cannot be inferred, return `{ "status": "error", "message": "..." }`.

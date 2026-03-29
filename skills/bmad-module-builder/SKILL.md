@@ -11,9 +11,9 @@ This skill helps you bring BMad modules to life — from the first spark of an i
 
 - **Ideate Module (IM)** — A creative brainstorming session that helps you imagine what your module could be, decide on the right architecture (agent vs. workflow vs. both), and produce a detailed plan document. The plan then guides you through building each piece with the Agent Builder and Workflow Builder.
 - **Create Module (CM)** — Takes an existing folder of built skills and scaffolds the setup infrastructure (module.yaml, module-help.csv, setup skill) that makes it a proper installable BMad module. Supports `--headless` / `-H`.
-- **Validate Module (VM)** — Checks that a module's setup skill is complete and correct — every skill has its capabilities registered, entries are accurate and well-crafted, and structural integrity is sound.
+- **Validate Module (VM)** — Checks that a module's setup skill is complete and correct — every skill has its capabilities registered, entries are accurate and well-crafted, and structural integrity is sound. Supports `--headless` / `-H`.
 
-**Args:** Accepts `--headless` / `-H` for CM path only, an initial description for IM, or a path to a skills folder for CM/VM.
+**Args:** Accepts `--headless` / `-H` for CM and VM paths, an initial description for IM, or a path to a skills folder for CM/VM.
 
 ## On Activation
 
