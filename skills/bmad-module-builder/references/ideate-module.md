@@ -30,11 +30,15 @@ Weave these into conversation naturally. Never name them or make the user feel l
 
 ## Process
 
-### 1. Open the Session
+This is a phased process. Each phase has a clear purpose and should not be skipped, even if the user is eager to move ahead. The phases prevent critical details from being missed and avoid expensive rewrites later.
+
+**Writing discipline:** During phases 1-2, write only to the **Ideas Captured** section — raw, generous, unstructured. Do not write structured Architecture or Skills sections yet. Starting at phase 3, begin writing structured sections. This avoids rewriting the entire document when the architecture shifts.
+
+### Phase 1: Vision and Module Identity
 
 Initialize the plan document immediately using `./assets/module-plan-template.md`. Write it to `{bmad_builder_reports}` with a descriptive filename. Set `created` and `updated` timestamps. This document is your cache — update it progressively as the conversation unfolds so work survives context compaction.
 
-Start by understanding the spark. Let the user talk freely — this is where the richest context comes from:
+**First: capture the spark.** Let the user talk freely — this is where the richest context comes from:
 
 - What's the idea? What problem space or domain?
 - Who would use this and what would they get from it?
@@ -42,7 +46,17 @@ Start by understanding the spark. Let the user talk freely — this is where the
 
 Don't rush to structure. Just listen, ask follow-ups, and capture.
 
-### 2. Explore Creatively
+**Then: lock down module identity.** Before any skill names are written, nail these down — they affect every name and path in the document:
+
+- **Module name** — Human-friendly display name (e.g., "Content Creators' Creativity Suite")
+- **Module code** — 2-4 letter abbreviation (e.g., "cs3"). All skill names and sidecar paths derive from this. Changing it later means a find-and-replace across the entire plan.
+- **Description** — One-line summary of what the module does
+
+Write these to the plan document frontmatter immediately. All subsequent skill names use `bmad-{modulecode}-{skillname}`.
+
+- **Standalone or expansion?** If expansion: which module does it extend? How do the new capabilities relate? Even expansion modules should provide value independently — the parent module being absent shouldn't break this one.
+
+### Phase 2: Creative Exploration
 
 This is the heart of the session — spend real time here. Use the brainstorming toolkit to help the user explore:
 
@@ -57,9 +71,9 @@ Update the **Ideas Captured** section of the plan document as ideas emerge. Capt
 
 Energy check: if the conversation plateaus, try a perspective shift or reverse brainstorming to open a new vein.
 
-### 3. Shape the Architecture
+### Phase 3: Architecture
 
-When exploration feels genuinely complete (not just "we have enough"), shift to architecture.
+When exploration feels genuinely complete (not just "we have enough"), shift to architecture. This is where structured writing begins.
 
 **Guide toward agent-with-capabilities when appropriate.** Many users default to thinking they need multiple specialized agents. But a well-designed single agent with rich internal capabilities and routing:
 
@@ -81,45 +95,108 @@ However, **multiple agents make sense when:**
 - The workflow requires sequential phases with fundamentally different processes
 - No persistent persona or memory is needed between invocations
 
+**The orchestrator pattern** is another option to present: a master agent that the user primarily talks to, which coordinates the domain agents. Think of it like a ship's commander — communications generally flow through them, but the user can still talk directly to a specialist when they want to go deep. This adds complexity but can provide a more cohesive experience for users who want a single conversational partner. Let the user decide if this fits their vision.
+
+**Output check for multi-agent:** When defining agents, verify that each one produces tangible output. If an agent's primary role is planning or coordinating (not producing), that's usually a sign those capabilities should be distributed into the domain agents as native capabilities, with shared memory handling cross-domain coordination. The exception is an explicit orchestrator agent the user wants as a conversational hub.
+
 Even with multiple agents, each should be self-contained with its own capabilities. Duplicating some common functionality across agents is fine — it keeps each agent coherent and independently useful. This is the user's decision, but guide them toward self-sufficiency per agent.
 
 Present the trade-offs. Let the user decide. Document the reasoning either way — future-them will want to know why.
 
 **Memory architecture for multi-agent modules.** If the module has multiple agents, explore how memory should work. Every agent has its own sidecar (personal memory at `{project-root}/_bmad/memory/{skillName}-sidecar/`), but modules may also benefit from shared memory:
 
-| Pattern                              | When It Fits                                                              | Example                                                                                                                                                                            |
-| ------------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Personal sidecars only**           | Agents have distinct domains with little overlap                          | A module with a code reviewer and a test writer — each tracks different things                                                                                                     |
-| **Personal + shared module sidecar** | Agents have their own context but also learn shared things about the user | A social creative module — podcast, video, and blog experts each remember their domain specifics but share knowledge about the user's style, catchphrases, and content preferences |
-| **Shared sidecar only**              | All agents serve the same domain and context                              | Probably a sign this should be a single agent                                                                                                                                      |
+| Pattern                                                            | When It Fits                                                                  | Example                                                                                                                                     |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Personal sidecars only**                                         | Agents have distinct domains with little overlap                              | A module with a code reviewer and a test writer — each tracks different things                                                              |
+| **Personal + shared module sidecar**                               | Agents have their own context but also learn shared things about the user     | Agents each remember domain specifics but share knowledge about the user's style and preferences                                            |
+| **Single module sidecar (recommended for tightly coupled agents)** | All agents benefit from full visibility into everything the suite has learned | A creative suite where every agent needs the user's voice, brand, and content history. Daily capture + periodic curation keeps it organized |
 
-With shared memory, each agent writes to both its personal sidecar and a module-level sidecar (e.g., `{project-root}/_bmad/memory/{moduleCode}-shared/`) when it learns something relevant to the whole module. Shared content might include: user style preferences, project assets, recurring themes, content history, or any cross-cutting context.
+The **single sidecar with daily/curated memory** model works well for tightly coupled multi-agent modules:
+
+- **Daily files** (`daily/YYYY-MM-DD.md`) — every session, the active agent appends timestamped entries tagged by agent name. Raw, chronological, append-only.
+- **Curated files** (organized by topic) — distilled knowledge that agents load on activation. Updated through inline curation (obvious updates go straight to the file) and periodic deep curation.
+- **Index** (`index.md`) — orientation document every agent reads first. Summarizes what curated files exist, when each was last updated, and recent activity. Agents selectively load only what's relevant.
 
 If the memory architecture points entirely toward shared memory with no personal differentiation, gently surface whether a single agent with multiple capabilities might be the better design.
 
-### 4. Define Module Context
+**Cross-agent interaction patterns.** If the module has multiple agents, explicitly define how they hand off work:
 
-- **Standalone or expansion?** If expansion: which module does it extend? How do the new capabilities relate? Even expansion modules should provide value independently — the parent module being absent shouldn't break this one.
-- **Custom configuration?** Does the module need to ask users questions during setup? What variables would skills use? Important guidance to capture: skills should always have sensible fallbacks if config hasn't been set, or ask at runtime for specific values they need.
-- **External dependencies?** Do any planned skills rely on externally installed CLI tools or MCP servers? If so, the setup skill may need to check for these, guide the user through installation, or configure connection details. Capture what's needed and why.
-- **UI or visualization?** Could the module benefit from a user interface? This could be a shared progress dashboard, per-skill visualizations, an interactive view showing how skills relate and flow together, or even a cohesive module-level dashboard. Some modules might warrant a bespoke web app. Not every module needs this, but it's worth exploring — users often don't think of it until prompted.
-- **Setup skill extensions?** Beyond config collection, does the setup process need to do anything special? Install a web app, scaffold project directories, configure external services, generate starter files? The setup skill is extensible — it can do more than just write config.
+- Is the user the router (brings output from one agent to another)?
+- Are there service-layer relationships (e.g., a visual agent other agents can describe needs for)?
+- Does an orchestrator agent coordinate?
+- How does shared memory enable cross-domain awareness (e.g., blog agent sees a podcast was recorded)?
 
-### 5. Define Each Skill
+Document these patterns — they're critical for builders to understand.
 
-For each planned skill (whether agent or workflow), work through:
+### Phase 4: Module Context and Configuration
+
+**Custom configuration.** Does the module need to ask users questions during setup? For each potential config variable, capture: key name, prompt, default, result template, and whether it's a user setting.
+
+**Even if there are no config variables, explicitly state this in the plan** — "This module requires no custom configuration beyond core BMad settings." Don't leave the section blank or the builder won't know if it was considered.
+
+Skills should always have sensible fallbacks if config hasn't been set, or ask at runtime for specific values they need.
+
+**External dependencies.** Do any planned skills rely on externally installed CLI tools or MCP servers? If so, the setup skill may need to check for these, guide the user through installation, or configure connection details. Capture what's needed and why.
+
+**UI or visualization.** Could the module benefit from a user interface? This could be a shared progress dashboard, per-skill visualizations, an interactive view showing how skills relate and flow together, or even a cohesive module-level dashboard. Some modules might warrant a bespoke web app. Not every module needs this, but it's worth exploring — users often don't think of it until prompted.
+
+**Setup skill extensions.** Beyond config collection, does the setup process need to do anything special? Install a web app, scaffold project directories, configure external services, generate starter files? The setup skill is extensible — it can do more than just write config.
+
+### Phase 5: Define Skills and Capabilities
+
+For each planned skill (whether agent or workflow), build a **self-contained brief** that could be handed directly to the Agent Builder or Workflow Builder without any conversation context. Each brief should include:
+
+**For agents:**
 
 - **Name** — following `bmad-{modulecode}-{skillname}` convention
-- **Purpose** — the core outcome in one sentence
-- **Capabilities** — each distinct action or mode. These become rows in the help CSV: display name, menu code, description, action name, args, phase, ordering (before/after), required flag, output location, outputs
-- **Relationships** — how skills relate to each other. Does one need to run before another? Are there cross-skill dependencies?
-- **Design notes** — non-obvious considerations the skill builders should know
+- **Persona** — who is this agent? Communication style, expertise, personality
+- **Core outcome** — what does success look like?
+- **The non-negotiable** — the one thing this agent must get right
+- **Capabilities** — each distinct action or mode, described as outcomes (not procedures). For each capability, define at minimum:
+  - What it does (outcome-driven description)
+  - **Inputs** — what does the user provide? (topic, transcript, existing content, etc.)
+  - **Outputs** — what does the agent produce? (draft, plan, report, code, etc.) Call out when an output would be a good candidate for an **HTML report** (validation runs, analysis results, quality checks, comparison reports)
+- **Memory** — what files does it read on activation? What does it write to? What's in the daily log?
+- **Init responsibility** — what happens on first run?
+- **Activation modes** — interactive, headless, or both?
+- **Tool dependencies** — external tools with technical specifics (what the agent outputs, how it's invoked)
+- **Design notes** — non-obvious considerations, the "why" behind decisions
+- **Relationships** — ordering (before/after), cross-agent handoff patterns
 
-Update the **Skills** section of the plan document with structured entries for each.
+**For workflows:**
 
-### 6. Finalize the Plan
+- **Name**, **Purpose**, **Capabilities** with inputs/outputs, **Design notes**, **Relationships**
 
-Complete all sections of the plan document. Review with the user — walk through the plan and confirm it captures their vision. Update `status` to "complete" in the frontmatter.
+### Phase 6: Capability Review
+
+**Do not skip this phase.** Present the complete capability list for each skill back to the user for review. For each skill:
+
+- Walk through the capabilities — are they complete? Missing anything?
+- Are any capabilities too granular and should be consolidated?
+- Are any too broad and should be split?
+- Do the inputs and outputs make sense?
+- Are there capabilities that would benefit from producing structured output (HTML reports, dashboards, exportable artifacts)?
+- For multi-skill modules: are there capability overlaps between skills that should be resolved?
+
+Offer to go deeper on any specific capability the user wants to explore further. Some capabilities may need more detailed planning — sub-steps, edge cases, format specifications. The user decides the depth.
+
+Iterate until the user confirms the capability list is right. Update the plan document with any changes.
+
+### Phase 7: Finalize the Plan
+
+Complete all sections of the plan document. Do a final pass to ensure:
+
+- **Module identity** (name, code, description) is in the frontmatter
+- **Architecture** section documents the decision and rationale
+- **Memory architecture** is explicit (which pattern, what files, what's shared)
+- **Cross-agent patterns** are documented (if multi-agent)
+- **Configuration** section is filled in — even if empty, state it explicitly
+- **Every skill brief** is self-contained enough for a builder agent with zero context
+- **Inputs and outputs** are defined for each capability
+- **Build roadmap** has a recommended order with rationale
+- **Ideas Captured** preserves raw brainstorming ideas that didn't make it into the structured plan
+
+Update `status` to "complete" in the frontmatter.
 
 **Close with next steps:**
 
