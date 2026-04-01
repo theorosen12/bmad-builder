@@ -41,12 +41,6 @@ export default defineConfig({
       title: 'BMad Builder',
       tagline: 'Tool for creating custom BMad agents and modules.',
 
-      logo: {
-        light: './public/img/bmad-light.png',
-        dark: './public/img/bmad-dark.png',
-        alt: 'BMad Builder',
-        replacesTitle: true,
-      },
       favicon: '/favicon.ico',
 
       // Social links
