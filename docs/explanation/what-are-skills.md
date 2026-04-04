@@ -11,7 +11,7 @@ The BMad Builder produces skills that conform to the open standard and adds a fe
 
 | Component      | Purpose                                                              |
 | -------------- | -------------------------------------------------------------------- |
-| **SKILL.md**   | The skill's instructions — persona, capabilities, and behavior rules |
+| **SKILL.md**   | The skill's instructions: persona, capabilities, and behavior rules |
 | **resources/** | Reference data, templates, and guidance documents                    |
 | **scripts/**   | Deterministic validation and analysis scripts                        |
 | **templates/** | Building blocks for generated output                                 |
@@ -20,6 +20,6 @@ Not every skill needs all of these. A simple utility might be a single `SKILL.md
 
 ## Ready to Use on Build
 
-The builders output a complete skill folder. Place it in your tool's skills directory — `.claude/skills`, `.codex/skills`, `.agent/skills`, or wherever your tool looks — and it is immediately usable.
+The builders output a complete skill folder. Place it in your tool's skills directory (`.claude/skills`, `.codex/skills`, `.agent/skills`, or wherever your tool looks) and it's immediately usable.
 
 See [What Are Agents](/explanation/what-are-bmad-agents.md) and [What Are Workflows](/explanation/what-are-workflows.md) for how agents and workflows each use this foundation differently.

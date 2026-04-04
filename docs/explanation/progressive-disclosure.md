@@ -1,6 +1,6 @@
 ---
 title: 'Progressive Disclosure in Skills'
-description: How to structure skills so they load only the context needed at each moment — from frontmatter through dynamic routing to step files
+description: How to structure skills so they load only the context needed at each moment, from frontmatter through dynamic routing to step files
 ---
 
 Progressive disclosure is what separates basic skills from powerful ones. The core idea: never load more context than the agent needs _right now_. This keeps token usage low, prevents context pollution, and lets skills survive long conversations.
@@ -18,7 +18,7 @@ Skills can use any combination of these layers. Most production skills use Layer
 
 ## Layer 1: Frontmatter vs Body
 
-Frontmatter (name + description) is **always in context** — it is how the LLM decides whether to load the skill. The body only loads when the skill triggers.
+Frontmatter (name + description) is **always in context**. It is how the LLM decides whether to load the skill. The body only loads when the skill triggers.
 
 This means frontmatter must be precise and include trigger phrases. The body stays under 500 lines and pushes detail into Layers 2-3.
 
@@ -67,7 +67,7 @@ The skill body acts as a **router** that dispatches to entirely different prompt
 → Run `scripts/analyze.py --target <path>` and present results
 ```
 
-The key difference from Layer 2: Layer 2 loads supplementary resources alongside the skill body. Layer 3 **branches the entire execution path** — different prompts, different scripts, different skills. The skill body becomes a dispatcher, not an instruction set.
+The key difference from Layer 2: Layer 2 loads supplementary resources alongside the skill body. Layer 3 **branches the entire execution path**: different prompts, different scripts, different skills. The skill body becomes a dispatcher, not an instruction set.
 
 ## Layer 4: Step Files
 

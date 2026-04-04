@@ -35,7 +35,7 @@ Caveats, potential issues
 :::
 
 :::danger[Title]
-Critical warnings only — data loss, security issues
+Critical warnings only: data loss, security issues
 :::
 ```
 
@@ -56,7 +56,7 @@ Critical warnings only — data loss, security issues
 | Phase | Name     | What Happens                                 |
 | ----- | -------- | -------------------------------------------- |
 | 1     | Analysis | Brainstorm, research _(optional)_            |
-| 2     | Planning | Requirements — PRD or tech-spec _(required)_ |
+| 2     | Planning | Requirements: PRD or tech-spec _(required)_ |
 ```
 
 **Commands:**
@@ -266,7 +266,7 @@ your-project/
 1. Title + Hook
 2. Table of Contents (jump links if 4+ items)
 3. Items (## for each config/task)
-   - **Bold summary** — one sentence
+   - **Bold summary**: one sentence
    - **Use it when:** bullet list
    - **How it works:** numbered steps (3-5 max)
    - **Output:** expected result (optional)
@@ -297,9 +297,9 @@ your-project/
 
 Starlight generates right-side "On this page" navigation from headers:
 
-- Categories as `##` headers — appear in right nav
-- Terms in tables — compact rows, not individual headers
-- No inline TOC — right sidebar handles navigation
+- Categories as `##` headers (appear in right nav)
+- Terms in tables, not individual headers
+- No inline TOC; right sidebar handles navigation
 
 ### Table Format
 

@@ -13,19 +13,19 @@ What if your AI remembered everything? A fitness coach that tracks every PR. A w
 
 BMad Builder lets you create:
 
-- **Personal AI Companions** — Agents with memory that evolve with you over time
-- **Domain Experts** — Specialists for any field: legal, medical, creative, technical
-- **Workflow Automations** — Structured processes that guide you through complex tasks
-- **Custom Modules** — Bundle agents and workflows into shareable packages
+- **Personal AI Companions**: Agents with memory that evolve with you over time
+- **Domain Experts**: Specialists for any field: legal, medical, creative, technical
+- **Workflow Automations**: Structured processes that guide you through complex tasks
+- **Custom Modules**: Bundle agents and workflows into shareable packages
 
 ## What Makes It Different
 
 | Feature               | Why It Matters                                              |
 | --------------------- | ----------------------------------------------------------- |
-| **Persistent Memory** | Agents remember across sessions — they learn and grow       |
+| **Persistent Memory** | Agents remember across sessions and keep improving          |
 | **Composable**        | Your creations work alongside the entire BMad ecosystem     |
 | **Skill-Compliant**   | Built on open standards that work with any AI tool          |
-| **Shareable**         | Package your modules for the BMad Marketplace (coming soon) |
+| **Shareable**         | Package and distribute your modules to the BMad community   |
 
 ## Quick Start
 
@@ -34,12 +34,12 @@ BMad Builder lets you create:
 On first use, run `bmad-bmb-setup` to register BMad Builder in your project. This collects your preferences (name, language, output paths) and registers the builder's capabilities with the help system so `bmad-help` can guide you.
 
 :::tip[Single-Skill Modules]
-If you install a module that contains only one skill, that skill handles its own registration on first run — no separate setup step needed.
+If you install a module that contains only one skill, that skill handles its own registration on first run. No separate setup step needed.
 :::
 
 ### 2. Build Something
 
-Invoke the **Agent Builder** or **Workflow Builder** and describe what you want to create. Both guide you through conversational discovery and produce a ready-to-use skill folder.
+Invoke the **Agent Builder** or **Workflow Builder** and describe what you want to create. Both walk you through a series of questions and produce a ready-to-use skill folder.
 
 | Goal                      | Builder          | Menu Code |
 | ------------------------- | ---------------- | --------- |
@@ -49,10 +49,10 @@ Invoke the **Agent Builder** or **Workflow Builder** and describe what you want 
 
 ### 3. Use Your Skill
 
-The builders produce a complete skill folder. To use it, copy the folder into your AI tool's skills directory — for Claude Code that's `.claude/skills/` at project scope or `~/.claude/skills/` at user scope. For other tools, ask your AI agent where skills are installed or consult the tool's documentation.
+The builders produce a complete skill folder. Copy it into your AI tool's skills directory (`.claude/skills/`, `.codex/skills/`, `.agent/skills/`, or wherever your tool looks) and it's immediately usable. If you're not sure where skills go, ask your AI agent or use the BMad Method installer: `npx bmad-method install`.
 
 :::tip[No Module Required]
-If you're building something for personal use or just testing it out, you don't need to package it as a module. Copy the skill folder, use it directly. Module packaging (with `bmad-help` registration and configuration) is for when you want to share or need richer discoverability.
+If you're building something for personal use, you don't need to package it as a module. Copy the skill folder and use it directly. Module packaging (with `bmad-help` registration and configuration) is for sharing or richer discoverability.
 :::
 
 ### 4. Learn More
@@ -66,11 +66,11 @@ See the [Builder Commands Reference](/reference/builder-commands.md) for all cap
 | **Personal**     | Journal companion, habit coach, learning tutor, friendly personal companions that remember |
 | **Professional** | Code reviewer, documentation specialist, workflow automator                                |
 | **Creative**     | Story architect, character developer, campaign designer                                    |
-| **Any Domain**   | If you can describe it, you can build it                                                   |
+| **Any Domain**   | Anything you can describe as a repeatable process                                          |
 
 ## Design Patterns
 
-Build better skills with these guides, distilled from real-world BMad development.
+Build better skills with these guides, drawn from real-world BMad development.
 
 | Guide                                                                                | What You'll Learn                                                    |
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
@@ -80,14 +80,16 @@ Build better skills with these guides, distilled from real-world BMad developmen
 
 ## Documentation
 
-| Section                                              | Purpose                                                                  |
-| ---------------------------------------------------- | ------------------------------------------------------------------------ |
-| **[Concepts](/explanation/)**                        | What agents, workflows, and skills are — and how they relate             |
-| **[Design Patterns](/explanation/#design-patterns)** | Progressive disclosure, subagent orchestration, authoring best practices |
-| **[Reference](/reference/)**                         | Builder commands, workflow patterns                                      |
+| Section                                                                          | Purpose                                                                  |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **[Build Your First Module](/tutorials/build-your-first-module.md)**             | Plan, build, scaffold, and validate a complete module                    |
+| **[Distribute Your Module](/how-to/distribute-your-module.md)**                  | Share your module via GitHub for anyone to install                        |
+| **[Concepts](/explanation/)**                                                    | What agents, workflows, and skills are, and how they relate              |
+| **[Design Patterns](/explanation/#design-patterns)**                             | Progressive disclosure, subagent orchestration, authoring best practices |
+| **[Reference](/reference/)**                                                     | Builder commands, workflow patterns                                      |
 
 ## Community
 
-- **[Discord](https://discord.gg/gk8jAdXWmj)** — Get unstuck, share what you built
-- **[GitHub](https://github.com/bmad-code-org/bmad-builder)** — Source code
-- **[BMad Method](https://docs.bmad-method.org)** — Core framework
+- **[Discord](https://discord.gg/gk8jAdXWmj)**: Get unstuck, share what you built
+- **[GitHub](https://github.com/bmad-code-org/bmad-builder)**: Source code
+- **[BMad Method](https://docs.bmad-method.org)**: Core framework

@@ -7,9 +7,9 @@ Practical guidance for writing skills that work reliably and adapt gracefully. T
 
 ## Core Principle: Informed Autonomy
 
-Give the executing agent enough context to make good judgment calls — not just enough to follow steps. The test for every piece of content: "Would the agent make _better decisions_ with this context?" If yes, keep it. If it is genuinely redundant, cut it.
+Give the executing agent enough context to make good judgment calls, not just enough to follow steps. The test for every piece of content: "Would the agent make _better decisions_ with this context?" If yes, keep it. If it is genuinely redundant, cut it.
 
-Simple utilities need minimal context — input/output is self-explanatory. Interactive workflows need domain understanding, user perspective, and rationale for non-obvious choices. When in doubt, explain _why_ — an agent that understands the mission improvises better than one following blind steps.
+Simple utilities need minimal context; input/output is self-explanatory. Interactive workflows need domain understanding, user perspective, and rationale for non-obvious choices. When in doubt, explain _why_. An agent that understands the mission improvises better than one following blind steps.
 
 ## Freedom Levels
 
@@ -29,11 +29,11 @@ Six dimensions to keep in mind during the build phase. The quality scanners chec
 
 | Dimension                  | What It Means                                                                                                                                                                                        |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Informed Autonomy**      | Overview establishes domain framing, theory of mind, and design rationale — enough for judgment calls                                                                                                |
+| **Informed Autonomy**      | Overview establishes domain framing, theory of mind, and design rationale, enough for judgment calls                                                                                                |
 | **Intelligence Placement** | Scripts handle plumbing (fetch, transform, validate). Prompts handle judgment (interpret, classify, decide). If a script contains an `if` that decides what content _means_, intelligence has leaked |
 | **Progressive Disclosure** | SKILL.md stays focused; stage instructions go in `prompts/`, reference data in `resources/`                                                                                                          |
-| **Description Format**     | Two parts: `[5-8 word summary]. [Use when user says 'X' or 'Y'.]` — default to conservative triggering                                                                                               |
-| **Path Construction**      | Never use `{skill-root}`. Use `{project-root}` for any project-scope path, `./` for skill-internal. Config variables used directly — they already contain `{project-root}`                            |
+| **Description Format**     | Two parts: `[5-8 word summary]. [Use when user says 'X' or 'Y'.]`. Default to conservative triggering                                                                                               |
+| **Path Construction**      | Never use `{skill-root}`. Use `{project-root}` for any project-scope path, `./` for skill-internal. Config variables used directly; they already contain `{project-root}`                            |
 | **Token Efficiency**       | Remove genuine waste (repetition, defensive padding). Preserve context that enables judgment (domain framing, rationale)                                                                             |
 
 ## Common Patterns
@@ -62,7 +62,7 @@ Never scan artifacts or project context until you understand WHY the user is her
 
 ### Capture-Don't-Interrupt
 
-When users provide information beyond the current scope — dropping requirements during a product brief, mentioning platforms during vision discovery — capture it silently for later use rather than redirecting them.
+When users provide information beyond the current scope (dropping requirements during a product brief, mentioning platforms during vision discovery), capture it silently for later use rather than redirecting them.
 
 Users in creative flow share their best insights unprompted. Interrupting to say "we'll cover that later" kills momentum and may lose the insight entirely.
 
@@ -72,8 +72,8 @@ Any artifact-producing workflow can output two complementary documents: a polish
 
 | Output         | Purpose                                                                                                                                                                                |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Primary**    | Human-facing document — concise, well-structured                                                                                                                                       |
-| **Distillate** | Dense, structured summary for downstream LLM workflows — captures overflow, rejected ideas (so downstream does not re-propose them), detail bullets with enough context to stand alone |
+| **Primary**    | Human-facing document: concise, well-structured                                                                                                                                       |
+| **Distillate** | Dense, structured summary for downstream LLM workflows: captures overflow, rejected ideas (so downstream does not re-propose them), detail bullets with enough context to stand alone |
 
 The distillate bridges the gap between what belongs in the human document and what downstream workflows need. Always offered to the user, never forced.
 
@@ -87,7 +87,7 @@ Interactive workflows can offer three execution modes matching different user co
 | **YOLO**                  | `--yolo` or "just draft it" | Ingests everything, drafts complete artifact upfront, then walks user through refinement |
 | **Headless (Autonomous)** | `--headless` / `-H`         | Headless; takes inputs, produces artifact, no interaction                                |
 
-Not every workflow needs all three — but considering them during design prevents painting yourself into a single interaction model.
+Not every workflow needs all three, but considering them during design prevents painting yourself into a single interaction model.
 
 ### Parallel Review Lenses
 
@@ -121,11 +121,11 @@ Catches errors early, is machine-verifiable, and makes planning reversible.
 
 | Do                                                     | Avoid                                                         |
 | ------------------------------------------------------ | ------------------------------------------------------------- |
-| Consistent terminology — one term per concept          | Switching between "workflow" and "process" for the same thing |
-| Third person in descriptions — "Processes files"       | First person — "I help process files"                         |
-| Descriptive file names — `form_validation_rules.md`    | Sequence names — `doc2.md`                                    |
+| Consistent terminology: one term per concept          | Switching between "workflow" and "process" for the same thing |
+| Third person in descriptions: "Processes files"        | First person: "I help process files"                         |
+| Descriptive file names: `form_validation_rules.md`     | Sequence names: `doc2.md`                                    |
 | Forward slashes in all paths                           | Backslashes or platform-specific paths                        |
-| One level deep for references — SKILL.md → resource.md | Nested references — SKILL.md → A.md → B.md                    |
+| One level deep for references: SKILL.md → resource.md  | Nested references: SKILL.md → A.md → B.md                    |
 | Table of contents for files over 100 lines             | Long files without navigation                                 |
 
 ## Anti-Patterns

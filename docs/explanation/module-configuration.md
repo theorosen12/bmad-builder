@@ -18,7 +18,7 @@ Most modules should not need configuration at all. Before adding configurable va
 | **Configuration**     | The value genuinely varies across projects and cannot be inferred at runtime                                                                              |
 
 :::tip[Standalone Skills]
-If you are building a single standalone agent or workflow, you do not need a separate setup skill. The Module Builder can package it as a **standalone self-registering module** — the registration logic is embedded directly in the skill via an `assets/module-setup.md` reference file, and runs on first activation or when the user passes `setup`/`configure`.
+If you are building a single standalone agent or workflow, you do not need a separate setup skill. The Module Builder can package it as a **standalone self-registering module** where the registration logic is embedded directly in the skill via an `assets/module-setup.md` reference file, and runs on first activation or when the user passes `setup`/`configure`.
 :::
 
 ## What Module Registration Does
@@ -41,7 +41,7 @@ The `bmad-help` skill reads `module-help.csv` to understand what capabilities ar
 | **Setup skill**       | Multi-skill modules (2+ skills)                           | A dedicated `bmad-{code}-setup` skill handles registration for all skills       |
 | **Self-registration** | Single-skill standalone modules                           | The skill itself registers on first run or when user passes `setup`/`configure` |
 
-The Module Builder detects which path to use based on what you give it — a folder of skills triggers the setup skill approach, a single skill triggers the standalone approach.
+The Module Builder detects which path to use based on what you give it: a folder of skills triggers the setup skill approach, a single skill triggers the standalone approach.
 
 ## Configuration Files
 
@@ -93,7 +93,7 @@ For simpler cases, these alternatives are often sufficient:
 
 | Alternative                   | What It Provides                                                                                                                         |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **SKILL.md overview section** | A concise summary at the top of the skill body — the `--help` system scans this section to present user-facing help, so keep it succinct |
+| **SKILL.md overview section** | A concise summary at the top of the skill body; the `--help` system scans this section to present user-facing help, so keep it succinct |
 | **Script header comments**    | Describe purpose, usage, and flags at the top of each script                                                                             |
 
 If these cover your discoverability needs, you can skip the setup skill entirely.
@@ -110,23 +110,23 @@ module,skill,display-name,menu-code,description,action,args,phase,after,before,r
 
 | Column              | Purpose                                                                                                                                      |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **module**          | Module display name — groups entries in help output                                                                                          |
-| **skill**           | Skill folder name (e.g., `bmad-agent-builder`) — must match the actual directory name                                                        |
+| **module**          | Module display name. Groups entries in help output                                                                                          |
+| **skill**           | Skill folder name (e.g., `bmad-agent-builder`); must match the actual directory name                                                        |
 | **display-name**    | User-facing label shown in help menus (e.g., "Build an Agent")                                                                               |
-| **menu-code**       | 1-3 letter shortcode displayed as `[CODE]` in help — unique across the module, intuitive mnemonic                                            |
-| **description**     | What this capability does — concise, action-oriented, specific enough for `bmad-help` to route correctly                                     |
-| **action**          | Action name within the skill — distinguishes capabilities when one skill exposes multiple (e.g., `build-process`, `quality-optimizer`)        |
-| **args**            | Arguments the capability accepts (e.g., `[-H] [path]`) — shown in help output                                                               |
-| **phase**           | When the capability is available — `anytime` or a workflow phase like `1-analysis`, `2-planning`                                             |
-| **after**           | Capabilities that should complete before this one — format `skill-name:action`, comma-separated for multiple                                  |
-| **before**          | Capabilities that should run after this one — same format as `after`                                                                         |
+| **menu-code**       | 1-3 letter shortcode displayed as `[CODE]` in help, unique across the module, intuitive mnemonic                                            |
+| **description**     | What this capability does. Concise, action-oriented, specific enough for `bmad-help` to route correctly                                     |
+| **action**          | Action name within the skill. Distinguishes capabilities when one skill exposes multiple (e.g., `build-process`, `quality-optimizer`)        |
+| **args**            | Arguments the capability accepts (e.g., `[-H] [path]`), shown in help output                                                               |
+| **phase**           | When the capability is available: `anytime` or a workflow phase like `1-analysis`, `2-planning`                                             |
+| **after**           | Capabilities that should complete before this one: format `skill-name:action`, comma-separated for multiple                                  |
+| **before**          | Capabilities that should run after this one, same format as `after`                                                                         |
 | **required**        | `true` if this is a blocking gate for phase progression, `false` otherwise                                                                   |
-| **output-location** | Config variable name (e.g., `output_folder`, `bmad_builder_reports`) — `bmad-help` resolves from config to scan for completion artifacts     |
+| **output-location** | Config variable name (e.g., `output_folder`, `bmad_builder_reports`); `bmad-help` resolves from config to scan for completion artifacts     |
 | **outputs**         | File patterns `bmad-help` looks for in the output location to detect completion (e.g., "quality report", "agent skill")                      |
 
 ### How bmad-help Uses These Entries
 
-The `after`/`before` columns create a **dependency graph** that `bmad-help` walks to recommend next steps. `required=true` entries are blocking gates — `bmad-help` will not suggest later-phase capabilities until required gates pass. The `output-location` and `outputs` columns enable **completion detection** — `bmad-help` scans those paths for matching artifacts to determine what's been done.
+The `after`/`before` columns create a **dependency graph** that `bmad-help` walks to recommend next steps. `required=true` entries are blocking gates; `bmad-help` will not suggest later-phase capabilities until required gates pass. The `output-location` and `outputs` columns enable **completion detection**: `bmad-help` scans those paths for matching artifacts to determine what's been done.
 
 ### Example Entry
 
@@ -143,13 +143,13 @@ Both merge scripts use an anti-zombie pattern: before writing new values for a m
 
 ## Legacy Directory Cleanup
 
-After config data is migrated and individual files are cleaned up by the merge scripts, a separate cleanup step removes the installer's per-module directory trees from `_bmad/`. These directories contain skill files that are already installed at `.claude/skills/` — they are redundant once the config has been consolidated.
+After config data is migrated and individual files are cleaned up by the merge scripts, a separate cleanup step removes the installer's per-module directory trees from `_bmad/`. These directories contain skill files that are already installed in the tool's skills directory. They are redundant once the config has been consolidated.
 
-Before removing any directory, the cleanup script verifies that every skill it contains exists at the installed location. Directories without skills (like `_config/`) are removed directly. The script is idempotent — running setup again after cleanup is safe.
+Before removing any directory, the cleanup script verifies that every skill it contains exists at the installed location. Directories without skills (like `_config/`) are removed directly. The script is idempotent; running setup again after cleanup is safe.
 
 ## Design Guidance
 
-Configuration is for **basic, project-level settings** — output folders, language preferences, feature toggles. Keep the number of configurable values small.
+Configuration is for **basic, project-level settings**: output folders, language preferences, feature toggles. Keep the number of configurable values small.
 
 | Pattern                | Configuration Role                                                                                              |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -157,7 +157,7 @@ Configuration is for **basic, project-level settings** — output folders, langu
 | **Workflow pattern**   | Use config for output locations and behavior switches that vary across projects                                 |
 | **Skill-only pattern** | Use config sparingly. If the skill works with sensible defaults, skip config entirely                           |
 
-Extensive workflow customization — step overrides, conditional branching, template selection — is a separate concern and will be covered in a dedicated document.
+Extensive workflow customization (step overrides, conditional branching, template selection) is a separate concern and will be covered in a dedicated document.
 
 ## Creating a Module with the Module Builder
 
@@ -165,7 +165,7 @@ The **Module Builder** (`bmad-module-builder`) automates module creation. It off
 
 | Capability          | Menu Code | What It Does                                                                            |
 | ------------------- | --------- | --------------------------------------------------------------------------------------- |
-| **Ideate Module**   | IM        | Brainstorm and plan a module through facilitative discovery — produces a plan document  |
+| **Ideate Module**   | IM        | Brainstorm and plan a module through facilitative discovery; produces a plan document  |
 | **Create Module**   | CM        | Package skills as an installable BMad module (setup skill or standalone self-registering)|
 | **Validate Module** | VM        | Check that a module's structure is complete, accurate, and properly registered           |
 
@@ -173,13 +173,13 @@ The **Module Builder** (`bmad-module-builder`) automates module creation. It off
 
 1. Run **Ideate Module (IM)** to brainstorm and plan
 2. Build each skill using the **Agent Builder (BA)** or **Workflow Builder (BW)**
-3. Run **Create Module (CM)** — it generates a dedicated `-setup` skill with `module.yaml`, `module-help.csv`, and merge scripts
+3. Run **Create Module (CM)**. It generates a dedicated `-setup` skill with `module.yaml`, `module-help.csv`, and merge scripts
 4. Run **Validate Module (VM)** to verify everything is wired correctly
 
 **For a single skill (standalone module):**
 
 1. Build the skill using the **Agent Builder (BA)** or **Workflow Builder (BW)**
-2. Run **Create Module (CM)** with the skill path — it embeds self-registration directly into the skill (`assets/module-setup.md`, `assets/module.yaml`, `assets/module-help.csv`) and generates a `marketplace.json` for distribution
+2. Run **Create Module (CM)** with the skill path. It embeds self-registration directly into the skill (`assets/module-setup.md`, `assets/module.yaml`, `assets/module-help.csv`) and generates a `marketplace.json` for distribution
 3. Run **Validate Module (VM)** to verify
 
 The Module Builder auto-detects single vs. multi-skill input and recommends the appropriate approach.

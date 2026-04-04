@@ -3,20 +3,20 @@ title: 'Build Your First Module'
 description: Create a complete BMad module from idea to installable package using the Module Builder
 ---
 
-This tutorial walks through the full module lifecycle — from brainstorming an idea to scaffolding an installable BMad module with help registration and configuration.
+This tutorial takes you from an initial idea to a working, installable BMad module with help registration and configuration.
 
 ## What You'll Learn
 
-- How to plan a module using the Ideate Module (IM) capability
-- When to use a single agent vs. multiple workflows
-- How to build individual skills with the Agent and Workflow Builders
-- How to scaffold a setup skill with Create Module (CM)
-- How to validate your module with Validate Module (VM)
+- Planning a module with the Ideate Module (IM) capability
+- Choosing between a single agent and multiple workflows
+- Building individual skills with the Agent and Workflow Builders
+- Scaffolding a setup skill with Create Module (CM)
+- Validating your module with Validate Module (VM)
 
 :::note[Prerequisites]
 
 - BMad Builder module registered in your project (run `bmad-bmb-setup` on first use)
-- Familiarity with what agents and workflows are — see **[What Are Agents](/explanation/what-are-bmad-agents.md)** and **[What Are Workflows](/explanation/what-are-workflows.md)**
+- Basic understanding of agents and workflows (see **[What Are Agents](/explanation/what-are-bmad-agents.md)** and **[What Are Workflows](/explanation/what-are-workflows.md)**)
 :::
 
 :::tip[Quick Path]
@@ -25,25 +25,25 @@ Already have your skills built? Skip to **Step 3: Scaffold the Module** to packa
 
 ## Understanding Modules
 
-A BMad module packages skills into a discoverable, configurable unit. The Module Builder offers two packaging approaches based on what you're building:
+A BMad module bundles skills so they're discoverable and configurable. The Module Builder offers two approaches depending on what you're building:
 
 | Approach              | When to Use                                  | What Gets Generated                                             |
 | --------------------- | -------------------------------------------- | --------------------------------------------------------------- |
 | **Setup skill**       | Folder of 2+ skills                          | Dedicated `bmad-{code}-setup` skill with config and help assets |
 | **Self-registration** | Single standalone skill                      | Registration embedded in the skill's own `assets/` folder       |
 
-Both approaches produce the same result: `module.yaml` (identity and config variables) and `module-help.csv` (capability entries for the help system) that register with `bmad-help`.
+Both produce the same registration artifacts: `module.yaml` (identity and config variables) and `module-help.csv` (capability entries), which register with `bmad-help`.
 
-See **[What Are Modules](/explanation/what-are-modules.md)** for architecture decisions and design patterns.
+See **[What Are Modules](/explanation/what-are-modules.md)** for the architecture behind these choices.
 
 ## Step 1: Plan Your Module
 
-Start with the Ideate Module capability to brainstorm and plan.
+Start with the Ideate Module capability.
 
 :::note[Example]
 **You:** "I want to ideate a module"
 
-**Builder:** Starts a creative brainstorming session — exploring what the module could do, who it's for, and how capabilities should be organized.
+**Builder:** Starts a brainstorming session to explore the module's purpose, audience, and capability structure.
 :::
 
 The ideation session covers:
@@ -58,18 +58,18 @@ The ideation session covers:
 | **Configuration** | Custom install questions and variables                                    |
 | **Dependencies**  | External CLI tools, MCP servers, web services                             |
 
-The output is a **plan document** saved to your reports folder. This document captures everything you discussed and serves as a blueprint for building each skill.
+The output is a **plan document** saved to your reports folder. You'll reference it when building each skill.
 
 ## Step 2: Build Your Skills
 
-With your plan in hand, build each skill individually.
+Now build each skill individually.
 
 | Skill Type          | Builder          | Menu Code |
 | ------------------- | ---------------- | --------- |
 | Agent               | Agent Builder    | BA        |
 | Workflow or utility | Workflow Builder | BW        |
 
-Share the plan document as context when building each skill — it helps the builder understand the bigger picture and how the skill fits into the module.
+Share the plan document as context when building each skill so the builder knows how it fits into the module.
 
 :::caution[Build Before Packaging]
 Build and test each skill before scaffolding the module. The Create Module step reads your finished skills to generate accurate help entries.
@@ -77,12 +77,12 @@ Build and test each skill before scaffolding the module. The Create Module step 
 
 ## Step 3: Scaffold the Module
 
-Once your skills are built, run Create Module (CM) to package them.
+Run Create Module (CM) to package your finished skills.
 
 :::note[Example]
 **You:** "I want to create a module" or provide the path to your skills folder (or a single skill).
 
-**Builder:** Reads the skills, detects whether this is a multi-skill or single-skill module, confirms the approach, then scaffolds.
+**Builder:** Reads your skills, detects whether this is a multi-skill or single-skill module, confirms the approach, and scaffolds the output.
 :::
 
 ### Multi-skill modules
@@ -126,12 +126,12 @@ A `.claude-plugin/marketplace.json` is also generated at the parent level for di
 
 ## Step 4: Validate
 
-Run Validate Module (VM) to check that everything is wired correctly.
+Run Validate Module (VM) to check for structural and quality issues.
 
 :::note[Example]
 **You:** "Validate my module at ./my-skills-folder"
 
-**Builder:** Runs structural checks and quality assessment, then reports findings.
+**Builder:** Runs structural and quality checks, then reports findings.
 :::
 
 | Check Type     | What It Catches                                                        |
@@ -143,45 +143,43 @@ Fix any findings and re-validate until clean.
 
 ## What You've Built
 
-Your module is now a complete, distributable BMad module. For multi-skill modules, users run the setup skill to install. For standalone modules, the skill self-registers on first run.
-
-Either way, the module's capabilities are discoverable through `bmad-help`, configuration is collected and persisted, and the module works within the BMad ecosystem.
+Your module is ready to distribute. Multi-skill modules install through the setup skill; standalone modules self-register on first run. Either way, capabilities appear in `bmad-help` and configuration is persisted automatically.
 
 ## Quick Reference
 
 | Capability       | Menu Code | When to Use                                        |
 | ---------------- | --------- | -------------------------------------------------- |
-| Ideate Module    | IM        | Planning a new module from scratch                 |
-| Build an Agent   | BA        | Building an agent skill for the module             |
-| Build a Workflow | BW        | Building a workflow skill for the module           |
-| Create Module    | CM        | Scaffolding the setup skill after skills are built |
-| Validate Module  | VM        | Checking the module is complete and accurate       |
+| Ideate Module    | IM        | Planning a new module from scratch                    |
+| Build an Agent   | BA        | Creating an agent skill                               |
+| Build a Workflow | BW        | Creating a workflow or utility skill                   |
+| Create Module    | CM        | Packaging skills into an installable module            |
+| Validate Module  | VM        | Checking completeness and accuracy                     |
 
 ## Common Questions
 
 ### Do I need to ideate before creating?
 
-No. If you already know what your module should contain and have built the skills, skip straight to Create Module (CM). Ideation is for when you're starting from an idea and want help planning.
+No. If you already know what your module should contain, skip straight to Create Module (CM). Ideation helps when you're still shaping the concept.
 
 ### Can I add skills to a module later?
 
-Yes. Build the new skill, then re-run Create Module (CM) on the folder. The scaffolding uses an anti-zombie pattern — it replaces the existing setup skill cleanly.
+Yes. Build the new skill and re-run Create Module (CM) on the folder. The anti-zombie pattern ensures the existing setup skill is replaced cleanly.
 
 ### What if my module only has one skill?
 
-The Module Builder handles this automatically. When you give it a single skill, it recommends the **standalone self-registering** approach — registration is embedded directly in the skill instead of generating a separate setup skill. The skill registers itself on first run or when the user passes `setup`/`configure`.
+The Module Builder handles this automatically. Give it a single skill and it recommends the **standalone self-registering** approach, where registration embeds directly in the skill and triggers on first run or when the user passes `setup`/`configure`.
 
 ### Can my module extend another module?
 
-Yes. During ideation or creation, specify that your module is an expansion. Your help CSV entries can reference the parent module's capabilities in their before/after ordering fields.
+Yes. Tell the builder during ideation or creation that your module is an expansion. Your help CSV entries can reference the parent module's capabilities in their before/after ordering fields.
 
 ## Getting Help
 
-- **[What Are Modules](/explanation/what-are-modules.md)** — Concepts and architecture decisions
-- **[Module Configuration](/explanation/module-configuration.md)** — Setup skill internals and config patterns
-- **[Builder Commands Reference](/reference/builder-commands.md)** — Full capability documentation
-- **[Discord](https://discord.gg/gk8jAdXWmj)** — Community support
+- **[What Are Modules](/explanation/what-are-modules.md)**: Concepts and architecture
+- **[Module Configuration](/explanation/module-configuration.md)**: Setup skill internals and config patterns
+- **[Builder Commands Reference](/reference/builder-commands.md)**: All builder capabilities
+- **[Discord](https://discord.gg/gk8jAdXWmj)**: Community support
 
-:::tip[Key Takeaways]
-Plan with Ideate Module (IM), build individual skills with the Agent and Workflow Builders, package with Create Module (CM), and verify with Validate Module (VM). For multi-skill modules, a setup skill handles registration. For single skills, registration is built in — no extra infrastructure needed.
+:::tip[Key Takeaway]
+The workflow is IM, then BA/BW for each skill, then CM to package, then VM to verify. Single-skill modules need no extra setup infrastructure.
 :::

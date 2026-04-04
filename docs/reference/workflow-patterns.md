@@ -82,7 +82,7 @@ bmad-my-workflow/
 
 ```
 bmad-my-complex-workflow/
-├── SKILL.md              # Routing logic — dispatches to prompts/
+├── SKILL.md              # Routing logic, dispatches to prompts/
 ├── prompts/              # Stage instructions
 │   ├── 01-discovery.md
 │   ├── 02-planning.md
@@ -99,15 +99,15 @@ bmad-my-complex-workflow/
 | Model                     | Applicable Types                  | Description                                                      |
 | ------------------------- | --------------------------------- | ---------------------------------------------------------------- |
 | **Interactive**           | All                               | User invokes skill and interacts conversationally                |
-| **Headless / Autonomous** | Simple Utility, Complex Workflow  | Runs without user interaction — takes inputs, produces outputs   |
+| **Headless / Autonomous** | Simple Utility, Complex Workflow  | Runs without user interaction; takes inputs, produces outputs    |
 | **YOLO**                  | Simple Workflow, Complex Workflow | User brain-dumps; builder drafts the full artifact, then refines |
 | **Guided**                | Simple Workflow, Complex Workflow | Section-by-section discovery with soft gates at transitions      |
 
 ## Module Context
 
-Module membership is orthogonal to skill type — any type can be standalone or part of a module.
+Module membership is orthogonal to skill type. Any type can be standalone or part of a module.
 
 | Context          | Naming                          | Init                                                               |
 | ---------------- | ------------------------------- | ------------------------------------------------------------------ |
-| **Module-based** | `bmad-{modulecode}-{skillname}` | Loads config from module config.yaml                               |
+| **Module-based** | `bmad-{modulecode}-{skillname}` | Loads config from module config.yaml                              |
 | **Standalone**   | `bmad-{skillname}`              | Loads config from module config.yaml; simple utilities may opt out |

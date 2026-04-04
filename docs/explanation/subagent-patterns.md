@@ -1,11 +1,11 @@
 ---
 title: 'Subagent Orchestration Patterns'
-description: Six patterns for using subagents effectively — from simple data delegation through persona-driven parallel reasoning to evolutionary systems
+description: Six patterns for using subagents effectively, from simple data delegation through persona-driven parallel reasoning to evolutionary systems
 ---
 
 Subagents are isolated LLM instances that a parent skill spawns to handle specific tasks. Each gets its own context window, receives instructions, and returns results. Used well, they keep the parent context small while enabling parallel work at scale.
 
-All patterns share one principle: **the filesystem is the single source of truth**. Parent context stays tiny (file pointers + high-level plan). Subagents are stateless black boxes — instructions in, response out, isolated context.
+All patterns share one principle: **the filesystem is the single source of truth**. Parent context stays tiny (file pointers + high-level plan). Subagents are stateless black boxes: instructions in, response out, isolated context.
 
 ## Foundation: The Filesystem Blackboard
 
@@ -35,7 +35,7 @@ The simplest pattern. Subagents read sources and return only distilled summaries
 | Aspect               | Detail                                                                                                                       |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | **How it works**     | Parent spawns readers in parallel; each reads a source and returns a compact summary; parent synthesizes from summaries only |
-| **Critical rule**    | Parent must delegate _before_ touching any source material — if it reads first, the tokens are already spent                 |
+| **Critical rule**    | Parent must delegate _before_ touching any source material. If it reads first, the tokens are already spent                 |
 | **When to use**      | 5+ documents, web research, large codebase exploration                                                                       |
 | **Not worth it for** | 1-2 files where the overhead exceeds the savings                                                                             |
 | **Token savings**    | ~99%. Five docs at 15K tokens each = 75K raw vs ~350 tokens in summaries                                                     |
@@ -48,7 +48,7 @@ For large-scale operations with potentially a lot of relevant data across multip
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **How it works** | Parent spawns N worker subagents writing to `tmp/{n}.md`; after all complete, spawns an assembler subagent that reads all temp files and creates the final artifact |
 | **When to use**  | When summaries are still too large to return inline, or when assembly needs a dedicated agent with fresh context                                                    |
-| **Example**      | The BMad quality optimizer uses this — 5 parallel scanner subagents write temp JSON, then a report-creator subagent synthesizes them                                |
+| **Example**      | The BMad quality optimizer uses this: 5 parallel scanner subagents write temp JSON, then a report-creator subagent synthesizes them                                |
 
 ## Pattern 3: Shared-File Orchestration
 
@@ -68,11 +68,11 @@ A lead subagent analyzes the task once and writes a breakdown. The parent spawns
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **How it works** | Lead agent writes `plan.json` with task breakdown; parent reads plan and spawns workers in parallel; complex subtasks get their own sub-orchestrator |
 | **When to use**  | Tasks that need analysis before decomposition, or where the parent cannot predict the work structure upfront                                         |
-| **Variant**      | Master-clone — spawn near-identical agents with slight persona tweaks exploring different branches of the same problem                               |
+| **Variant**      | Master-clone: spawn near-identical agents with slight persona tweaks exploring different branches of the same problem                               |
 
 ## Pattern 5: Persona-Driven Parallel Reasoning
 
-The most powerful pattern for quality. Spawn diverse specialists in parallel — genuinely independent thinking from isolated contexts.
+The most powerful pattern for quality. Spawn diverse specialists in parallel, producing genuinely independent thinking from isolated contexts.
 
 | Aspect           | Detail                                                                                                                                                                                        |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,8 +85,8 @@ The most powerful pattern for quality. Spawn diverse specialists in parallel —
 | Persona           | Perspective                                       |
 | ----------------- | ------------------------------------------------- |
 | **Architect**     | Scale and elegance above all                      |
-| **Red Teamer**    | Break this — what fails?                          |
-| **Pragmatist**    | Ship it Friday — what is the minimum?             |
+| **Red Teamer**    | Break this. What fails?                           |
+| **Pragmatist**    | Ship it Friday. What is the minimum?              |
 | **Innovator**     | What if we approached this entirely differently?  |
 | **User Advocate** | How does the end user actually experience this?   |
 | **Future-Self**   | With 5 years of hindsight, what would you change? |
@@ -112,9 +112,9 @@ These turn stateless subagents into something that feels alive. All build on the
 
 ## The Most Common Mistake: Parent Reads First
 
-The single most important thing to get right with subagent patterns is **preventing the parent from reading the data it is delegating**. If the parent reads all the files before spawning subagents, the entire pattern is defeated — you have already spent the tokens, bloated the context, and lost the isolation benefit.
+The single most important thing to get right with subagent patterns is **preventing the parent from reading the data it is delegating**. If the parent reads all the files before spawning subagents, the entire pattern is defeated. You have already spent the tokens, bloated the context, and lost the isolation benefit.
 
-This happens often. You write a skill that should spawn subagents to each read a document and return findings. You run it. The parent agent helpfully reads every document first, then passes them to subagents, then collects distilled summaries. The subagents still provide fresh perspectives, but the context savings — the primary reason for the pattern — are gone.
+This happens often. You write a skill that should spawn subagents to each read a document and return findings. You run it. The parent agent helpfully reads every document first, then passes them to subagents, then collects distilled summaries. The subagents still provide fresh perspectives, but the context savings (the primary reason for the pattern) are gone.
 
 **The fix is defensive language in your skill.** Explicitly tell the parent agent what it should and should not do. Be specific without being verbose.
 
@@ -126,28 +126,28 @@ The optimizer's instructions say: **"DO NOT read the target skill's files yourse
 
 | Tip                                            | Example Language                                                                                                      |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Tell the parent what to discover, not read** | "List all files in `resources/` by name to determine how many subagents to spawn — do not read their contents"        |
+| **Tell the parent what to discover, not read** | "List all files in `resources/` by name to determine how many subagents to spawn. Do not read their contents"        |
 | **Tell subagents what to return**              | "Return only findings relevant to [topic]. Output as JSON to `{output-path}`. Do not echo raw content"                |
 | **Use pre-pass scripts**                       | Run a lightweight script that extracts metadata (file names, sizes, structure) so the parent can plan without reading |
 | **Be explicit about the boundary**             | "Your role is ORCHESTRATION. Scripts and subagents do all analysis"                                                   |
 
-**Test and watch what actually happens.** If the parent reads files it should be delegating, tighten the language. This is normal iteration — the builders are tuned with these patterns, but different models and tools may need more explicit guidance. Review the BMad quality optimizer prompts (`prompts/quality-optimizer.md`) and scanner agents (`agents/quality-scan-*.md`) for working examples of this defensive language.
+**Test and watch what actually happens.** If the parent reads files it should be delegating, tighten the language. This is normal iteration. The builders are tuned with these patterns, but different models and tools may need more explicit guidance. Review the BMad quality optimizer prompts (`prompts/quality-optimizer.md`) and scanner agents (`agents/quality-scan-*.md`) for working examples of this defensive language.
 
 ## Choosing a Pattern
 
 | Need                                              | Pattern                               |
 | ------------------------------------------------- | ------------------------------------- |
-| Read multiple sources without bloating context    | 1 — Delegated Data Access             |
-| Combine many outputs into one deliverable         | 2 — Temp File Assembly                |
-| Pipeline where stages depend on each other        | 3 — Shared-File Orchestration         |
-| Task needs analysis before work can be decomposed | 4 — Hierarchical Lead-Worker          |
-| Quality through diverse perspectives              | 5 — Persona-Driven Parallel Reasoning |
-| Iterative optimization or simulation              | 6 — Evolutionary & Emergent           |
+| Read multiple sources without bloating context    | 1: Delegated Data Access              |
+| Combine many outputs into one deliverable         | 2: Temp File Assembly                 |
+| Pipeline where stages depend on each other        | 3: Shared-File Orchestration          |
+| Task needs analysis before work can be decomposed | 4: Hierarchical Lead-Worker           |
+| Quality through diverse perspectives              | 5: Persona-Driven Parallel Reasoning  |
+| Iterative optimization or simulation              | 6: Evolutionary & Emergent            |
 
 ## Implementation Notes
 
 - Force **strict JSON schemas** on every subagent output for reliable parent parsing
 - Use **git worktrees** or per-agent directories to prevent crosstalk
-- Start small — one orchestrator that reads `plan.md` and spawns the first wave
+- Start small: one orchestrator that reads `plan.md` and spawns the first wave
 - Patterns compose: use Delegated Access for data gathering, Persona-Driven for analysis, Temp File Assembly for the final report
-- Always include **graceful degradation** — if subagents are unavailable, the main agent performs the work sequentially
+- Always include **graceful degradation**. If subagents are unavailable, the main agent performs the work sequentially

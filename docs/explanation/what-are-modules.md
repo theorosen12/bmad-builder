@@ -7,7 +7,7 @@ BMad modules package agents and workflows into installable units with shared con
 
 ## Distribution: Plugins and Marketplaces
 
-At the distribution level, a BMad module is a **plugin** — a package of skills with a `.claude-plugin/` manifest. How you structure it depends on what you're shipping:
+At the distribution level, a BMad module is a **plugin**: a package of skills with a `.claude-plugin/` manifest. How you structure it depends on what you're shipping:
 
 | Structure           | When to Use                                                  | Manifest                                                  |
 | ------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
@@ -30,7 +30,7 @@ This also means you can include remote URL skills in your own module to combine 
 | **module-help.csv** | In the setup skill's `assets/`                          | In the skill's own `assets/`                               |
 | **Distribution**    | Plugin with multiple skill folders                      | Plugin with single skill folder + `marketplace.json`       |
 
-For multi-skill modules, the setup skill is the glue — it registers all capabilities in one step. For standalone modules, the skill handles its own registration on first run or when the user passes `setup`/`configure`.
+For multi-skill modules, the setup skill is the glue; it registers all capabilities in one step. For standalone modules, the skill handles its own registration on first run or when the user passes `setup`/`configure`.
 
 ## Agent vs. Workflow vs. Both
 
@@ -48,15 +48,15 @@ Many users default to building multiple single-purpose agents. Consider whether 
 
 ## Multi-Agent Modules and Memory
 
-Modules with multiple agents introduce a memory architecture decision. Every BMad agent has its own **sidecar memory** — a personal folder where it stores user preferences, learned patterns, session history, and domain-specific data. In a multi-agent module, you also need to decide whether agents should share memory.
+Modules with multiple agents introduce a memory architecture decision. Every BMad agent has its own **sidecar memory**: a personal folder where it stores user preferences, learned patterns, session history, and domain-specific data. In a multi-agent module, you also need to decide whether agents should share memory.
 
 | Pattern                              | When It Fits                                                                            |
 | ------------------------------------ | --------------------------------------------------------------------------------------- |
 | **Personal sidecars only**           | Agents have distinct domains with minimal overlap                                       |
 | **Personal + shared module sidecar** | Agents have their own context but also learn shared things about the user or project    |
-| **Shared sidecar only**              | All agents serve the same domain — consider whether a single agent is the better design |
+| **Shared sidecar only**              | All agents serve the same domain; consider whether a single agent is the better design |
 
-**Example:** A social creative module with a podcast expert, a viral video expert, and a blog expert. Each agent remembers the specifics of what it has done with the user — episode topics, video formats, blog themes. But they all also learn about the user's communication style, favorite catchphrases, content preferences, and brand voice. This shared knowledge lives in a module-level sidecar that every agent reads from and contributes to.
+**Example:** A social creative module with a podcast expert, a viral video expert, and a blog expert. Each agent remembers the specifics of what it has done with the user (episode topics, video formats, blog themes). But they all also learn about the user's communication style, favorite catchphrases, content preferences, and brand voice. This shared knowledge lives in a module-level sidecar that every agent reads from and contributes to.
 
 Each agent should still be self-contained with its own capabilities, even if this means duplicating some common functionality. A podcast expert that can independently handle a full session without needing the blog expert is better than one that depends on shared state to function.
 
@@ -71,7 +71,7 @@ See **[What Are BMad Agents](/explanation/what-are-bmad-agents.md)** for details
 
 Expansion modules can reference the parent module's capabilities in their help CSV ordering (before/after fields). This lets a new capability slot into the parent module's natural workflow sequence.
 
-Even expansion modules should be designed to work independently — the parent module being absent should degrade gracefully, not break the expansion.
+Even expansion modules should be designed to work independently. The parent module being absent should degrade gracefully, not break the expansion.
 
 ## Configuration and Registration
 
@@ -79,9 +79,9 @@ Modules register with a project through three files in `{project-root}/_bmad/`:
 
 | File               | Purpose                                                                |
 | ------------------ | ---------------------------------------------------------------------- |
-| `config.yaml`      | Shared settings committed to git — module section keyed by module code |
-| `config.user.yaml` | Personal settings (gitignored) — user name, language preferences       |
-| `module-help.csv`  | Capability registry — one row per action users can discover            |
+| `config.yaml`      | Shared settings committed to git, module section keyed by module code |
+| `config.user.yaml` | Personal settings (gitignored), user name, language preferences       |
+| `module-help.csv`  | Capability registry, one row per action users can discover            |
 
 Registration is what makes a module visible to `bmad-help`. Without it, the help system cannot discover, recommend, or track completion of the module's capabilities.
 
@@ -101,7 +101,7 @@ When a module has external dependencies, the setup skill should check for their 
 
 ## UI and Visualization
 
-Modules can include user interfaces — dashboards, progress views, interactive visualizations, or even full web applications. A UI skill might show shared progress across the module's capabilities, provide a visual map of how skills relate, or offer an interactive way to navigate the module's features.
+Modules can include user interfaces: dashboards, progress views, interactive visualizations, or even full web applications. A UI skill might show shared progress across the module's capabilities, provide a visual map of how skills relate, or offer an interactive way to navigate the module's features.
 
 Not every module needs a UI. But for complex modules with many capabilities, a visual layer makes the experience much more accessible.
 
@@ -109,8 +109,8 @@ Not every module needs a UI. But for complex modules with many capabilities, a v
 
 The Module Builder (`bmad-module-builder`) provides three capabilities for the module lifecycle:
 
-1. **Ideate Module (IM)** — Brainstorm and plan through creative facilitation
-2. **Create Module (CM)** — Package skills as an installable module. Detects whether you have a folder of skills (generates a setup skill) or a single skill (embeds self-registration directly)
-3. **Validate Module (VM)** — Verify structural integrity and entry quality for both multi-skill and standalone modules
+1. **Ideate Module (IM)**: Brainstorm and plan through creative facilitation
+2. **Create Module (CM)**: Package skills as an installable module. Detects whether you have a folder of skills (generates a setup skill) or a single skill (embeds self-registration directly)
+3. **Validate Module (VM)**: Verify structural integrity and entry quality for both multi-skill and standalone modules
 
 See the **[Builder Commands Reference](/reference/builder-commands.md)** for detailed documentation on each capability.

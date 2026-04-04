@@ -3,44 +3,35 @@ title: 'Distribute Your Module'
 description: Set up a GitHub repository to share your BMad module so others can install it
 ---
 
-Set up a GitHub repository so others can install your BMad module with a single command.
+This guide walks through publishing a BMad module to GitHub with a `.claude-plugin/marketplace.json` manifest so anyone can install it in one command.
 
 ## When to Use This
 
-- You have built a module and want to share it publicly or within your organization
-- You want others to install your module through the BMad installer
-- You want to host one or multiple modules from a single repository
+- You have a module ready to share publicly or within your organization
+- Others should be able to install it through the BMad installer
+- The repository may host one module or several
 
 ## When to Skip This
 
-- You are building a module for personal use in a single project — just keep the skills in your project
-- You are still iterating on the module — distribute after it is stable
+- The module is for personal use in a single project. Keep the skills in your project.
+- The module isn't stable yet. Distribute once it is.
 
 :::note[Prerequisites]
 
-- A completed, validated BMad module — see **[Build Your First Module](/tutorials/build-your-first-module.md)**
+- A completed, validated BMad module (see **[Build Your First Module](/tutorials/build-your-first-module.md)**)
 - A GitHub account with a repository for your module
 - Git installed locally
 :::
 
-## Getting Started
+:::tip[Quick Path]
+Start from the [BMad Module Template](https://github.com/bmad-code-org/bmad-module-template). Click **Use this template** on GitHub, add your skills under `skills/`, update `marketplace.json`, and push. If you already have a repo with skills, use Create Module (CM) to scaffold the manifest and registration files directly.
+:::
 
-The fastest way to start is with the [BMad Module Template](https://github.com/bmad-code-org/bmad-module-template):
+## Step 1: Configure the Plugin Manifest
 
-1. Click **Use this template** on GitHub to create your new repo
-2. Install BMad Builder in the project: `npx bmad-method install` and select the BMad Builder module
-3. Use the Agent Builder or Workflow Builder to create your skills
-4. Organize your finished skills under `skills/`
-5. Update `.claude-plugin/marketplace.json` with your module info
-6. Add documentation under `docs/`
+The BMad installer discovers modules through a `.claude-plugin/marketplace.json` manifest at the repository root. Create Module (CM) generates this file for you. Verify and complete it before publishing.
 
-If you already have a repo with skills, you can skip the template and use the Module Builder's Create Module (CM) capability to scaffold the `marketplace.json` and registration files directly.
-
-## Step 1: Understand the Plugin Format
-
-The BMad installer discovers modules through a `.claude-plugin/marketplace.json` manifest at the repository root. The Module Builder generates this file during the Create Module (CM) step, but you need to verify and complete it before publishing.
-
-Even if you are not targeting Claude specifically, this is the standard format that allows installing to any skills-capable platform.
+This format works for any skills-capable platform, not just Claude.
 
 A minimal manifest for a single module:
 
@@ -70,12 +61,12 @@ A minimal manifest for a single module:
 
 | Field | Purpose |
 | ----- | ------- |
-| **name** | Package identifier — lowercase, hyphenated |
+| **name** | Package identifier, lowercase and hyphenated |
 | **plugins[].source** | Path from repo root to the module's skill folder parent |
 | **plugins[].skills** | Array of relative paths to each skill directory |
-| **plugins[].version** | Semantic version — bump on each release |
+| **plugins[].version** | Semantic version; bump on each release |
 
-For repositories that ship multiple modules, add additional entries to the `plugins` array. Each entry points to its own set of skill directories.
+For repositories that ship multiple modules, add an entry to the `plugins` array for each one, pointing to its own skill directories.
 
 ## Step 2: Structure Your Repository
 
@@ -160,7 +151,7 @@ Every path in the `skills` array must point to a directory containing a `SKILL.m
 
 ### Check module registration files
 
-For multi-skill modules, verify the setup skill contains `assets/module.yaml` and `assets/module-help.csv`. For standalone modules, verify these files exist in the skill's own `assets/` folder.
+Multi-skill modules need `assets/module.yaml` and `assets/module-help.csv` in the setup skill. Standalone modules keep these files in the skill's own `assets/` folder.
 
 ### Run Validate Module
 
@@ -168,11 +159,11 @@ For multi-skill modules, verify the setup skill contains `assets/module.yaml` an
 "Validate my module at ./skills"
 ```
 
-The Validate Module (VM) capability checks structural integrity, missing files, orphan entries, and description quality. Fix any findings before publishing.
+Validate Module (VM) checks for missing files, orphan entries, and other structural problems. Fix anything it flags before publishing.
 
 ## Step 4: Publish to GitHub
 
-Push your repository to GitHub. The module is installable as soon as it is accessible.
+Push your repository to GitHub. Once the repo is accessible, anyone with permission can install the module.
 
 ### Public modules
 
@@ -184,31 +175,31 @@ npx bmad-method install --custom-content https://github.com/your-org/my-module
 
 ### Private or organization modules
 
-Users with access can install the same way. The installer respects GitHub authentication configured on the machine.
+Users with access install the same way. The installer uses whatever GitHub authentication is configured on the machine.
 
 ### Versioning
 
-Tag releases with semantic versions. Users installing from GitHub get the default branch unless they specify a tag or branch.
+Tag releases with semantic versions. Installs pull from the default branch unless the user specifies a tag or branch.
 
 ## What You Get
 
 After publishing, users can:
 
-- Install your module through the BMad installer with `--custom-content`
-- Run the setup skill to register capabilities with `bmad-help`
-- Discover your module's capabilities through the help system
-- Receive configuration prompts defined in your `module.yaml`
+- Install your module with `--custom-content` via the BMad installer
+- Run the setup skill to register with `bmad-help`
+- Browse your module's capabilities through the help system
+- Get configuration prompts defined in `module.yaml`
 
-## List Your Module in the Marketplace
+## Step 5: List in the Marketplace (Optional)
 
-Once your module is published and working, you can submit it to the [BMad Plugins Marketplace](https://github.com/bmad-code-org/bmad-plugins-marketplace) so users can discover it alongside official modules. Listing is optional — your module is fully installable without it — but it gives your module visibility and a trust tier badge after review.
+Submit your module to the [BMad Plugins Marketplace](https://github.com/bmad-code-org/bmad-plugins-marketplace) for visibility alongside official modules. A listing isn't required for installation, but it adds discoverability and a trust tier badge after review.
 
 See the marketplace [CONTRIBUTING.md](https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/CONTRIBUTING.md) for the submission process.
 
 ## Tips
 
-- Include a `README.md` that explains what the module does, how to install it, and any external dependencies
-- Add a `LICENSE` file — MIT is common for open-source BMad modules
-- Keep `marketplace.json` version in sync with your release tags
-- If your module has external dependencies (CLI tools, MCP servers), document them in the README and handle detection in your setup skill
+- Include a `README.md` covering what the module does, how to install it, and any external dependencies
+- Add a `LICENSE` file. MIT is common for open-source BMad modules.
+- Keep the `marketplace.json` version in sync with your release tags
+- External dependencies (CLI tools, MCP servers) should be documented in the README and detected by your setup skill
 - Run `Validate Module (VM)` before each release to catch regressions

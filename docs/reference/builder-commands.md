@@ -3,7 +3,7 @@ title: 'Builder Commands Reference'
 description: Complete reference for all capabilities, modes, and paths available in the Agent Builder, Workflow Builder, and Module Builder
 ---
 
-Reference for the three core BMad Builder skills — the Agent Builder (`bmad-agent-builder`), the Workflow Builder (`bmad-workflow-builder`), and the Module Builder (`bmad-module-builder`).
+Reference for the three core BMad Builder skills: the Agent Builder (`bmad-agent-builder`), the Workflow Builder (`bmad-workflow-builder`), and the Module Builder (`bmad-module-builder`).
 
 ## Capabilities Overview
 
@@ -11,7 +11,7 @@ Reference for the three core BMad Builder skills — the Agent Builder (`bmad-ag
 | -------------------- | --------- | ------------------------------------- | ----------------------------------------------------------------------------------- |
 | **Build Process**    | BP        | Build, edit, convert, or fix agents   | Build, edit, convert, or fix workflows and utilities                                |
 | **Quality Optimize** | QO        | Validate and optimize existing agents | Validate and optimize existing workflows and utilities                              |
-| **Convert**          | CW        | —                                     | Convert any skill to BMad-compliant, outcome-driven equivalent with comparison report |
+| **Convert**          | CW        | -                                     | Convert any skill to BMad-compliant, outcome-driven equivalent with comparison report |
 
 Both capabilities support autonomous/headless mode via `--headless` / `-H` flags.
 
@@ -26,7 +26,7 @@ Both builders accept any of these as a starting point.
 | Input                             | What Happens                                              |
 | --------------------------------- | --------------------------------------------------------- |
 | A rough idea or description       | Guided discovery from scratch                             |
-| An existing BMad skill path       | Edit mode — analyze what exists, determine what to change |
+| An existing BMad skill path       | Edit mode. Analyze what exists, determine what to change  |
 | A non-BMad skill, tool, or code   | Convert to BMad-compliant structure                       |
 | Documentation, API specs, or code | Extract intent and requirements automatically             |
 
@@ -36,18 +36,18 @@ Both builders accept any of these as a starting point.
 | -------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | **Guided**     | The builder walks through decisions, clarifies ambiguities, ensures completeness             | Production skills, first-time builders       |
 | **YOLO**       | Brain-dump your idea; the builder guesses its way to a finished skill with minimal questions | Quick prototypes, experienced builders       |
-| **Autonomous** | Fully headless — no interactive prompts, proceeds with safe defaults                         | CI/CD, batch processing, orchestrated builds |
+| **Autonomous** | Fully headless; no interactive prompts, proceeds with safe defaults                          | CI/CD, batch processing, orchestrated builds |
 
 ### Build Phases
 
 | Phase | Agent Builder                                                                                    | Workflow Builder                                                                                      |
 | ----- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| 1     | **Discover Intent** — understand the vision                                                      | **Discover Intent** — understand the vision; accepts any input format                                 |
-| 2     | **Capabilities Strategy** — internal commands, external skills, or both; script opportunities    | **Classify Skill Type** — Simple Utility, Simple Workflow, or Complex Workflow; module membership     |
-| 3     | **Gather Requirements** — name, persona, memory, capabilities, autonomous modes, folder dominion | **Gather Requirements** — name, description, stages, config variables, output artifacts, dependencies |
-| 4     | **Draft & Refine** — present outline, iterate until ready                                        | **Draft & Refine** — present plan, clarify gaps, iterate until ready                                  |
-| 5     | **Build** — generate skill structure, lint gate                                                  | **Build** — generate skill structure, lint gate                                                       |
-| 6     | **Summary** — present results, offer Quality Optimize                                            | **Summary** — present results, run unit tests if scripts exist, offer Quality Optimize                |
+| 1     | **Discover Intent**: understand the vision                                                       | **Discover Intent**: understand the vision; accepts any input format                                  |
+| 2     | **Capabilities Strategy**: internal commands, external skills, or both; script opportunities     | **Classify Skill Type**: Simple Utility, Simple Workflow, or Complex Workflow; module membership      |
+| 3     | **Gather Requirements**: name, persona, memory, capabilities, autonomous modes, folder dominion  | **Gather Requirements**: name, description, stages, config variables, output artifacts, dependencies  |
+| 4     | **Draft & Refine**: present outline, iterate until ready                                         | **Draft & Refine**: present plan, clarify gaps, iterate until ready                                   |
+| 5     | **Build**: generate skill structure, lint gate                                                   | **Build**: generate skill structure, lint gate                                                        |
+| 6     | **Summary**: present results, offer Quality Optimize                                             | **Summary**: present results, run unit tests if scripts exist, offer Quality Optimize                 |
 
 ### Agent Builder: Phase 2-3 Details
 
@@ -84,11 +84,11 @@ Both builders accept any of these as a starting point.
 
 | Requirement             | Simple Utility | Simple Workflow | Complex Workflow                         |
 | ----------------------- | -------------- | --------------- | ---------------------------------------- |
-| **Input/output format** | Yes            | —               | —                                        |
-| **Composability**       | Yes            | —               | —                                        |
-| **Steps**               | —              | Numbered steps  | Named stages with progression conditions |
-| **Headless mode**       | —              | Optional        | Optional                                 |
-| **Config variables**    | —              | Core + custom   | Core + module-specific                   |
+| **Input/output format** | Yes            | -               | -                                        |
+| **Composability**       | Yes            | -               | -                                        |
+| **Steps**               | -              | Numbered steps  | Named stages with progression conditions |
+| **Headless mode**       | -              | Optional        | Optional                                 |
+| **Config variables**    | -              | Core + custom   | Core + module-specific                   |
 | **Module sequencing**   | Optional       | Optional        | Recommended                              |
 
 ### Build Output
@@ -112,7 +112,7 @@ Before completing the build, both builders run deterministic validation.
 
 | Script                   | What It Checks                                                                            |
 | ------------------------ | ----------------------------------------------------------------------------------------- |
-| `scan-path-standards.py` | Path conventions — no `{skill-root}`, `{project-root}` for project-scope, `./` for skill-internal, no double-prefix |
+| `scan-path-standards.py` | Path conventions: no `{skill-root}`, `{project-root}` for project-scope, `./` for skill-internal, no double-prefix  |
 | `scan-scripts.py`        | Script portability, PEP 723 metadata, agentic design, unit test presence                  |
 
 Critical issues block completion. Warnings are noted but don't block.
@@ -134,14 +134,14 @@ In autonomous mode, both checks are skipped and noted as warnings in the report.
 
 The optimizer runs three tiers of analysis.
 
-**Tier 1 — Lint scripts** (deterministic, zero tokens, instant):
+**Tier 1: Lint scripts** (deterministic, zero tokens, instant):
 
 | Script                   | Focus                            |
 | ------------------------ | -------------------------------- |
 | `scan-path-standards.py` | Path convention violations       |
 | `scan-scripts.py`        | Script portability and standards |
 
-**Tier 2 — Pre-pass scripts** (extract metrics for LLM scanners):
+**Tier 2: Pre-pass scripts** (extract metrics for LLM scanners):
 
 | Script                        | Agent Builder                       | Workflow Builder                |
 | ----------------------------- | ----------------------------------- | ------------------------------- |
@@ -149,7 +149,7 @@ The optimizer runs three tiers of analysis.
 | Prompt metrics pre-pass       | `prepass-prompt-metrics.py`         | `prepass-prompt-metrics.py`     |
 | Execution dependency pre-pass | `prepass-execution-deps.py`         | `prepass-execution-deps.py`     |
 
-**Tier 3 — LLM scanners** (judgment-based, run as parallel subagents):
+**Tier 3: LLM scanners** (judgment-based, run as parallel subagents):
 
 | Scanner                       | Agent Builder Focus                                                        | Workflow Builder Focus                                                                       |
 | ----------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -175,14 +175,14 @@ In autonomous mode, it outputs structured JSON with severity counts and the repo
 
 Not every suggestion should be applied. The optimizer communicates these decision rules:
 
-- **Keep phrasing** that captures the intended voice — leaner is not always better for persona-driven skills
+- **Keep phrasing** that captures the intended voice. Leaner is not always better for persona-driven skills
 - **Keep content** that adds clarity for the AI even if a human finds it obvious
 - **Prefer scripting** for deterministic operations; **prefer prompting** for creative or judgment-based tasks
 - **Reject changes** that flatten personality unless a neutral tone is explicitly wanted
 
 ## Convert (CW)
 
-One-command conversion of any existing skill into a BMad-compliant, outcome-driven equivalent. Takes a non-conformant skill — bloated, poorly structured, or just not following BMad practices — and produces a clean version. Unlike the Build Process's edit/rebuild modes, `--convert` always runs headless and produces a visual comparison report.
+One-command conversion of any existing skill into a BMad-compliant, outcome-driven equivalent. Takes a non-conformant skill (bloated, poorly structured, or just not following BMad practices) and produces a clean version. Unlike the Build Process's edit/rebuild modes, `--convert` always runs headless and produces a visual comparison report.
 
 ### Usage
 
@@ -190,14 +190,14 @@ One-command conversion of any existing skill into a BMad-compliant, outcome-driv
 --convert <path-or-url> [-H]
 ```
 
-The `--convert` flag implies headless mode. Accepts a local skill path or a URL (not limited to remote — local file paths work too).
+The `--convert` flag implies headless mode. Accepts a local skill path or a URL (not limited to remote; local file paths work too).
 
 ### Process
 
 | Step | What Happens |
 | ---- | ------------ |
 | **1. Capture** | Fetch or read the original skill, save a copy for comparison |
-| **2. Rebuild** | Full headless rebuild from intent — extract what the skill achieves, apply BMad outcome-driven best practices |
+| **2. Rebuild** | Full headless rebuild from intent: extract what the skill achieves, apply BMad outcome-driven best practices  |
 | **3. Report** | Measure both versions, categorize what changed and why, generate an interactive HTML comparison report |
 
 ### Comparison Report
@@ -207,9 +207,9 @@ The HTML report includes:
 | Section | Content |
 | ------- | ------- |
 | **Hero banner** | Overall token reduction percentage |
-| **Metrics table** | Lines, words, characters, sections, files, estimated tokens — with visual bars |
-| **What changed** | Categorized differences — bloat removal, structural reorganization, best-practice alignment — with severity and examples |
-| **What survived** | Content that earns its place — instructions the LLM wouldn't follow correctly without being told |
+| **Metrics table** | Lines, words, characters, sections, files, estimated tokens, with visual bars |
+| **What changed** | Categorized differences (bloat removal, structural reorganization, best-practice alignment) with severity and examples |
+| **What survived** | Content that earns its place: instructions the LLM wouldn't follow correctly without being told  |
 | **Verdict** | One-sentence summary of the conversion |
 
 Reports are saved to `{bmad_builder_reports}/convert-{skill-name}/`.
@@ -226,30 +226,30 @@ Reports are saved to `{bmad_builder_reports}/convert-{skill-name}/`.
 
 ## Module Builder
 
-The Module Builder (`bmad-module-builder`) handles module-level planning, scaffolding, and validation. It operates at a higher level than the Agent and Workflow Builders — it orchestrates what those builders produce into a cohesive, installable module.
+The Module Builder (`bmad-module-builder`) handles module-level planning, scaffolding, and validation. It operates at a higher level than the Agent and Workflow Builders; it orchestrates what those builders produce into a cohesive, installable module.
 
 ### Capabilities Overview
 
 | Capability          | Menu Code | What It Does                                                                                                    |
 | ------------------- | --------- | --------------------------------------------------------------------------------------------------------------- |
 | **Ideate Module**   | IM        | Brainstorm and plan a module through creative facilitation                                                      |
-| **Create Module**   | CM        | Package skills as an installable module — setup skill for multi-skill, self-registration for standalone          |
+| **Create Module**   | CM        | Package skills as an installable module: setup skill for multi-skill, self-registration for standalone           |
 | **Validate Module** | VM        | Check structural integrity and entry quality for both multi-skill and standalone modules                        |
 
 ### Ideate Module (IM)
 
-A brainstorming session that helps you plan your module from scratch. The builder acts as a creative collaborator — drawing out ideas, exploring possibilities, and guiding you toward the right architecture.
+A brainstorming session that helps you plan your module from scratch. The builder acts as a creative collaborator, drawing out ideas, exploring possibilities, and guiding you toward the right architecture.
 
 | Aspect          | Detail                                          |
 | --------------- | ----------------------------------------------- |
-| **Interaction** | Interactive only — no headless mode             |
+| **Interaction** | Interactive only; no headless mode              |
 | **Input**       | An idea or rough description                    |
 | **Output**      | Plan document saved to `{bmad_builder_reports}` |
 
 **What it covers:**
 
 - Problem space exploration and creative brainstorming
-- Architecture decision — single agent with capabilities vs. multiple skills vs. hybrid
+- Architecture decision: single agent with capabilities vs. multiple skills vs. hybrid
 - Standalone module or expansion of an existing module
 - External dependencies (CLI tools, MCP servers)
 - UI and visualization opportunities
@@ -276,7 +276,7 @@ Packages built skills as an installable BMad module. Auto-detects single-skill v
 1. Reads the SKILL.md files to understand each skill
 2. Detects single vs. multi-skill and confirms the packaging approach with the user
 3. Collects module identity (name, code, description, version, greeting)
-4. Defines help CSV entries — capabilities, menu codes, ordering, relationships
+4. Defines help CSV entries: capabilities, menu codes, ordering, relationships
 5. Captures configuration variables and external dependencies
 6. Scaffolds the module infrastructure
 
@@ -307,11 +307,11 @@ Verifies that a module's structure is complete and accurate. Auto-detects multi-
 
 **Quality assessment** (LLM-driven):
 
-- Description accuracy — does each entry match what the skill actually does?
-- Description quality — concise, action-oriented, specific, not overly verbose
-- Completeness — are all distinct capabilities registered as separate rows?
-- Ordering — do before/after relationships make sense?
-- Menu codes — are they intuitive and memorable?
+- Description accuracy: does each entry match what the skill actually does?
+- Description quality: concise, action-oriented, specific, not overly verbose
+- Completeness: are all distinct capabilities registered as separate rows?
+- Ordering: do before/after relationships make sense?
+- Menu codes: are they intuitive and memorable?
 
 ## Trigger Phrases
 

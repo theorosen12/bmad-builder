@@ -1,9 +1,9 @@
 ---
 title: 'Scripts in Skills'
-description: Why deterministic scripts make skills faster, cheaper, and more reliable — and the technical choices behind portable script design
+description: Why deterministic scripts make skills faster, cheaper, and more reliable, and the technical choices behind portable script design
 ---
 
-Scripts handle work that has clear right-and-wrong answers — validation, transformation, extraction, counting — so the LLM can focus on judgment, synthesis, and creative reasoning.
+Scripts handle work that has clear right-and-wrong answers (validation, transformation, extraction, counting) so the LLM can focus on judgment, synthesis, and creative reasoning.
 
 ## The Problem: LLMs Do Too Much
 
@@ -29,7 +29,7 @@ The design principle is **intelligence placement**: put each operation where it 
 **The test:** Given identical input, will this operation always produce identical output? If yes, it belongs in a script. Could you write a unit test with expected output? Definitely a script. Requires interpreting meaning, tone, or context? Keep it as an LLM prompt.
 
 :::tip[The Pre-Processing Pattern]
-One of the highest-value script uses is pre-processing. A script extracts compact metrics from large files into a small JSON summary. The LLM then reasons over the summary instead of reading raw files — dramatically reducing token usage while improving analysis quality because the data is clean and structured.
+One of the highest-value script uses is pre-processing. A script extracts compact metrics from large files into a small JSON summary. The LLM then reasons over the summary instead of reading raw files, dramatically reducing token usage while improving analysis quality because the data is clean and structured.
 :::
 
 ## Why Python, Not Bash
@@ -45,7 +45,7 @@ Skills must work across macOS, Linux, and Windows. Bash is not portable.
 | **Testing**          | Difficult                                     | Standard unittest/pytest |
 | **Complex logic**    | Quickly becomes unreadable                    | Clean, maintainable      |
 
-Even basic commands like `sed -i` behave differently on macOS vs Linux. Piping, `jq`, `grep`, `awk` — all of these have cross-platform pitfalls that Python's standard library avoids entirely.
+Even basic commands like `sed -i` behave differently on macOS vs Linux. Piping, `jq`, `grep`, `awk`. All of these have cross-platform pitfalls that Python's standard library avoids entirely.
 
 **Safe bash commands** that work everywhere and remain fine to use directly:
 
@@ -73,11 +73,11 @@ Python's standard library covers most script needs without any external dependen
 | Source analysis    | `ast`              |
 | Data formats       | `csv`, `xml.etree` |
 
-Only reach for external dependencies when the stdlib genuinely cannot do the job — `tiktoken` for accurate token counting, `pyyaml` for YAML parsing, `jsonschema` for schema validation. Each external dependency adds install-time cost, requires `uv` to be available, and expands the supply-chain surface. The BMad builders require explicit user approval for any external dependency during the build process.
+Only reach for external dependencies when the stdlib genuinely cannot do the job: `tiktoken` for accurate token counting, `pyyaml` for YAML parsing, `jsonschema` for schema validation. Each external dependency adds install-time cost, requires `uv` to be available, and expands the supply-chain surface. The BMad builders require explicit user approval for any external dependency during the build process.
 
 ## Zero-Friction Dependencies with PEP 723
 
-Python scripts in skills use [PEP 723](https://peps.python.org/pep-0723/) inline metadata to declare their dependencies directly in the file. Combined with `uv run`, this gives you `npx`-like behavior — dependencies are silently cached in an isolated environment, no global installs, no user prompts.
+Python scripts in skills use [PEP 723](https://peps.python.org/pep-0723/) inline metadata to declare their dependencies directly in the file. Combined with `uv run`, this gives you `npx`-like behavior: dependencies are silently cached in an isolated environment, no global installs, no user prompts.
 
 ```python
 #!/usr/bin/env -S uv run --script
@@ -92,15 +92,15 @@ import yaml
 
 When a skill invokes this script with `uv run scripts/analyze.py`, the dependency (`pyyaml` in this example) is automatically resolved. The user never sees an install prompt, never needs to manage a virtual environment, and never pollutes their global Python installation.
 
-Without PEP 723, skills that need libraries like `pyyaml` or `tiktoken` would force users to run `pip install` — a jarring experience that makes people hesitate to adopt the skill.
+Without PEP 723, skills that need libraries like `pyyaml` or `tiktoken` would force users to run `pip install`, a jarring experience that makes people hesitate to adopt the skill.
 
 ## Graceful Degradation
 
 Skills run in multiple environments: CLI terminals, desktop apps, IDE extensions, and web interfaces like claude.ai. Not all environments can execute Python scripts.
 
-The principle: **scripts are the fast, reliable path — but the skill must still deliver its outcome when execution is unavailable.**
+The principle: **scripts are the fast, reliable path, but the skill must still deliver its outcome when execution is unavailable.**
 
-When a script cannot run, the LLM performs the equivalent work directly. This is slower and less deterministic, but the user still gets a result. The script's `--help` output documents what it checks, making the fallback natural — the LLM reads the help to understand the script's purpose and replicates the logic.
+When a script cannot run, the LLM performs the equivalent work directly. This is slower and less deterministic, but the user still gets a result. The script's `--help` output documents what it checks, making the fallback natural. The LLM reads the help to understand the script's purpose and replicates the logic.
 
 Frame script steps as outcomes in the SKILL.md, not just commands:
 
@@ -109,11 +109,11 @@ Frame script steps as outcomes in the SKILL.md, not just commands:
 | **Good**    | "Validate path conventions (run `scripts/scan-paths.py --help` for details)" |
 | **Fragile** | "Execute `python3 scripts/scan-paths.py`" with no context                    |
 
-The good version tells the LLM both what to accomplish and where to find the details — enabling graceful degradation without additional instructions.
+The good version tells the LLM both what to accomplish and where to find the details, enabling graceful degradation without additional instructions.
 
 ## When to Reach for a Script
 
-Look for these signal verbs in a skill's requirements — they indicate script opportunities:
+Look for these signal verbs in a skill's requirements; they indicate script opportunities:
 
 | Signal                             | Script Type      |
 | ---------------------------------- | ---------------- |

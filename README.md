@@ -6,31 +6,37 @@
 
 **Build More, Architect Dreams... With the BMad Builder!**
 
-BMad Builder is so much more than a skill builder. BMad Method modules support:
+## Create, Share, and Discover Modules
 
-- **Agents** that transform your AI tool into exactly who you need to talk to — with memory that persists across sessions
-- **Workflows** that go far beyond simple tasks into truly guided, facilitated processes that can produce near-infinite steps and turns as needed
-- **Modules** that are entire ecosystems, not just skill packs — like the BMad Method module for agile AI-driven development. You can create simpler or vastly more complex modules for any entertainment or work purpose.
+BMad Builder gives you the complete pipeline to create your own AI modules and share them with the world. Build agents with persistent memory, guided workflows, or full module ecosystems, then distribute them through the [BMad Marketplace](https://github.com/bmad-code-org/bmad-plugins-marketplace) or any compliant public marketplace.
+
+The [Agent Skills open standard](https://agentskills.io/home) means your creations work across 40+ AI tools, not just one platform - but with the BMad Ecosystem they will also gain full integration.
+
+| Guide | What It Covers |
+| ----- | -------------- |
+| **[Quick Start](https://bmad-builder-docs.bmad-method.org)** | Set up BMad Builder and build your first skill |
+| **[Build Your First Module](https://bmad-builder-docs.bmad-method.org/tutorials/build-your-first-module/)** | Plan, build, scaffold, and validate a complete module |
+| **[Distribute Your Module](https://bmad-builder-docs.bmad-method.org/how-to/distribute-your-module/)** | Package and share your module for anyone to install |
 
 ## The Dream
 
-Imagine AI that truly knows you — a fitness coach that remembers every PR, a writing partner that knows your characters better than you do, a research assistant that learns your preferences.
+Imagine AI that truly knows you. A fitness coach that remembers every PR. A writing partner that knows your characters better than you do. A research assistant that learns your preferences.
 
 BMad Builder lets you create:
 
-- **Personal AI Companions** — Agents with memory that evolve with you over time
-- **Domain Experts** — Specialists for any field: legal, medical, creative, technical
-- **Workflow Automations** — Structured processes that guide you through complex tasks
-- **Custom Modules** — Bundle agents and workflows into shareable packages that can empower any type of business or domain
+- **Personal AI Companions**: Agents with memory that evolve with you over time
+- **Domain Experts**: Specialists for any field: legal, medical, creative, technical
+- **Workflow Automations**: Structured processes that guide you through complex tasks
+- **Custom Modules**: Bundle agents and workflows into shareable packages that can empower any type of business or domain
 
 ## What Makes It Different
 
 | Feature               | Why It Matters                                              |
 | --------------------- | ----------------------------------------------------------- |
-| **Persistent Memory** | Agents remember across sessions — they learn and grow       |
+| **Persistent Memory** | Agents remember across sessions and keep improving          |
 | **Composable**        | Your creations work alongside the entire BMad ecosystem     |
-| **Skill-Compliant**   | Built on open standards that work with any AI tool          |
-| **Shareable**         | Package your modules for the BMad Marketplace (coming soon) |
+| **Skill-Compliant**   | Built on the open Agent Skills standard, works with 40+ AI tools |
+| **Shareable**         | Distribute through the BMad Marketplace or any compliant marketplace |
 
 ## What You Can Build
 
@@ -43,20 +49,18 @@ BMad Builder lets you create:
 
 ## Learn More
 
-**[Documentation and Quick Start](https://bmad-builder-docs.bmad-method.org)**
-
-Complete guides for building agents, workflows, and modules.
+**[Full Documentation](https://bmad-builder-docs.bmad-method.org)**: Concepts, design patterns, and reference for the complete builder toolkit.
 
 ## Community
 
-- **[Discord](https://discord.gg/gk8jAdXWmj)** — Get help and share what you've built
-- **[BMad Method](https://docs.bmad-method.org)** — Core framework documentation
+- **[Discord](https://discord.gg/gk8jAdXWmj)**: Get help and share what you've built
+- **[BMad Method](https://docs.bmad-method.org)**: Core framework documentation
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE) for details.
 
-**BMad Builder** — Part of the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD) ecosystem.
+**BMad Builder**: Part of the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD) ecosystem.
 
 [![Contributors](https://contrib.rocks/image?repo=bmad-code-org/bmad-builder)](https://github.com/bmad-code-org/bmad-builder/graphs/contributors)
 
