@@ -23,6 +23,19 @@ Set up a GitHub repository so others can install your BMad module with a single 
 - Git installed locally
 :::
 
+## Getting Started
+
+The fastest way to start is with the [BMad Module Template](https://github.com/bmad-code-org/bmad-module-template):
+
+1. Click **Use this template** on GitHub to create your new repo
+2. Install BMad Builder in the project: `npx bmad-method install` and select the BMad Builder module
+3. Use the Agent Builder or Workflow Builder to create your skills
+4. Organize your finished skills under `skills/`
+5. Update `.claude-plugin/marketplace.json` with your module info
+6. Add documentation under `docs/`
+
+If you already have a repo with skills, you can skip the template and use the Module Builder's Create Module (CM) capability to scaffold the `marketplace.json` and registration files directly.
+
 ## Step 1: Understand the Plugin Format
 
 The BMad installer discovers modules through a `.claude-plugin/marketplace.json` manifest at the repository root. The Module Builder generates this file during the Create Module (CM) step, but you need to verify and complete it before publishing.
@@ -185,6 +198,12 @@ After publishing, users can:
 - Run the setup skill to register capabilities with `bmad-help`
 - Discover your module's capabilities through the help system
 - Receive configuration prompts defined in your `module.yaml`
+
+## List Your Module in the Marketplace
+
+Once your module is published and working, you can submit it to the [BMad Plugins Marketplace](https://github.com/bmad-code-org/bmad-plugins-marketplace) so users can discover it alongside official modules. Listing is optional — your module is fully installable without it — but it gives your module visibility and a trust tier badge after review.
+
+See the marketplace [CONTRIBUTING.md](https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/CONTRIBUTING.md) for the submission process.
 
 ## Tips
 
