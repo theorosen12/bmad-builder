@@ -1,14 +1,14 @@
 ---
 title: 'Distribute Your Module'
-description: Set up a GitHub repository to share your BMad module so others can install it
+description: Set up a Git repository to share your BMad module so others can install it
 ---
 
-This guide walks through publishing a BMad module to GitHub with a `.claude-plugin/marketplace.json` manifest so anyone can install it in one command.
+This guide walks through publishing a BMad module to a Git repository with a `.claude-plugin/marketplace.json` manifest so anyone can install it in one command.
 
 ## When to Use This
 
 - You have a module ready to share publicly or within your organization
-- Others should be able to install it (manually now, or via the BMad installer once released)
+- Others should be able to install it via the BMad installer
 - The repository may host one module or several
 
 ## When to Skip This
@@ -19,7 +19,7 @@ This guide walks through publishing a BMad module to GitHub with a `.claude-plug
 :::note[Prerequisites]
 
 - A completed, validated BMad module (see **[Build Your First Module](/tutorials/build-your-first-module.md)**)
-- A GitHub account with a repository for your module
+- A Git repository on any host (GitHub, GitLab, Bitbucket, or self-hosted)
 - Git installed locally
 :::
 
@@ -29,13 +29,13 @@ Start from the [BMad Module Template](https://github.com/bmad-code-org/bmad-modu
 
 ## Step 1: Configure the Plugin Manifest
 
-Modules are discovered through a `.claude-plugin/marketplace.json` manifest at the repository root. Create Module (CM) generates this file for you. Verify and complete it before publishing.
+Modules are discovered through a `.claude-plugin/marketplace.json` manifest at the repository root. Create Module generates this file for you. Verify and complete it before publishing.
 
-:::note[Installer Coming Soon]
-The BMad Method installer (`npx bmad-method install --custom-content`) will support installing custom modules from GitHub in an upcoming release. Until then, users install by cloning your repo and copying the skill folders into their tool's skills directory (`.claude/skills/`, `.agents/skills/`, etc.).
+:::tip[Installer Support]
+The BMad Method installer (`npx bmad-method install`) supports installing custom modules from any Git host or local path. Users can install interactively or via `--custom-source <url-or-path>`. See the [BMad Method install guide](https://docs.bmad-method.org/how-to/install-custom-modules/) for details.
 :::
 
-This format works for any skills-capable platform, not just Claude.
+This format works for any skills-capable platform, not just Claude, we just utilize the claude file as a convention to support any skills based platform.
 
 A minimal manifest for a single module:
 
@@ -165,30 +165,27 @@ Multi-skill modules need `assets/module.yaml` and `assets/module-help.csv` in th
 
 Validate Module (VM) checks for missing files, orphan entries, and other structural problems. Fix anything it flags before publishing.
 
-## Step 4: Publish to GitHub
+## Step 4: Publish
 
-Push your repository to GitHub. Once the repo is accessible, anyone with permission can use it.
+Push your repository to a Git host (GitHub, GitLab, Bitbucket, or self-hosted). Once the repo is accessible, anyone with permission can install it.
 
-### Installing (current)
+### Installing your module
 
-Users clone or download the repo and copy the skill folders into their tool's skills directory:
-
-```bash
-# Example: copy an agent skill into Claude Code's skills directory
-cp -r skills/my-agent ~/.claude/skills/my-agent
-```
-
-### Installing (upcoming)
-
-Once the BMad installer supports custom modules, users will install with:
+Users install custom modules through the BMad installer:
 
 ```bash
-npx bmad-method install --custom-content https://github.com/your-org/my-module
+# Interactive: the installer prompts for a custom source URL or path
+npx bmad-method install
+
+# Non-interactive: specify the source directly
+npx bmad-method install --custom-source https://github.com/your-org/my-module --tools claude-code --yes
 ```
+
+The installer accepts HTTPS URLs, SSH URLs, URLs with deep paths (e.g., `/tree/main/subdir`), and local file paths.
 
 ### Private or organization modules
 
-For private repos, users need GitHub access to clone. The upcoming installer will use whatever GitHub authentication is configured on the machine.
+For private repos, users need Git access to clone. The installer uses whatever Git authentication is configured on the machine.
 
 ### Versioning
 
@@ -198,7 +195,7 @@ Tag releases with semantic versions. Installs pull from the default branch unles
 
 After publishing, users can:
 
-- Copy skill folders into their tool's skills directory (or use the BMad installer once available)
+- Install via the BMad installer from any Git URL or local path
 - Run the setup skill to register with `bmad-help`
 - Browse your module's capabilities through the help system
 - Get configuration prompts defined in `module.yaml`

@@ -14,7 +14,7 @@ At the distribution level, a BMad module is a **plugin**: a package of skills wi
 | **Single plugin**   | One module (standalone or multi-skill)                       | `.claude-plugin/marketplace.json` with one plugin entry   |
 | **Marketplace**     | A repo that ships multiple modules                           | `.claude-plugin/marketplace.json` with multiple plugin entries |
 
-The `.claude-plugin/` convention originates from Claude Code, but the format works across multiple skills platforms. The BMad installer will support installing custom modules directly from GitHub in an upcoming release. Until then, copy the created skill folder into your tool's skills directory (`.claude/skills/`, `.agents/skills/`, etc.). You can also use Anthropic's plugin system if targeting only Claude Code.
+The `.claude-plugin/` convention originates from Claude Code, but the format works across multiple skills platforms. The BMad installer supports installing custom modules from any Git host (GitHub, GitLab, Bitbucket, self-hosted) or local file paths. See the [BMad Method install guide](https://docs.bmad-method.org/how-to/install-custom-modules/) for details.
 
 The Module Builder generates the appropriate `marketplace.json` during the Create Module (CM) step - but you will want to verify it lists the proper relative paths to the skills you want to deliver with your module.
 

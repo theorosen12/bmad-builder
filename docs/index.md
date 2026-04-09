@@ -51,8 +51,8 @@ Invoke the **Agent Builder** or **Workflow Builder** and describe what you want 
 
 The builders produce a complete skill folder. Copy it into your AI tool's skills directory (`.claude/skills/`, `.codex/skills/`, `.agents/skills/`, or wherever your tool looks) and it's immediately usable.
 
-:::note[Installer Coming Soon]
-The BMad Method installer (`npx bmad-method install`) will support installing custom modules directly from GitHub repositories in an upcoming release. For now, copy the created skill folder into your tool's skills directory manually.
+:::tip[Custom Module Installation]
+The BMad Method installer supports installing custom modules from any Git host (GitHub, GitLab, Bitbucket, self-hosted) or local paths. See the [BMad Method install guide](https://docs.bmad-method.org/how-to/install-custom-modules/) for details.
 :::
 
 :::tip[No Module Required]
@@ -87,7 +87,7 @@ Build better skills with these guides, drawn from real-world BMad development.
 | Section                                                                          | Purpose                                                                  |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | **[Build Your First Module](/tutorials/build-your-first-module.md)**             | Plan, build, scaffold, and validate a complete module                    |
-| **[Distribute Your Module](/how-to/distribute-your-module.md)**                  | Share your module via GitHub for anyone to install                        |
+| **[Distribute Your Module](/how-to/distribute-your-module.md)**                  | Share your module via any Git host for anyone to install                  |
 | **[Concepts](/explanation/)**                                                    | Agent types, memory architecture, workflows, skills, and how they relate |
 | **[Design Patterns](/explanation/#design-patterns)**                             | Progressive disclosure, subagent orchestration, authoring best practices |
 | **[Reference](/reference/)**                                                     | Builder commands, workflow patterns                                      |
