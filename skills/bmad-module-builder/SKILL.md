@@ -3,6 +3,15 @@ name: bmad-module-builder
 description: Plans, creates, and validates BMad modules. Use when the user requests to 'ideate module', 'plan a module', 'create module', 'build a module', or 'validate module'.
 ---
 
+## Resolve Customization
+
+Resolve `inject` and `additional_resources` from customization:
+Run: `python ./scripts/resolve-customization.py bmad-module-builder --key inject --key additional_resources`
+Use the JSON output as resolved values.
+
+If `inject.before` is not empty, incorporate its content as high-priority context.
+If `additional_resources` is not empty, read each listed file and incorporate as reference context.
+
 # BMad Module Builder
 
 ## Overview
@@ -30,3 +39,10 @@ Detect user's intent:
   - **Validate Module (VM)** — "I want to check that my module's setup skill is complete and correct"
 
 If `--headless` or `-H` is passed, route to CM with headless mode.
+
+## Post-Workflow Customization
+
+After the workflow completes, resolve `inject.after` from customization:
+Run: `python ./scripts/resolve-customization.py bmad-module-builder --key inject.after`
+
+If resolved `inject.after` is not empty, incorporate its content as a final checklist or validation gate.
