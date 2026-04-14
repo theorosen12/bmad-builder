@@ -3,10 +3,14 @@ name: bmad-bmb-setup
 description: Sets up BMad Builder module in a project. Use when the user requests to 'install bmb module', 'configure BMad Builder', or 'setup BMad Builder'.
 ---
 
+## Available Scripts
+
+- **`scripts/resolve-customization.py`** -- Resolves customization from three-layer TOML merge (user > team > defaults). Outputs JSON.
+
 ## Resolve Customization
 
 Resolve `inject` and `additional_resources` from customization:
-Run: `python ./scripts/resolve-customization.py bmad-bmb-setup --key inject --key additional_resources`
+Run: `python3 scripts/resolve-customization.py bmad-bmb-setup --key inject --key additional_resources`
 Use the JSON output as resolved values.
 
 If `inject.before` is not empty, incorporate its content as high-priority context.
@@ -87,6 +91,6 @@ Once the user's `user_name` and `communication_language` are known (from collect
 ## Post-Workflow Customization
 
 After the workflow completes, resolve `inject.after` from customization:
-Run: `python ./scripts/resolve-customization.py bmad-bmb-setup --key inject.after`
+Run: `python3 scripts/resolve-customization.py bmad-bmb-setup --key inject.after`
 
 If resolved `inject.after` is not empty, incorporate its content as a final checklist or validation gate.
