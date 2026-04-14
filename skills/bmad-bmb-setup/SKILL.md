@@ -13,8 +13,8 @@ Resolve `inject` and `additional_resources` from customization:
 Run: `python3 scripts/resolve-customization.py bmad-bmb-setup --key inject --key additional_resources`
 Use the JSON output as resolved values.
 
-If `inject.before` is not empty, incorporate its content as high-priority context.
-If `additional_resources` is not empty, read each listed file and incorporate as reference context.
+1. **Inject before** -- If `inject.before` resolved to a non-empty value, prepend it to your active instructions and follow it.
+2. **Available resources** -- Note the `additional_resources` list. Do not read these files now; they are available for the injected prompt or workflow steps to reference when needed.
 
 # Module Setup
 
@@ -93,4 +93,4 @@ Once the user's `user_name` and `communication_language` are known (from collect
 After the workflow completes, resolve `inject.after` from customization:
 Run: `python3 scripts/resolve-customization.py bmad-bmb-setup --key inject.after`
 
-If resolved `inject.after` is not empty, incorporate its content as a final checklist or validation gate.
+If resolved `inject.after` is not empty, append it to your active instructions and follow it.
