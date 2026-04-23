@@ -232,7 +232,7 @@ function fileToSiteRelative(filePath) {
  * Process a single file and find issues
  */
 function processFile(filePath) {
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = fs.readFileSync(filePath, 'utf8');
   const strippedContent = stripCodeBlocks(content);
   const issues = [];
 
@@ -291,7 +291,7 @@ function processFile(filePath) {
 
     // Validate anchor if present
     if (anchor) {
-      const targetContent = fs.readFileSync(targetFile, 'utf-8');
+      const targetContent = fs.readFileSync(targetFile, 'utf8');
       const anchors = extractAnchors(targetContent);
 
       if (!anchors.has(anchor)) {
@@ -382,7 +382,7 @@ for (const filePath of files) {
       const fixableIssues = issues.filter((i) => i.status === 'auto-fixable');
       if (fixableIssues.length > 0) {
         const updated = applyFixes(content, fixableIssues);
-        fs.writeFileSync(filePath, updated, 'utf-8');
+        fs.writeFileSync(filePath, updated, 'utf8');
       }
     }
   }
@@ -409,4 +409,4 @@ if (totalIssues === 0) {
 
 console.log('');
 
-process.exit(totalIssues > 0 ? 1 : 0);
+process.exitCode = totalIssues > 0 ? 1 : 0;
