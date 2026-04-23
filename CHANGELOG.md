@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.7.0] - 2026-04-23
+
+### 📚 Documentation
+
+* **Customization authoring flow awareness** — `explanation/customization-for-authors.md` and `how-to/make-a-skill-customizable.md` now mention `bmad-customize`, the conversational authoring helper that walks users through scope selection, override writing, and merge verification. Guides authors to pick field names and defaults that read well in that flow, while preserving that hand-writing TOML still works for users who prefer it (#78)
+
 ## [1.6.0] - 2026-04-20
 
 ### 🎁 Features
