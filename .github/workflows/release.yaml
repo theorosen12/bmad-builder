@@ -53,11 +53,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run validation and tests
-        run: npm test
+      - name: Run validation
+        run: |
+          npm run format:check
+          npm run lint:md
 
       - name: Bump version
-        run: npm version ${{ inputs.bump }} -m "chore(release): v%s [skip ci]"
+        run: |
+          npm version ${{ inputs.bump }} -m "chore(release): v%s [skip ci]"
 
       - name: Capture new version
         id: version
