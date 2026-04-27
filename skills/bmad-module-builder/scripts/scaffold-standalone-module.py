@@ -2,12 +2,18 @@
 # /// script
 # requires-python = ">=3.10"
 # ///
-"""Scaffold standalone module infrastructure into an existing skill.
+"""Scaffold self-registering single-skill bundle into an existing skill.
 
-Copies template files (module-setup.md, merge scripts) into the skill directory
-and generates a .claude-plugin/marketplace.json for distribution. The LLM writes
-module.yaml and module-help.csv directly to the skill's assets/ folder before
-running this script.
+This is the **single-skill direct-download bundle**: an optional add-on for
+single-skill modules that need to be installable without the BMad installer.
+The canonical manifests live at the module root (the parent of the skill
+folder); this script copies the registration reference and merge scripts into
+the skill so it can self-register on first run or via `setup`/`configure`.
+
+Before running this script, the LLM must duplicate the root manifests into
+`<skill>/assets/module.yaml` and `<skill>/assets/module-help.csv`. The script
+then copies template files (module-setup.md, merge scripts) into the skill
+directory and (re)generates a .claude-plugin/marketplace.json for distribution.
 """
 
 import argparse

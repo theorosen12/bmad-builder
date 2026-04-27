@@ -4,18 +4,25 @@
 # ///
 """Validate a BMad module's structure and help CSV integrity.
 
-Supports two module types:
-- Multi-skill modules with a dedicated setup skill (*-setup directory)
-- Standalone single-skill modules with self-registration (assets/module-setup.md)
+Supports three module layouts (in installer priority order):
+- Root: module.yaml and module-help.csv at the module root (recommended default)
+- Setup skill bundling: manifests inside a {code}-setup/assets/ folder (optional, for direct-download installs)
+- Self-registering standalone bundling: manifests inside a single skill's assets/ folder with module-setup.md (optional, single-skill direct-download)
+
+A module needs at least one of these layouts. Root placement is the canonical
+location; setup-skill and self-registering layouts are additive bundles for the
+direct-download install path. When both root and a bundle are present, root wins
+and the bundle is validated as additional infrastructure.
 
 Performs deterministic structural checks:
-- Required files exist (setup skill or standalone structure)
+- Manifests are present in at least one supported layout
 - All skill folders have at least one capability entry in the CSV
 - No orphan CSV entries pointing to nonexistent skills
 - Menu codes are unique
 - Before/after references point to real capability entries
 - Required module.yaml fields are present
 - CSV column count is consistent
+- If bundling is present: bundle infrastructure files exist (merge scripts, module-setup.md, etc.)
 """
 
 import argparse
@@ -33,8 +40,15 @@ CSV_HEADER = [
 ]
 
 
+def find_root_manifests(module_dir: Path) -> tuple[Path | None, Path | None]:
+    """Check for module.yaml and module-help.csv at the module root."""
+    yaml = module_dir / "module.yaml"
+    csv = module_dir / "module-help.csv"
+    return (yaml if yaml.is_file() else None, csv if csv.is_file() else None)
+
+
 def find_setup_skill(module_dir: Path) -> Path | None:
-    """Find the setup skill folder (*-setup)."""
+    """Find the setup skill folder (*-setup) used for multi-skill direct-download bundling."""
     for d in module_dir.iterdir():
         if d.is_dir() and d.name.endswith("-setup"):
             return d
@@ -50,15 +64,15 @@ def find_skill_folders(module_dir: Path, exclude_name: str = "") -> list[str]:
     return sorted(skills)
 
 
-def detect_standalone_module(module_dir: Path) -> Path | None:
-    """Detect a standalone module: single skill folder with assets/module.yaml."""
+def detect_self_registering_bundle(module_dir: Path) -> Path | None:
+    """Detect a single-skill self-registering bundle: skill folder with assets/module-setup.md."""
     skill_dirs = [
         d for d in module_dir.iterdir()
         if d.is_dir() and (d / "SKILL.md").is_file()
     ]
     if len(skill_dirs) == 1:
         candidate = skill_dirs[0]
-        if (candidate / "assets" / "module.yaml").is_file():
+        if (candidate / "assets" / "module-setup.md").is_file():
             return candidate
     return None
 
@@ -98,61 +112,97 @@ def validate(module_dir: Path, verbose: bool = False) -> dict:
             "detail": detail,
         })
 
-    # 1. Find setup skill or detect standalone module
+    # 1. Detect layouts in priority order: root > setup-skill bundle > self-registering bundle
+    root_yaml, root_csv = find_root_manifests(module_dir)
     setup_dir = find_setup_skill(module_dir)
-    standalone_dir = None
+    self_reg_dir = detect_self_registering_bundle(module_dir)
 
-    if not setup_dir:
-        standalone_dir = detect_standalone_module(module_dir)
-        if not standalone_dir:
-            finding("critical", "structure",
-                    "No setup skill found (*-setup directory) and no standalone module detected")
-            return {"status": "fail", "findings": findings, "info": info}
+    has_root = bool(root_yaml and root_csv)
+    has_setup_bundle = bool(setup_dir)
+    has_self_reg_bundle = bool(self_reg_dir)
 
-    # Branch: standalone vs multi-skill
-    if standalone_dir:
-        info["standalone"] = True
-        info["skill_dir"] = standalone_dir.name
-        skill_dir = standalone_dir
+    info["layouts"] = {
+        "root": has_root,
+        "setup_skill_bundle": has_setup_bundle,
+        "self_registering_bundle": has_self_reg_bundle,
+    }
 
-        # 2s. Check required files for standalone module
-        required_files = {
-            "assets/module.yaml": skill_dir / "assets" / "module.yaml",
-            "assets/module-help.csv": skill_dir / "assets" / "module-help.csv",
-            "assets/module-setup.md": skill_dir / "assets" / "module-setup.md",
-            "scripts/merge-config.py": skill_dir / "scripts" / "merge-config.py",
-            "scripts/merge-help-csv.py": skill_dir / "scripts" / "merge-help-csv.py",
-        }
-        for label, path in required_files.items():
-            if not path.is_file():
-                finding("critical", "structure", f"Missing required file: {label}")
+    if not (has_root or has_setup_bundle or has_self_reg_bundle):
+        finding("critical", "structure",
+                "No module manifests found. Expected module.yaml and module-help.csv at the module root, "
+                "or inside a {code}-setup/assets/ folder, or inside a single skill's assets/ with module-setup.md")
+        return {"status": "fail", "findings": findings, "info": info}
 
-        if not all(p.is_file() for p in required_files.values()):
-            return {"status": "fail", "findings": findings, "info": info}
+    # Partial root layout: one of the two manifests exists but not both
+    if has_root and not (root_yaml and root_csv):
+        if not root_yaml:
+            finding("critical", "structure", "module.yaml missing at module root (module-help.csv is present)")
+        if not root_csv:
+            finding("critical", "structure", "module-help.csv missing at module root (module.yaml is present)")
+        return {"status": "fail", "findings": findings, "info": info}
 
-        yaml_dir = skill_dir
-        csv_dir = skill_dir
-    else:
+    # 2. Choose the canonical source for manifest reading (root wins, then bundles)
+    if has_root:
+        info["canonical_source"] = "root"
+        yaml_path = root_yaml
+        csv_path = root_csv
+    elif has_setup_bundle:
+        info["canonical_source"] = "setup-skill-bundle"
         info["setup_skill"] = setup_dir.name
-
-        # 2. Check required files in setup skill
-        required_files = {
-            "SKILL.md": setup_dir / "SKILL.md",
-            "assets/module.yaml": setup_dir / "assets" / "module.yaml",
-            "assets/module-help.csv": setup_dir / "assets" / "module-help.csv",
-        }
-        for label, path in required_files.items():
+        yaml_path = setup_dir / "assets" / "module.yaml"
+        csv_path = setup_dir / "assets" / "module-help.csv"
+        # Verify bundle files exist
+        for label, path in [
+            ("setup SKILL.md", setup_dir / "SKILL.md"),
+            ("setup assets/module.yaml", yaml_path),
+            ("setup assets/module-help.csv", csv_path),
+        ]:
             if not path.is_file():
                 finding("critical", "structure", f"Missing required file: {label}")
-
-        if not all(p.is_file() for p in required_files.values()):
+        if not (yaml_path.is_file() and csv_path.is_file()):
+            return {"status": "fail", "findings": findings, "info": info}
+    else:
+        info["canonical_source"] = "self-registering-bundle"
+        info["skill_dir"] = self_reg_dir.name
+        yaml_path = self_reg_dir / "assets" / "module.yaml"
+        csv_path = self_reg_dir / "assets" / "module-help.csv"
+        # Verify bundle files exist
+        required = {
+            "assets/module.yaml": yaml_path,
+            "assets/module-help.csv": csv_path,
+            "assets/module-setup.md": self_reg_dir / "assets" / "module-setup.md",
+            "scripts/merge-config.py": self_reg_dir / "scripts" / "merge-config.py",
+            "scripts/merge-help-csv.py": self_reg_dir / "scripts" / "merge-help-csv.py",
+        }
+        for label, path in required.items():
+            if not path.is_file():
+                finding("critical", "structure", f"Missing required file: {label}")
+        if not all(p.is_file() for p in required.values()):
             return {"status": "fail", "findings": findings, "info": info}
 
-        yaml_dir = setup_dir
-        csv_dir = setup_dir
+    # 2b. If root is canonical AND a bundle is also present, validate bundle infrastructure too
+    if has_root and has_setup_bundle:
+        for label, path in [
+            ("setup SKILL.md", setup_dir / "SKILL.md"),
+            ("setup assets/module.yaml", setup_dir / "assets" / "module.yaml"),
+            ("setup assets/module-help.csv", setup_dir / "assets" / "module-help.csv"),
+        ]:
+            if not path.is_file():
+                finding("high", "bundle", f"Setup-skill bundle is incomplete: missing {label}")
+
+    if has_root and has_self_reg_bundle:
+        for label, path in [
+            ("self-reg assets/module-setup.md", self_reg_dir / "assets" / "module-setup.md"),
+            ("self-reg assets/module.yaml", self_reg_dir / "assets" / "module.yaml"),
+            ("self-reg assets/module-help.csv", self_reg_dir / "assets" / "module-help.csv"),
+            ("self-reg scripts/merge-config.py", self_reg_dir / "scripts" / "merge-config.py"),
+            ("self-reg scripts/merge-help-csv.py", self_reg_dir / "scripts" / "merge-help-csv.py"),
+        ]:
+            if not path.is_file():
+                finding("high", "bundle", f"Self-registering bundle is incomplete: missing {label}")
 
     # 3. Validate module.yaml
-    yaml_text = (yaml_dir / "assets" / "module.yaml").read_text(encoding="utf-8")
+    yaml_text = yaml_path.read_text(encoding="utf-8")
     yaml_data = parse_yaml_minimal(yaml_text)
     info["module_code"] = yaml_data.get("code", "")
     info["module_name"] = yaml_data.get("name", "")
@@ -162,7 +212,7 @@ def validate(module_dir: Path, verbose: bool = False) -> dict:
             finding("high", "yaml", f"module.yaml missing or empty required field: {field}")
 
     # 4. Parse and validate CSV
-    csv_text = (csv_dir / "assets" / "module-help.csv").read_text(encoding="utf-8")
+    csv_text = csv_path.read_text(encoding="utf-8")
     header, rows = parse_csv_rows(csv_text)
 
     # Check header
@@ -270,11 +320,11 @@ def validate(module_dir: Path, verbose: bool = False) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Validate a BMad module's setup skill structure and help CSV integrity"
+        description="Validate a BMad module's structure and help CSV integrity"
     )
     parser.add_argument(
         "module_dir",
-        help="Path to the module's skills folder (containing the setup skill and other skills)",
+        help="Path to the module root (folder containing module.yaml/module-help.csv and the skill folders)",
     )
     parser.add_argument("--verbose", action="store_true", help="Print progress to stderr")
     args = parser.parse_args()

@@ -28,24 +28,13 @@ For each skill, understand:
 
 Skills without a `customize.toml` are fine — older skills or ones that predate customization support. Their metadata comes from the SKILL.md body (title heading, description frontmatter) as a fallback.
 
-**Single skill detection:** If the folder contains exactly one skill (one directory with a SKILL.md), or the user provided a direct path to a single skill, note this as a **standalone module candidate**.
+**Single skill detection:** Note whether the folder contains exactly one skill (one directory with a SKILL.md), or the user provided a direct path to a single skill. This affects only the optional direct-download bundling step later, not the default scaffolding.
 
-### 1.5. Confirm Approach
+### 1.5. Confirm Scope
 
-**If single skill detected:** Present the standalone option:
+Confirm with the user what you found: "I found {N} skill(s): {list}. I'll write `module.yaml`, `module-help.csv`, and `.claude-plugin/marketplace.json` at the module root. The BMad installer reads these directly. Sound good?"
 
-> "I found one skill: **{skill-name}**. For single-skill modules, I recommend the **standalone self-registering** approach — instead of generating a separate setup skill, the registration logic is built directly into this skill via a setup reference file. When users pass `setup` or `configure` as an argument, the skill handles its own module registration.
->
-> This means:
-> - No separate `-setup` skill to maintain
-> - Simpler distribution (single skill folder + marketplace.json)
-> - Users install by adding the skill and running it with `setup`
->
-> Shall I proceed with the standalone approach, or would you prefer a separate setup skill?"
-
-**If multiple skills detected:** Confirm with the user: "I found {N} skills: {list}. I'll generate a dedicated `-setup` skill to handle module registration for all of them. Sound good?"
-
-If the user overrides the recommendation (e.g., wants a setup skill for a single skill, or standalone for multiple), respect their choice.
+This is the **default layout for every module**, single-skill or multi-skill. Direct-download bundling (a setup skill or self-registering single skill that duplicates the manifests inside a skill so users can install without running the BMad installer) is offered later as an optional add-on in step 7.5. Don't ask about bundling yet; offer it after the root scaffolding is confirmed.
 
 ### 2. Gather Module Identity
 
@@ -148,9 +137,9 @@ Ask the user about requirements beyond configuration:
 - **UI or web app** — Does the module include a dashboard, visualization layer, or interactive web interface? If the setup skill needs to install or configure a web app, scaffold UI files, or set up a dev server, capture those requirements.
 - **Additional setup actions** — Beyond config collection: scaffolding project directories, generating starter files, configuring external services, setting up webhooks, etc.
 
-If any of these apply, let the user know the scaffolded setup skill will need manual customization after creation to add these capabilities. Document what needs to be added so the user has a clear checklist.
+External dependency checks belong inside the skills that need them, not in installer-time hooks. A skill should detect missing tools at runtime and guide the user, since direct-download installs skip the installer entirely. See [Skills Must Be Self-Runnable](../../../docs/explanation/skill-authoring-best-practices.md#skills-must-be-self-runnable).
 
-**Standalone modules:** External dependency checks would need to be handled within the skill itself (in the module-setup.md reference or the main SKILL.md). Note any needed checks for the user to add manually.
+If the user opts into setup-skill bundling later (step 7.5), the bundled setup skill can also include installer-time checks as a convenience. Note these for the user to add manually after scaffolding.
 
 ### 6. Generate and Confirm
 
@@ -163,31 +152,82 @@ Present the complete module.yaml and module-help.csv content for the user to rev
 
 Iterate until the user confirms everything is correct.
 
-### 7. Scaffold
+### 7. Scaffold the Module Root (Always)
 
-#### Multi-skill modules (setup skill approach)
+Write the confirmed manifests directly to the **module root**: the skills folder the user pointed at (or, for a single-skill input, the parent of the skill folder). This is the canonical layout the BMad installer reads. Always do this, regardless of whether the user opts into bundling later.
 
-Write the confirmed module.yaml and module-help.csv content to temporary files at `{bmad_builder_reports}/{module-code}-temp-module.yaml` and `{bmad_builder_reports}/{module-code}-temp-help.csv`. Run the scaffold script:
+Use the Write tool to create three files:
+
+1. **`{module-root}/module.yaml`** — the confirmed module definition from step 3.5/4/6
+2. **`{module-root}/module-help.csv`** — the confirmed help CSV from step 3
+3. **`{module-root}/../.claude-plugin/marketplace.json`** — the distribution manifest (parent of the module root, not inside it)
+
+For the marketplace.json, use this template, filling in values from the module identity collected in step 2:
+
+```json
+{
+  "name": "{module-code}",
+  "owner": { "name": "" },
+  "license": "",
+  "homepage": "",
+  "repository": "",
+  "keywords": ["bmad"],
+  "plugins": [
+    {
+      "name": "{module-code}",
+      "source": "./",
+      "description": "{module-description}",
+      "version": "{module-version}",
+      "author": { "name": "" },
+      "skills": [
+        "./{module-folder-basename}/{skill-1}",
+        "./{module-folder-basename}/{skill-2}"
+      ]
+    }
+  ]
+}
+```
+
+Adjust the `skills` paths to match the actual directory layout. If `marketplace.json` already exists, **merge into it rather than overwriting** (preserve existing owner/license/homepage/repository fields the user has already filled in; replace only this module's plugin entry).
+
+Show the user the three file paths and confirm before writing.
+
+### 7.5. Optional: Direct-Download Bundling
+
+After the root scaffolding is in place, ask the user:
+
+> "Your module is now installable via the BMad installer (`npx bmad-method install`). Do you also want users to be able to install it by direct download, without running the installer? If yes, I'll bundle the registration files inside a {bundling-target} so the user can trigger registration manually."
+
+Where `{bundling-target}` is:
+
+- **For multi-skill modules**: a dedicated `{code}-setup/` skill the user can run to register the module
+- **For single-skill modules**: the existing skill itself (self-registering on first run or via `setup`/`configure`)
+
+If the user declines, skip to step 8. If they accept, run the appropriate scaffold below. Bundling is purely **additive**: the root manifests stay in place and remain canonical; the bundled copies exist for the manual-install path.
+
+#### Multi-skill bundling: setup skill
+
+Run the scaffold script. It reads the root manifests you already wrote and duplicates them into the setup skill's `assets/` folder, alongside the merge scripts:
 
 ```bash
 python3 ./scripts/scaffold-setup-skill.py \
-  --target-dir "{skills-folder}" \
+  --target-dir "{module-root}" \
   --module-code "{code}" \
   --module-name "{name}" \
-  --module-yaml "{bmad_builder_reports}/{module-code}-temp-module.yaml" \
-  --module-csv "{bmad_builder_reports}/{module-code}-temp-help.csv"
+  --module-yaml "{module-root}/module.yaml" \
+  --module-csv "{module-root}/module-help.csv"
 ```
 
-This creates `{code}-setup/` in the user's skills folder containing:
+This creates `{code}-setup/` in the module root containing:
 
 - `./SKILL.md` — Generic setup skill with module-specific frontmatter
 - `./scripts/` — merge-config.py, merge-help-csv.py, cleanup-legacy.py
-- `./assets/module.yaml` — Generated module definition
-- `./assets/module-help.csv` — Generated capability registry
+- `./assets/module.yaml` — Duplicate of the root module.yaml
+- `./assets/module-help.csv` — Duplicate of the root module-help.csv
 
-#### Standalone modules (self-registering approach)
+#### Single-skill bundling: self-registering skill
 
-Write the confirmed module.yaml and module-help.csv directly to the skill's `assets/` folder (create the folder if needed). Then run the standalone scaffold script to copy the template infrastructure:
+Copy the root `module.yaml` and `module-help.csv` into the skill's `assets/` folder (create the folder if needed), then run the standalone scaffold script to copy the registration reference and merge scripts:
 
 ```bash
 python3 ./scripts/scaffold-standalone-module.py \
@@ -198,10 +238,9 @@ python3 ./scripts/scaffold-standalone-module.py \
 
 This adds to the existing skill:
 
-- `./assets/module-setup.md` — Self-registration reference (alongside module.yaml and module-help.csv)
+- `./assets/module-setup.md` — Self-registration reference (alongside the duplicated module.yaml and module-help.csv)
 - `./scripts/merge-config.py` — Config merge script
 - `./scripts/merge-help-csv.py` — Help CSV merge script
-- `../.claude-plugin/marketplace.json` — Distribution manifest
 
 After scaffolding, read the skill's SKILL.md and integrate the registration check into its **On Activation** section. How you integrate depends on whether the skill has an existing first-run init flow:
 
@@ -213,27 +252,26 @@ After scaffolding, read the skill's SKILL.md and integrate the registration chec
 
 In both cases, the `setup`/`configure` argument should always trigger `./assets/module-setup.md` regardless of whether the module is already registered (for reconfiguration).
 
-Show the user the proposed changes and confirm before writing.
+Show the user the proposed SKILL.md changes and confirm before writing.
 
 ### 8. Confirm and Next Steps
 
-#### Multi-skill modules
+Show what was created. Always:
 
-Show what was created — the setup skill folder structure and key file contents. Let the user know:
+- `module.yaml` and `module-help.csv` at the module root
+- `.claude-plugin/marketplace.json` for distribution
 
-- To install this module in any project, run the setup skill
-- The setup skill handles config collection, writing, and help CSV registration
-- The module is now a complete, distributable BMad module
+If bundling was added, also list:
 
-#### Standalone modules
+- The `{code}-setup/` skill (multi-skill bundling), or
+- The `module-setup.md` + merge scripts inside the skill (single-skill bundling)
 
-Show what was added to the skill — the new files and the SKILL.md modification. Let the user know:
+Let the user know:
 
-- The skill is now a self-registering BMad module
-- Users install by adding the skill and running it with `setup` or `configure`
-- On first normal run, if config is missing, it will automatically trigger registration
-- Review and fill in the `marketplace.json` fields (owner, license, homepage, repository) for distribution
-- The module can be validated with the Validate Module (VM) capability
+- To install this module in any project: `npx bmad-method install --custom-source <repo-or-path>`. The installer reads the root manifests directly.
+- If bundling was added: users can also install by direct download. They run the setup skill (multi-skill) or run the skill with `setup`/`configure` (single-skill) to trigger registration manually.
+- Review and fill in the `marketplace.json` fields (owner, license, homepage, repository) before publishing.
+- The module can be validated with the Validate Module (VM) capability.
 
 ## Headless Mode
 
@@ -254,24 +292,32 @@ When `--headless` is set, the skill requires either:
 - Version (defaults to 1.0.0)
 - Capability ordering (inferred from skill dependencies)
 
-**Approach auto-detection:** If the path contains a single skill, use the standalone approach automatically. If it contains multiple skills, use the setup skill approach.
+**Default behavior:** Always scaffold root manifests (`module.yaml`, `module-help.csv`, `.claude-plugin/marketplace.json`). Direct-download bundling is **off by default in headless mode** and must be opted into explicitly.
+
+**Bundling flags:**
+
+- `--bundle=setup` — also generate the `{code}-setup/` skill (multi-skill bundling); requires multiple skills in the input
+- `--bundle=standalone` — also generate self-registering bundling inside the skill (single-skill bundling); requires single-skill input
+- `--bundle=auto` — pick `setup` for multi-skill input or `standalone` for single-skill input
+- `--bundle=none` (default) — root scaffolding only
 
 In headless mode: skip interactive questions, scaffold immediately, and return structured JSON:
 
 ```json
 {
   "status": "success|error",
-  "approach": "standalone|setup-skill",
   "module_code": "...",
+  "module_root": "/path/to/module-root/",
+  "marketplace_json": "/path/to/.claude-plugin/marketplace.json",
+  "bundle": "none|setup|standalone",
   "setup_skill": "{code}-setup",
   "skill_dir": "/path/to/skill/",
-  "location": "/path/to/...",
   "files_created": ["..."],
   "inferred": { "module_name": "...", "description": "..." },
   "warnings": []
 }
 ```
 
-For multi-skill modules: `setup_skill` and `location` point to the generated setup skill. For standalone modules: `skill_dir` points to the modified skill and `location` points to the marketplace.json parent.
+`module_root` and `marketplace_json` are always populated. `setup_skill` is populated when `bundle == "setup"`. `skill_dir` is populated when `bundle == "standalone"`.
 
 The `inferred` object lists every value that was not explicitly provided, so the caller can spot wrong inferences. If critical information is missing and cannot be inferred, return `{ "status": "error", "message": "..." }`.

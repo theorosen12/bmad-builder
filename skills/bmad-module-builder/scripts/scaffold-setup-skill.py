@@ -4,9 +4,17 @@
 # ///
 """Scaffold a BMad module setup skill from template.
 
+This is the **multi-skill direct-download bundle**: an optional add-on for
+modules that need to be installable without the BMad installer. The canonical
+manifests live at the module root (`<module>/module.yaml` and
+`<module>/module-help.csv`); this script duplicates them into a setup skill so
+users can run the skill manually to register the module.
+
 Copies the setup-skill-template into the target directory as {code}-setup/,
-then writes the generated module.yaml and module-help.csv into the assets folder
-and updates the SKILL.md frontmatter with the module's identity.
+then writes the supplied module.yaml and module-help.csv into the assets folder
+and updates the SKILL.md frontmatter with the module's identity. The supplied
+files should be the same content as the root manifests; typically pass the root
+manifest paths directly via --module-yaml and --module-csv.
 """
 
 import argparse

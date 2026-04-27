@@ -196,7 +196,7 @@ def create_standalone_module(tmp: Path, skill_name: str = "my-skill",
 
 
 def test_valid_standalone_module():
-    """A well-formed standalone module should pass with standalone=true in info."""
+    """A well-formed self-registering bundle should pass and report the canonical source."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         module_dir = create_standalone_module(tmp)
@@ -204,7 +204,8 @@ def test_valid_standalone_module():
         code, data = run_validate(module_dir)
         assert code == 0, f"Expected pass: {data}"
         assert data["status"] == "pass"
-        assert data["info"].get("standalone") is True
+        assert data["info"].get("canonical_source") == "self-registering-bundle"
+        assert data["info"].get("layouts", {}).get("self_registering_bundle") is True
         assert data["summary"]["total_findings"] == 0
 
 
@@ -250,7 +251,7 @@ def test_standalone_csv_validation():
 
 
 def test_multi_skill_not_detected_as_standalone():
-    """A folder with two skills and no setup skill should fail (not detected as standalone)."""
+    """Two skills with no root manifests, no setup skill, and no self-reg bundle should fail."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         module_dir = tmp / "module"
@@ -265,8 +266,8 @@ def test_multi_skill_not_detected_as_standalone():
 
         code, data = run_validate(module_dir)
         assert code == 1
-        # Should fail because it's neither a setup-skill module nor a single-skill standalone
-        assert any("No setup skill found" in f["message"] for f in data["findings"])
+        # Should fail because no recognized module layout is present
+        assert any("No module manifests found" in f["message"] for f in data["findings"])
 
 
 def test_nonexistent_directory():
@@ -278,6 +279,97 @@ def test_nonexistent_directory():
     assert result.returncode == 2
     data = json.loads(result.stdout)
     assert data["status"] == "error"
+
+
+def create_root_module(tmp: Path, skills: list[str] | None = None,
+                       csv_rows: str = "", yaml_content: str = "") -> Path:
+    """Create a root-layout module: manifests at module root, skills as siblings."""
+    module_dir = tmp / "module"
+    module_dir.mkdir()
+
+    skills = skills or ["tst-foo"]
+    (module_dir / "module.yaml").write_text(
+        yaml_content or 'code: tst\nname: "Test Module"\ndescription: "A test module"\n'
+    )
+    if not csv_rows:
+        csv_rows = f'Test Module,{skills[0]},Do Foo,DF,Does the foo,run,,anytime,,,false,output_folder,report\n'
+    (module_dir / "module-help.csv").write_text(CSV_HEADER + csv_rows)
+
+    for skill in skills:
+        skill_dir = module_dir / skill
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(f"---\nname: {skill}\n---\n# {skill}\n")
+
+    return module_dir
+
+
+def test_valid_root_module():
+    """Root layout: module.yaml and module-help.csv at module root, no bundles."""
+    with tempfile.TemporaryDirectory() as tmp:
+        code, data = run_validate(create_root_module(Path(tmp)))
+        assert code == 0, f"Expected pass: {data}"
+        assert data["status"] == "pass"
+        assert data["info"]["canonical_source"] == "root"
+        assert data["info"]["layouts"]["root"] is True
+        assert data["info"]["layouts"]["setup_skill_bundle"] is False
+        assert data["info"]["layouts"]["self_registering_bundle"] is False
+
+
+def test_root_module_partial_manifests():
+    """Root layout missing one of the two required files should fail."""
+    with tempfile.TemporaryDirectory() as tmp:
+        module_dir = create_root_module(Path(tmp))
+        (module_dir / "module-help.csv").unlink()
+        # No bundle either, so this falls through to "no manifests"
+        code, data = run_validate(module_dir)
+        assert code == 1
+        assert any("No module manifests" in f["message"] for f in data["findings"])
+
+
+def test_root_plus_setup_bundle_passes():
+    """Root manifests are canonical; setup-skill bundle present is fine if complete."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        module_dir = create_root_module(tmp)
+        # Add a setup skill bundle alongside root
+        setup = module_dir / "tst-setup"
+        setup.mkdir()
+        (setup / "SKILL.md").write_text("---\nname: tst-setup\n---\n# Setup\n")
+        (setup / "assets").mkdir()
+        (setup / "assets" / "module.yaml").write_text(
+            (module_dir / "module.yaml").read_text()
+        )
+        (setup / "assets" / "module-help.csv").write_text(
+            (module_dir / "module-help.csv").read_text()
+        )
+
+        code, data = run_validate(module_dir)
+        assert code == 0, f"Expected pass: {data}"
+        assert data["info"]["canonical_source"] == "root"
+        assert data["info"]["layouts"]["setup_skill_bundle"] is True
+
+
+def test_root_plus_incomplete_setup_bundle_warns():
+    """Root manifests are canonical, but an incomplete setup bundle should be flagged."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        module_dir = create_root_module(tmp)
+        # Add a half-built setup skill bundle (missing SKILL.md)
+        setup = module_dir / "tst-setup"
+        setup.mkdir()
+        (setup / "assets").mkdir()
+        (setup / "assets" / "module.yaml").write_text(
+            (module_dir / "module.yaml").read_text()
+        )
+        (setup / "assets" / "module-help.csv").write_text(
+            (module_dir / "module-help.csv").read_text()
+        )
+
+        code, data = run_validate(module_dir)
+        # Should flag bundle as incomplete (high severity → fail)
+        assert code == 1
+        bundle_findings = [f for f in data["findings"] if f["category"] == "bundle"]
+        assert any("setup SKILL.md" in f["message"] for f in bundle_findings)
 
 
 if __name__ == "__main__":
@@ -296,6 +388,10 @@ if __name__ == "__main__":
         test_standalone_csv_validation,
         test_multi_skill_not_detected_as_standalone,
         test_nonexistent_directory,
+        test_valid_root_module,
+        test_root_module_partial_manifests,
+        test_root_plus_setup_bundle_passes,
+        test_root_plus_incomplete_setup_bundle_warns,
     ]
     passed = 0
     failed = 0
