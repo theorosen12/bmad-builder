@@ -320,8 +320,8 @@ The Module Builder (`bmad-module-builder`) handles module-level planning, scaffo
 | Capability          | Menu Code | What It Does                                                                                                    |
 | ------------------- | --------- | --------------------------------------------------------------------------------------------------------------- |
 | **Ideate Module**   | IM        | Brainstorm and plan a module through creative facilitation                                                      |
-| **Create Module**   | CM        | Package skills as an installable module: setup skill for multi-skill, self-registration for standalone           |
-| **Validate Module** | VM        | Check structural integrity and entry quality for both multi-skill and standalone modules                        |
+| **Create Module**   | CM        | Generate `module.yaml`, `module-help.csv`, and `marketplace.json` at the module root (or bundled into a skill for direct-download distribution) |
+| **Validate Module** | VM        | Check structural integrity and entry quality                                                                    |
 
 ### Ideate Module (IM)
 
@@ -350,30 +350,30 @@ The plan document uses a resumable template with YAML frontmatter, so long brain
 
 ### Create Module (CM)
 
-Packages built skills as an installable BMad module. Auto-detects single-skill vs. multi-skill input and recommends the appropriate approach. Supports `--headless` / `-H`.
+Packages built skills as an installable BMad module. Supports `--headless` / `-H`.
 
 | Aspect          | Detail                                                                                      |
 | --------------- | ------------------------------------------------------------------------------------------- |
 | **Interaction** | Guided or headless                                                                          |
 | **Input**       | Path to a skills folder or single skill (or SKILL.md file), optional plan document          |
-| **Output**      | Setup skill for multi-skill modules, or self-registration files for standalone modules      |
+| **Output**      | `module.yaml`, `module-help.csv`, and `.claude-plugin/marketplace.json` for the module      |
 
 **What it does:**
 
 1. Reads the SKILL.md files to understand each skill
-2. Detects single vs. multi-skill and confirms the packaging approach with the user
+2. Confirms the layout with the user (root placement is the default; direct-download alternatives are opt-in)
 3. Collects module identity (name, code, description, version, greeting)
 4. Defines help CSV entries: capabilities, menu codes, ordering, relationships
 5. Captures configuration variables and external dependencies
-6. Scaffolds the module infrastructure
+6. Writes the manifests and distribution scaffolding
 
-**Multi-skill output:** A dedicated `{code}-setup/` folder with merge scripts, cleanup scripts, and a generic SKILL.md.
+**Default output (root placement):** `module.yaml` and `module-help.csv` at the module root, plus `.claude-plugin/marketplace.json`. The BMad installer reads these directly. No setup skill or merge scripts are generated.
 
-**Standalone output:** `assets/module-setup.md`, `assets/module.yaml`, and `assets/module-help.csv` embedded in the skill, plus merge scripts in `scripts/` and a `.claude-plugin/marketplace.json` for distribution. The skill's SKILL.md is updated to check for registration on activation.
+**Alternative output (direct-download layouts):** If the author opts in, Create Module can instead bundle the manifests and merge scripts into a `{code}-setup/` skill (multi-skill) or embed self-registration into a single skill's `assets/` folder with a `module-setup.md` reference (standalone). Use these when the module must install by direct download without the BMad installer.
 
 ### Validate Module (VM)
 
-Verifies that a module's structure is complete and accurate. Auto-detects multi-skill modules (with setup skill) and standalone modules (with self-registration). Combines a deterministic validation script with LLM-based quality assessment.
+Verifies that a module's structure is complete and accurate. Auto-detects the module's layout (root placement, setup skill, or self-registering skill) and adjusts its checks accordingly. Combines a deterministic validation script with LLM-based quality assessment.
 
 | Aspect          | Detail                                                 |
 | --------------- | ------------------------------------------------------ |
@@ -385,7 +385,7 @@ Verifies that a module's structure is complete and accurate. Auto-detects multi-
 
 | Check                  | What It Catches                                                                             |
 | ---------------------- | ------------------------------------------------------------------------------------------- |
-| Module structure       | Missing setup skill or standalone files (`module-setup.md`, merge scripts)                  |
+| Module structure       | Missing `module.yaml` or `module-help.csv` at the module root, or for direct-download layouts: missing setup skill files (`module-setup.md`, merge scripts) |
 | Coverage               | Skills without CSV entries, orphan entries for nonexistent skills                           |
 | Menu codes             | Duplicate codes across the module                                                           |
 | References             | Before/after fields pointing to nonexistent capabilities                                    |

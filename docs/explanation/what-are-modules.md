@@ -22,15 +22,44 @@ This also means you can include remote URL skills in your own module to combine 
 
 ## What a Module Contains
 
-| Component           | Multi-Skill Module                                      | Standalone Module                                          |
-| ------------------- | ------------------------------------------------------- | ---------------------------------------------------------- |
-| **Skills**          | Two or more agents/workflows                            | A single agent or workflow                                 |
-| **Registration**    | Dedicated `{code}-setup` skill                          | Built into the skill itself (`assets/module-setup.md`)     |
-| **module.yaml**     | In the setup skill's `assets/`                          | In the skill's own `assets/`                               |
-| **module-help.csv** | In the setup skill's `assets/`                          | In the skill's own `assets/`                               |
-| **Distribution**    | Plugin with multiple skill folders                      | Plugin with single skill folder + `marketplace.json`       |
+A module is a folder of one or more skills with two registration manifests:
 
-For multi-skill modules, the setup skill is the glue; it registers all capabilities in one step. For standalone modules, the skill handles its own registration on first run or when the user passes `setup`/`configure`.
+- **`module.yaml`**: module identity and configuration variables
+- **`module-help.csv`**: capability registry consumed by `bmad-help`
+
+The recommended placement is at the **module root**, alongside the skill folders:
+
+```
+my-module/
+├── module.yaml             # Recommended: at module root
+├── module-help.csv         # Recommended: at module root
+├── .claude-plugin/
+│   └── marketplace.json
+├── my-agent/
+│   └── SKILL.md
+└── my-workflow/
+    └── SKILL.md
+```
+
+This is the layout the BMad installer expects by default, and it's how the official BMad modules (`bmm`, `cis`, etc.) ship today.
+
+### Why Root Placement Is the Default
+
+The manifests are **registration metadata**, not runtime dependencies of any one skill. Putting them at the module root reflects that: they describe the module as a whole, not any individual skill. The installer reads them once at install time to register the module with the project; the skills themselves never read them at runtime.
+
+This keeps every skill in the module **self-runnable**: a user who downloads and drops a single skill folder into a project gets a working skill, with or without module-level registration. See [Skills Must Be Self-Runnable](/explanation/skill-authoring-best-practices.md#skills-must-be-self-runnable) for why this matters.
+
+### Alternative: Bundling Registration Inside a Skill
+
+For authors who want their module installable by direct download (no `npx bmad-method install`), the manifests can be bundled inside a skill so the skill self-registers on first run:
+
+| Pattern                          | When to Use                                                | Where Manifests Live                              |
+| -------------------------------- | ---------------------------------------------------------- | ------------------------------------------------- |
+| **Root placement (default)**     | Distribution via the BMad installer; all headless installs | `<module>/module.yaml`, `<module>/module-help.csv`|
+| **Setup skill (alternative)**    | Multi-skill modules distributed by direct download         | `<module>/{code}-setup/assets/`                   |
+| **Self-registering (alternative)** | Single-skill modules distributed by direct download      | `<skill>/assets/` with `module-setup.md`          |
+
+The BMad installer supports all three locations, with **root placement taking priority** and the others as fallbacks. Choose the alternatives only when direct-download distribution is a primary requirement.
 
 ## Agent vs. Workflow vs. Both
 
@@ -98,7 +127,7 @@ Some modules depend on tools outside the BMad ecosystem.
 | **MCP servers**  | Custom or third-party Model Context Protocol servers |
 | **Web services** | APIs that require credentials or configuration       |
 
-When a module has external dependencies, the setup skill should check for their presence and guide users through installation or configuration.
+When a module has external dependencies, the skills that depend on them should check for their presence at runtime and guide the user through installation or configuration. Do not rely on installer-time checks alone, since users who install by direct download skip the installer entirely.
 
 ## UI and Visualization
 
@@ -111,7 +140,7 @@ Not every module needs a UI. But for complex modules with many capabilities, a v
 The Module Builder (`bmad-module-builder`) provides three capabilities for the module lifecycle:
 
 1. **Ideate Module (IM)**: Brainstorm and plan through creative facilitation
-2. **Create Module (CM)**: Package skills as an installable module. Detects whether you have a folder of skills (generates a setup skill) or a single skill (embeds self-registration directly)
-3. **Validate Module (VM)**: Verify structural integrity and entry quality for both multi-skill and standalone modules
+2. **Create Module (CM)**: Package skills as an installable module by generating `module.yaml`, `module-help.csv`, and a `.claude-plugin/marketplace.json` for the module
+3. **Validate Module (VM)**: Verify structural integrity and entry quality
 
 See the **[Builder Commands Reference](/reference/builder-commands.md)** for detailed documentation on each capability.

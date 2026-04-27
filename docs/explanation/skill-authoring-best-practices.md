@@ -40,6 +40,23 @@ Six dimensions to keep in mind during the build phase. The quality scanners chec
 
 When your skill's users come from varied contexts (different orgs, different domains, different taste in output formats), a `customize.toml` surface lets them override specific fields without forking. It's opt-in per skill, and the decision is deliberate: every knob you ship is a promise the resolver will carry across releases. Before you opt in during the build, read [Customization for Authors](/explanation/customization-for-authors.md) for the decision framework and [How to Make a Skill Customizable](/how-to/make-a-skill-customizable.md) for the mechanics.
 
+## Skills Must Be Self-Runnable
+
+Every skill should run successfully whenever a user has it installed, whether they used the BMad installer or simply dropped the skill folder into their project. A skill that depends on installer-only setup to function is fragile; it breaks in the direct-download case and silently misleads anyone who copies it into a new project.
+
+The module manifests (`module.yaml` and `module-help.csv`) are registration metadata, not a runtime dependency. They integrate the skill into shared config and `bmad-help`. They are not part of how the skill operates.
+
+What this means in practice:
+
+| Need                                              | Where It Belongs                                                                                                            |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Cross-project value** (output folder, language) | Read from config if present; otherwise prompt the user or fall back to a sensible default                                   |
+| **Per-skill behavior overrides**                  | Use the [customization surface](/explanation/customization-for-authors.md), not config                                      |
+| **First-run onboarding** (memory agents)          | Initialize from the skill itself on first activation; never assume an installer ran                                         |
+| **Installer-only concerns**                       | Keep narrow: agent registration, `bmad-help` registration, optional cross-project config collection                         |
+
+If a skill needs a value at runtime and config has not been set, it should ask the user, not fail. This keeps the same skill viable across both installer-driven and direct-download distributions.
+
 ## Common Patterns
 
 ### Soft Gate Elicitation

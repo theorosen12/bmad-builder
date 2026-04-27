@@ -10,7 +10,7 @@ This tutorial takes you from an initial idea to a working, installable BMad modu
 - Planning a module with the Ideate Module (IM) capability
 - Choosing between a single agent and multiple workflows
 - Building individual skills with the Agent and Workflow Builders
-- Scaffolding a setup skill with Create Module (CM)
+- Generating module manifests with Create Module (CM)
 - Validating your module with Validate Module (VM)
 
 :::note[Prerequisites]
@@ -25,16 +25,14 @@ Already have your skills built? Skip to **Step 3: Scaffold the Module** to packa
 
 ## Understanding Modules
 
-A BMad module bundles skills so they're discoverable and configurable. The Module Builder offers two approaches depending on what you're building:
+A BMad module is a folder of skills with two registration manifests at its root:
 
-| Approach              | When to Use                                  | What Gets Generated                                             |
-| --------------------- | -------------------------------------------- | --------------------------------------------------------------- |
-| **Setup skill**       | Folder of 2+ skills                          | Dedicated `{code}-setup` skill with config and help assets      |
-| **Self-registration** | Single standalone skill                      | Registration embedded in the skill's own `assets/` folder       |
+- **`module.yaml`**: module identity and configuration variables
+- **`module-help.csv`**: capability entries consumed by `bmad-help`
 
-Both produce the same registration artifacts: `module.yaml` (identity and config variables) and `module-help.csv` (capability entries), which register with `bmad-help`.
+The recommended layout places these manifests at the **module root**, alongside the skill folders. The BMad installer reads them directly and handles registration. This is what you'll build in this tutorial.
 
-See **[What Are Modules](/explanation/what-are-modules.md)** for the architecture behind these choices.
+For modules distributed by direct download (no installer), the manifests can instead ship inside a setup skill or embedded in a standalone skill. Those alternatives are covered in **[What Are Modules](/explanation/what-are-modules.md)**.
 
 ## Step 1: Plan Your Module
 
@@ -81,49 +79,31 @@ Build and test each skill before scaffolding the module. The Create Module step 
 Run Create Module (CM) to package your finished skills.
 
 :::note[Example]
-**You:** "I want to create a module" or provide the path to your skills folder (or a single skill).
+**You:** "I want to create a module" or provide the path to your skills folder.
 
-**Builder:** Reads your skills, detects whether this is a multi-skill or single-skill module, confirms the approach, and scaffolds the output.
+**Builder:** Reads your skills, gathers module identity and capability entries through conversation, then writes `module.yaml`, `module-help.csv`, and `marketplace.json` for the module.
 :::
 
-### Multi-skill modules
-
-The builder generates a dedicated setup skill:
+### Default layout (root placement)
 
 ```
-your-skills-folder/
-├── {code}-setup/                # Generated setup skill
-│   ├── SKILL.md                 # Setup instructions
-│   ├── scripts/                 # Config merge and cleanup scripts
-│   │   ├── merge-config.py
-│   │   ├── merge-help-csv.py
-│   │   └── cleanup-legacy.py
-│   └── assets/
-│       ├── module.yaml          # Module identity and config vars
-│       └── module-help.csv      # Capability entries
+your-module-folder/
+├── .claude-plugin/
+│   └── marketplace.json         # Distribution manifest
+├── module.yaml                  # Module identity and config vars
+├── module-help.csv              # Capability entries
 ├── your-agent-skill/
+│   └── SKILL.md
 ├── your-workflow-skill/
+│   └── SKILL.md
 └── ...
 ```
 
-### Standalone modules
+This is the layout the BMad installer expects. When a user installs the module via `npx bmad-method install`, the installer reads `module.yaml` and `module-help.csv` directly from the module root and handles agent registration, help registration, and any cross-project config.
 
-The builder embeds registration into the skill itself:
+### Alternative: bundle registration inside a skill
 
-```
-your-skill/
-├── SKILL.md                     # Updated with registration check
-├── assets/
-│   ├── module-setup.md          # Self-registration reference
-│   ├── module.yaml              # Module identity and config vars
-│   └── module-help.csv          # Capability entries
-├── scripts/
-│   ├── merge-config.py          # Config merge script
-│   └── merge-help-csv.py        # Help CSV merge script
-└── ...
-```
-
-A `.claude-plugin/marketplace.json` is also generated at the parent level for distribution.
+If your module needs to be installable by direct download (no installer), Create Module can instead bundle the registration manifests and merge scripts into a setup skill (`{code}-setup/assets/`) or embed self-registration into a single skill (`<skill>/assets/` with `module-setup.md`). See **[Distribute Your Module](/how-to/distribute-your-module.md)** for the full direct-download layouts.
 
 ## Step 4: Validate
 
@@ -144,7 +124,7 @@ Fix any findings and re-validate until clean.
 
 ## What You've Built
 
-Your module is ready to distribute. Multi-skill modules install through the setup skill; standalone modules self-register on first run. Either way, capabilities appear in `bmad-help` and configuration is persisted automatically.
+Your module is ready to distribute. With the default root layout, users install with `npx bmad-method install` and the BMad installer handles registration. Capabilities appear in `bmad-help` and configuration is persisted automatically.
 
 ## Quick Reference
 
@@ -168,7 +148,7 @@ Yes. Build the new skill and re-run Create Module (CM) on the folder. The anti-z
 
 ### What if my module only has one skill?
 
-The Module Builder handles this automatically. Give it a single skill and it recommends the **standalone self-registering** approach, where registration embeds directly in the skill and triggers on first run or when the user passes `setup`/`configure`.
+That's fine. A module can be a single skill plus `module.yaml` and `module-help.csv` at its root. If you specifically need direct-download distribution, ask Create Module to embed self-registration into the skill instead; the manifests will live in `<skill>/assets/` and the skill triggers registration on first run or when the user passes `setup`/`configure`.
 
 ### Can my module extend another module?
 
@@ -177,10 +157,10 @@ Yes. Tell the builder during ideation or creation that your module is an expansi
 ## Getting Help
 
 - **[What Are Modules](/explanation/what-are-modules.md)**: Concepts and architecture
-- **[Module Configuration](/explanation/module-configuration.md)**: Setup skill internals and config patterns
+- **[Module Configuration](/explanation/module-configuration.md)**: Registration internals and config patterns
 - **[Builder Commands Reference](/reference/builder-commands.md)**: All builder capabilities
 - **[Discord](https://discord.gg/gk8jAdXWmj)**: Community support
 
 :::tip[Key Takeaway]
-The workflow is IM, then BA/BW for each skill, then CM to package, then VM to verify. Single-skill modules need no extra setup infrastructure.
+The workflow is IM, then BA/BW for each skill, then CM to generate the module manifests, then VM to verify. Root placement is the default and works with the BMad installer; bundled registration is the alternative for direct-download distribution.
 :::

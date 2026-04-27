@@ -1,11 +1,9 @@
 ---
-title: 'Module Configuration and the Setup Skill'
-description: How BMad modules handle user configuration through a setup skill, when to use configuration vs. alternatives, and how to register with the help system
+title: 'Module Configuration and Registration'
+description: How BMad modules register with the help system, collect user preferences, and decide between root-placement, setup-skill, and self-registering layouts
 ---
 
-BMad modules register their capabilities with the help system and optionally collect user preferences. Multi-skill modules use a dedicated **setup skill** for this. Single-skill standalone modules handle registration themselves on first run.
-
-When you create your own module, you can either add a configuration skill or embed the feature in every skill following the standalone pattern. For modules with more than 1-2 skills, a setup skill is the better choice.
+BMad modules register their capabilities with the help system and optionally collect user preferences. The recommended layout is **root placement**: `module.yaml` and `module-help.csv` at the module root, installed via the BMad installer. Setup skills and self-registering single-skill modules are alternative layouts for direct-download distribution.
 
 ## When You Need Configuration
 
@@ -17,8 +15,8 @@ Most modules should not need configuration at all. Before adding configurable va
 | **Agent memory**      | Your module follows the agent pattern and the agent can learn preferences through conversation                                                            |
 | **Configuration**     | The value genuinely varies across projects and cannot be inferred at runtime                                                                              |
 
-:::tip[Standalone Skills]
-If you are building a single standalone agent or workflow, you do not need a separate setup skill. The Module Builder can package it as a **standalone self-registering module** where the registration logic is embedded directly in the skill via an `assets/module-setup.md` reference file, and runs on first activation or when the user passes `setup`/`configure`.
+:::tip[Most Modules Don't Need a Setup Skill]
+Putting `module.yaml` and `module-help.csv` at the module root is sufficient for any module distributed through the BMad installer. The setup skill exists as an alternative for authors who want their module installable by direct download (no installer required); it bundles the registration scripts into a skill so the user can run `setup` to register the module manually.
 :::
 
 ## Configuration vs Customization
@@ -40,18 +38,21 @@ Module registration serves two purposes:
 
 The `bmad-help` skill reads `module-help.csv` to understand what capabilities are available, detect which ones have been completed (by checking output locations for artifacts), and recommend next steps based on the dependency graph. Without registration, `bmad-help` cannot discover or recommend your module's capabilities beyond what it knows basically from skill headers. The help system provides richer detail: arguments, relationships to other skills, inputs and outputs, and any other authored metadata. If a skill has multiple capabilities, each one gets its own help entry.
 
-### Two Registration Paths
+### Three Registration Layouts
 
-| Path                  | When to Use                                               | How It Works                                                                    |
-| --------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Setup skill**       | Multi-skill modules (2+ skills)                           | A dedicated `{code}-setup` skill handles registration for all skills            |
-| **Self-registration** | Single-skill standalone modules                           | The skill itself registers on first run or when user passes `setup`/`configure` |
+The BMad installer resolves manifests in priority order:
 
-The Module Builder detects which path to use based on what you give it: a folder of skills triggers the setup skill approach, a single skill triggers the standalone approach.
+| Layout                    | When to Use                                                          | Where Manifests Live                              |
+| ------------------------- | -------------------------------------------------------------------- | ------------------------------------------------- |
+| **Root (default)**        | Distribution via the BMad installer; all headless installs           | `<module>/module.yaml`, `<module>/module-help.csv`|
+| **Setup skill**           | Multi-skill modules distributed by direct download (no installer)    | `<module>/{code}-setup/assets/`                   |
+| **Self-registering skill**| Single-skill modules distributed by direct download                  | `<skill>/assets/` with `module-setup.md`          |
+
+Root placement is the default because it reflects what these files are: registration metadata for the module as a whole, not runtime state for any one skill. The installer picks them up automatically. The setup-skill and self-registering layouts are for the case where users install by copying the folder into their project rather than running the installer; the registration scripts ship inside a skill so the user can trigger registration by running it.
 
 ## Configuration Files
 
-Setup skills write to three files in `{project-root}/_bmad/`:
+Module registration writes to three files in `{project-root}/_bmad/`:
 
 | File               | Scope                    | Contains                                                                                        |
 | ------------------ | ------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -63,7 +64,7 @@ Core settings (like `output_folder` and `document_output_language`) live at the 
 
 ## The module.yaml File
 
-Each module declares its identity and configurable variables in an `assets/module.yaml` file. For multi-skill modules, this lives inside the setup skill. For standalone modules, it lives in the skill's own `assets/` folder. This file drives both the prompts shown to the user and the values written to config.
+Each module declares its identity and configurable variables in a `module.yaml` file. The recommended location is the **module root**, alongside `module-help.csv` and the skill folders. For modules distributed by direct download, the file can instead live inside a setup skill's `assets/` (multi-skill) or the skill's own `assets/` (standalone). This file drives both the prompts shown to the user and the values written to config.
 
 ```yaml
 code: mymod
@@ -102,7 +103,7 @@ For simpler cases, these alternatives are often sufficient:
 | **SKILL.md overview section** | A concise summary at the top of the skill body; the `--help` system scans this section to present user-facing help, so keep it succinct |
 | **Script header comments**    | Describe purpose, usage, and flags at the top of each script                                                                             |
 
-If these cover your discoverability needs, you can skip the setup skill entirely.
+If these cover your discoverability needs, you can skip module-level registration entirely and just ship the skill.
 
 ## The module-help.csv File
 
@@ -175,19 +176,13 @@ The **Module Builder** (`bmad-module-builder`) automates module creation. It off
 | **Create Module**   | CM        | Package skills as an installable BMad module (setup skill or standalone self-registering)|
 | **Validate Module** | VM        | Check that a module's structure is complete, accurate, and properly registered           |
 
-**For a folder of skills (multi-skill module):**
+**Standard flow:**
 
-1. Run **Ideate Module (IM)** to brainstorm and plan
+1. Run **Ideate Module (IM)** to brainstorm and plan (optional)
 2. Build each skill using the **Agent Builder (BA)** or **Workflow Builder (BW)**
-3. Run **Create Module (CM)**. It generates a dedicated `-setup` skill with `module.yaml`, `module-help.csv`, and merge scripts
+3. Run **Create Module (CM)** to generate `module.yaml`, `module-help.csv`, and `.claude-plugin/marketplace.json` for the module
 4. Run **Validate Module (VM)** to verify everything is wired correctly
 
-**For a single skill (standalone module):**
-
-1. Build the skill using the **Agent Builder (BA)** or **Workflow Builder (BW)**
-2. Run **Create Module (CM)** with the skill path. It embeds self-registration directly into the skill (`assets/module-setup.md`, `assets/module.yaml`, `assets/module-help.csv`) and generates a `marketplace.json` for distribution
-3. Run **Validate Module (VM)** to verify
-
-The Module Builder auto-detects single vs. multi-skill input and recommends the appropriate approach.
+If you need direct-download distribution (users install by copying the folder rather than using the installer), the builder can also generate a setup skill or embed self-registration into a single skill. Tell Create Module which layout you want during the conversation.
 
 See **[What Are Modules](/explanation/what-are-modules.md)** for concepts and architecture decisions, or the **[Builder Commands Reference](/reference/builder-commands.md)** for detailed capability documentation.
