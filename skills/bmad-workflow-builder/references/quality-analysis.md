@@ -2,7 +2,13 @@
 
 Communicate with user in `{communication_language}`. Write report content in `{document_output_language}`.
 
-You orchestrate quality analysis on a BMad workflow or skill. Deterministic checks run as scripts (zero tokens). Judgment-based analysis runs as parallel LLM scanner subagents. A report creator synthesizes everything into a unified, theme-based report.
+You orchestrate quality analysis on a BMad workflow or skill. The pipeline is optimized for speed and completeness:
+
+1. **Deterministic checks** (scripts) — zero tokens, instant
+2. **LLM scanners** (parallel subagents) — judgment-based analysis against `skill-quality-principles.md`
+3. **Fast JSON extraction** (deterministic script) — lossless capture of all scanner findings (~10 seconds, no LLM)
+4. **HTML generation** — interactive, auto-opening report from JSON (no wait for synthesis)
+5. **Optional markdown synthesis** (LLM subagent, background) — thematic analysis and archival markdown
 
 The scanners verify against `references/skill-quality-principles.md` — the same file the build process loads at create/edit time. Findings cite the principle that's being violated rather than restating it.
 
@@ -80,24 +86,48 @@ Each subagent receives:
 
 The subagent loads its scanner file (which loads the principles file), analyzes the skill, writes its analysis to `{quality-report-dir}`, and returns the filename.
 
-### Step 3: Synthesize Report
+### Step 3: Extract Report JSON (Fast, Deterministic)
 
-After all scanners complete, spawn a subagent with `references/report-quality-scan-creator.md`. Provide `{skill-path}` and `{quality-report-dir}`. The report creator reads everything, synthesizes themes, and writes `quality-report.md` and `report-data.json` to `{quality-report-dir}`.
+After all scanners complete, extract structured data from analysis files into `report-data.json`. This is fast (<10s) and captures all scanner output without lossy synthesis:
 
-### Step 4: Generate HTML Report
+```bash
+python3 scripts/extract-report-json.py {skill-path} {quality-report-dir} -o {quality-report-dir}/report-data.json
+```
+
+This extracts:
+- Assessment and findings from all 4 analysis files (architecture, determinism, customization, enhancement)
+- All user journey archetypes, bright spots, friction points from enhancement
+- Headless/automation potential from enhancement
+- Prepass metrics from JSON files
+- Complete, lossless `report-data.json` suitable for HTML generation
+
+### Step 4: Generate & Open HTML Report
+
+Generate the interactive HTML report from the JSON data (no wait for markdown):
 
 ```bash
 python3 scripts/generate-html-report.py {quality-report-dir} --open
 ```
 
-### Step 5: Log the Run
+The HTML report is now interactive and auto-opens. No blocking on markdown synthesis.
+
+### Step 5: Create Markdown Report (Optional, Background)
+
+After HTML is generated, optionally spawn a background task with `references/report-quality-scan-creator.md` to synthesize markdown report. This is asynchronous; the user has their HTML. The report creator provides:
+- Thematic synthesis (finds root-cause clusters across scanners)
+- Markdown report with "What's Broken", "Opportunities", "Strengths", "Recommendations"
+- Grade and narrative assessment
+
+If synthesis time is a concern, this step can be omitted; the JSON + HTML are the primary deliverables. The markdown is archival.
+
+### Step 6: Log the Run
 
 Append a session heading to `{skill-path}/.decision-log.md` (create the file if absent). Cite the timestamped folder so the skill's history points to this run:
 
 ```markdown
 ## YYYY-MM-DD — Quality analysis
 
-Grade: <grade from report-data.json>. Report: `.analysis/<timestamp>/quality-report.md`.
+Grade: <grade from HTML>. Report: `.analysis/<timestamp>/quality-report.html`. Markdown: `.analysis/<timestamp>/quality-report.md` (if generated).
 ```
 
 ## Present to User
