@@ -115,7 +115,7 @@ SKILL.md must reference resolved values as `{workflow.<name>}`. Hardcoded paths 
 - Prompt validating structure, counting items, comparing against schemas = determinism leak into the LLM.
 
 ### Workflows: inline first, carve out only when needed
-Default: write the entire workflow as named sections in SKILL.md (`## Discovery`, `## Constraints`, `## Finalize`, etc.). `bmad-product-brief` is the canonical model — a multi-stage coaching workflow that lives in one SKILL.md.
+Default: write the entire workflow as named sections in SKILL.md (`## Discovery`, `## Constraints`, `## Finalize`, etc.). A multi-stage coaching workflow can live in one SKILL.md.
 
 Carve out to `references/` only when SKILL.md genuinely gets too big to scan. When you do:
 - **Descriptive filenames.** `references/press-release.md`, `references/customer-faq.md`. Never numbered prefixes (`01-press-release.md`) — the carve-out is a section, not a "step." SKILL.md routes to references by name and the order is whatever SKILL.md specifies.
@@ -141,6 +141,7 @@ Production targets, not hard limits. The "what fails if I delete this?" test sti
 ### Patterns BMad has seen pay off
 Institutional names for patterns the LLM won't generate by default:
 
+- **Open-floor opening** — Conversational skills start with an explicit invitation for the user to share everything they have (goals, references, examples, paths to artifacts) before any structured Q&A. The dump replaces most of the question script that would otherwise follow; the agent then asks only what's missing. The form adapts to input — vague request gets "tell me everything", path/URL gets "what do you want focused on?". Costs almost nothing token-wise; drastically improves conversational feel.
 - **Soft-gate elicitation** — "Anything else, or shall we move on?" at natural transitions. Users always remember one more thing when given a graceful exit.
 - **Intent-before-ingestion** — Understand why the user is here before scanning artifacts. Without intent, scanning is noise.
 - **Capture-don't-interrupt** — Out-of-scope insights mid-flow get captured silently, not redirected. Users in flow share their best stuff unprompted.
@@ -148,13 +149,55 @@ Institutional names for patterns the LLM won't generate by default:
 - **Parallel review lenses** — Fan out 2-3 review subagents (skeptic, opportunity-spotter, contextually-chosen lens) before finalizing significant artifacts.
 - **Three-mode architecture** — Guided / Yolo / Headless. Not all skills need all three; considering it during design prevents lock-in.
 - **Graceful degradation** — Subagent-dependent features fall back to sequential when subagents are unavailable.
-- **Document-as-cache** — Long-running workflows write progressively to the output doc with YAML front matter (status + inputs). Surviving compaction = re-reading the doc.
+- **Decision-Log Workspace** — multi-turn workflows producing revisable artifacts. The decision log is the load-bearing artifact (carries identity across sessions, prevents railroading, audits overrides). Subsumes "document-as-cache" — see full treatment below.
 
 ### Writing
 - One term per concept; pick it and stick to it.
 - Third person in descriptions ("Processes files", not "I help process files").
 - Descriptive file names (`form-validation-rules.md`, not `doc2.md`).
 - One level deep for reference files — SKILL.md → reference, never SKILL → ref → ref chains.
+
+## The Decision-Log Workspace Pattern
+
+The default for any multi-turn workflow that produces a substantive artifact, may be revisited (Update or Validate), or risks running long enough to compact.
+
+**Core insight.** The decision log is the load-bearing artifact, not the document. The document is what the user takes; the decision log is what carries identity across sessions, prevents the agent from railroading the user, surfaces conflicts on update, and creates an audit trail when the user overrides their own past calls. Workflows that lack it look fine on the first pass and fall apart on revisit.
+
+### Workspace layout
+
+All files live in a single folder rooted at the primary artifact. Two cases:
+
+- **The artifact is a single document** (a brief, a PRFAQ, etc.) → the workspace is the document's containing folder; the log + addendum + distillate sit as peers of the document.
+- **The artifact is itself a folder of files** (a built skill, a generated module) → the workspace IS the artifact's folder; the log + addendum sit as peers of the primary file (e.g. `SKILL.md`).
+
+Either way, the workspace exists from the moment intent is confirmed — not at the end. The user knows the path immediately; state lives on disk, not in the conversation.
+
+- `<primary>` — the artifact (or, for folder-artifacts, the primary file like `SKILL.md`). YAML frontmatter is the recoverable-state mechanism when the workflow needs it; fields are workflow-specific (the LLM picks what each workflow benefits from — some need none).
+- `.decision-log.md` — every meaningful decision and why, with alternatives considered. Append-only across sessions, with date-stamped session headings. Can carry its own frontmatter for session state when that's useful.
+- `addendum.md` — context the user surfaced that didn't earn a place in the primary (rejected alternatives, parked roadmap, options-considered matrices, in-depth personas). Created only when something earns its place.
+- `distillate.md` *(optional)* — token-efficient version of the primary for downstream LLM consumers.
+
+### Resume protocol
+
+On activation, check whether a workspace already exists for this artifact. If found, surface it (with the `updated` timestamp from the primary's frontmatter) and offer to resume. Reading `.decision-log.md` recovers full context regardless of compaction.
+
+### Update mode
+
+Read `.decision-log.md` and the addendum first. The change request enters as a "change signal" against the standing record. If the change contradicts a prior decision, surface the conflict before applying. Every change — clean or override — gets a new decision-log entry. Overrides also write to the addendum: the rejected reasoning needs to live somewhere.
+
+### Validate mode
+
+Read `.decision-log.md` first. A validation that ignores prior decisions or stated user criteria is shallow; it should challenge the artifact against the standards the user themselves set, not against generic rubrics.
+
+### Finalize step
+
+Decision-log audit. Every meaningful entry must be either captured in the primary, captured in the addendum, or explicitly set aside as process noise. The user ends the session with a shared accounting of how their thinking was handled — not a one-sided polish-and-deliver.
+
+### When NOT to use
+
+- Simple Utilities (no decisions to log; the input/output IS the contract).
+- One-shot code operations (the diff is the decision log).
+- Purely conversational skills (no artifact persists).
 
 ## Failure Modes With Body Count
 

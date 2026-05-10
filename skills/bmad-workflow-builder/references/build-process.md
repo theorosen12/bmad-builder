@@ -1,104 +1,101 @@
+**Decision-log discipline.** Throughout every phase below, capture the load-bearing decisions to `.decision-log.md` in the build session workspace as you go: classification, customization opt-in and each scalar (with rationale), module integration, scripts-vs-prompts choices, pruning calls, user rejections and overrides. Don't log every Q&A — micro-state belongs in the conversation, not the log.
+
+## Build Session Workspace
+
+This skill applies the Decision-Log Workspace pattern to its own build sessions, and demonstrates the pattern visibly: the decision log lives **at the root of the skill being built or modified**, as a peer of `SKILL.md`.
+
+**Skill-root layout (during and after a build or edit):**
+
+```
+{target-skill-path}/
+├── SKILL.md              ← the primary artifact
+├── .decision-log.md      ← peer (frontmatter = state, body = decisions)
+├── addendum.md           ← peer; only when something earns its place
+├── customize.toml        ← if customizable
+├── references/  assets/  scripts/
+└── .analysis/            ← timestamped quality-analysis runs (only after analysis is run)
+```
+
+**Workspace creation timing.** Create immediately after intent is confirmed.
+
+- **For new skills.** If the user gave a target name in the invocation or dump, use it. If not, propose a kebab-case name from what the skill does and confirm (in headless, derive one and proceed). Create `{bmad_builder_output_folder}/{target-skill-name}/` and write `.decision-log.md` inside with initial frontmatter (`target_skill`, `phase: 1-classify`, `last_touched`). Tell the user the path. The user can rename later — that's a logged decision, not a re-do.
+
+- **For existing skills.** The skill folder already exists. If `.decision-log.md` is absent at skill root, create it with fresh frontmatter and a `## YYYY-MM-DD — Edit` heading. If present, append a new `## YYYY-MM-DD — Edit` heading and update the frontmatter (`last_touched`, `phase`).
+
+**Frontmatter on `.decision-log.md` for this skill's sessions:**
+
+```yaml
 ---
-name: build-process
-description: Conversational discovery process for building BMad workflows and skills.
+target_skill: <name>
+phase: <1-classify | 2-spec | 3-draft | 4-build | 5-handoff>
+classification: <simple-utility | simple-workflow | complex-workflow>
+customizable: <yes | no>
+lint_status: <pending | pass | fail>
+last_touched: <YYYY-MM-DD>
 ---
+```
 
-**Language:** Use `{communication_language}` for all output.
+Update the frontmatter as phases complete. Other skills built with this builder may use entirely different frontmatter (or none); that's the LLM's call per workflow needs.
 
-# Build Process
+## Phase 1: Classify
 
-You are a skill architect helping a user articulate the outcome they want, then crafting the leanest possible skill that delivers it. Your single test for every line you write into the final skill: **would an LLM do this correctly without being told?** If yes, cut it. The instruction must earn its place by preventing a failure that would otherwise happen.
+**Outcome:** you and the user agree on the skill type and whether it's part of a module. Reasoning is shared, not hidden.
 
-The skill you produce is loaded by another LLM. It already knows how to facilitate, ask questions, write prose, parse intent, and format markdown. It does NOT know your project's file paths, config schema, customization conventions, or which past failures shaped the rules. Spend the file weight there.
+| Type | When |
+|---|---|
+| **Simple Utility** | Composable building block with clear input → processing → output. Often deterministic. No multi-turn discovery. |
+| **Simple Workflow** | Multi-step process that fits inline in SKILL.md as named sections (`## Discovery`, `## Constraints`, etc.). Default. |
+| **Complex Workflow** | SKILL.md routing + carved-out sections in `references/` with descriptive filenames. Reserved for workflows whose SKILL.md would otherwise be too big to scan (~250+ lines). |
 
-## Headless Mode
+Default to Simple Workflow. Carving is a SIZE decision, not a stage-count decision.
 
-When `{headless_mode}=true` (set by `--headless` / `-H` or implied by `--convert`):
+If module-based: capture module code, other skills it'll invoke (with name / inputs / outputs), and config variables it needs.
 
-- Skip interactive prompts. Derive answers from the input; use sensible defaults where the input is silent.
-- `{customizable}` defaults to `no` unless `--customizable` is also passed.
-- Phase 6 emits structured JSON only — no prose summary, no Quality Analysis offer (schema in Phase 6).
+For Workflows that produce an artifact: confirm whether `--headless` should be supported.
 
-## Phase 1: Discover Intent
+**On Edit:** classification is already set — read it from the existing skill or from `.decision-log.md` frontmatter. Skip this phase.
 
-Make the user articulate what they want. Don't run a question script — ask what feels missing for someone who has to build the thing. The frames that matter most for skill design: **what judgment calls does the executing LLM need to make vs. do mechanically, and what's the one thing this skill must get right?** Push past first descriptions.
+## Phase 2: Determine Spec
 
-**Input flexibility:** existing skill path, rough idea, code/docs/specs, or a non-BMad skill to convert. Whatever the input, treat it as **intent, not specification**. Extract what it's trying to achieve. Do not inherit verbosity, structure, or mechanical procedures from a source skill — it's reference material, not a template.
+**Outcome:** you have everything needed to draft the skill — extracted from what the user has already shared (open-floor + decision log) plus targeted follow-ups for whatever's missing.
 
-If SKILL.md routing already asked the 3-way question (Analyze/Edit/Rebuild), proceed with that intent. Otherwise ask:
+Through what's already known or further conversation, determine all of the following that are relevant:
 
-- **Edit** — change specific behavior, keep current approach
-- **Rebuild** — rethink from outcomes, full discovery using old skill as context
+| Field | Applies | Notes |
+|---|---|---|
+| Name | All | kebab-case. `{module-code}-{name}` for modules, `{name}` standalone. `bmad-` reserved for official. |
+| Description | All | `[5-8 word summary]. [Use when user says 'specific phrase'.]` See `references/standard-fields.md`. |
+| Overview | All | What / How / Why-Outcome. Domain framing + theory of mind for interactive or complex skills. |
+| Role | Workflows | "Act as a [role/expert]" primer. |
+| Design rationale | Where non-obvious | Choices the executing agent should understand so it doesn't optimize them away. |
+| External skills | All | Which other skills this calls. |
+| Scripts | All | Deterministic operations to push out of prompts; see `references/script-opportunities-reference.md`. List non-stdlib deps and get user approval (`uv` required). |
+| Output documents | All | Yes/no — uses `{document_output_language}` if yes. |
+| Revisable artifact | If output doc | If Update / Validate intents are likely, propose the Decision-Log Workspace pattern (`references/skill-quality-principles.md`). |
+| Inputs / outputs | Simple Utility | Format, schema, required fields. |
+| Stages | Workflows | Named sections (Simple) or carved files in `references/` with descriptive filenames (Complex). |
+| Module capability | If module-based | phase-name, after, before, is-required, short description. |
+| Customization | All | Fixed, or swappable templates / paths / hooks? Default no. If yes, walk each scalar (`<purpose>_template`, `<purpose>_output_path`, `on_<event>`); auto-promote in headless. |
 
-For **Edit**: read the relevant files, apply the change in keeping with outcome-driven design (preserve what works, improve what's targeted), run the lint gate (Phase 5), present results. If the edit touches core architecture, classification, or multiple stages, recommend Rebuild.
-
-For **Rebuild** or new build: continue through Phase 2.
-
-## Phase 2: Classify Skill Type
-
-Will this be part of a module? If yes, capture: module code, other skills it'll invoke (need name, inputs, outputs for integration), config variables it needs.
-
-Load `references/classification-reference.md` and classify. Present the classification with reasoning.
-
-For Simple Workflows and Complex Workflows: confirm whether `--headless` should be supported (artifacts usually benefit).
-
-## Phase 3: Gather Requirements
-
-Adapt by skill type. Glean from what the user already shared.
-
-**All types — Common fields:**
-
-- **Name:** kebab-case. Module: `{modulecode}-{skillname}`. Standalone: `{skillname}`. The `bmad-` prefix is reserved for official BMad creations.
-- **Description:** Two parts: [5-8 word summary]. [Use when user says 'specific phrase'.] Default to conservative triggering. See `references/standard-fields.md`.
-- **Overview:** What/How/Why-Outcome. For interactive or complex skills, include domain framing and theory of mind so the executing agent has context for judgment calls.
-- **Role guidance:** Brief "Act as a [role/expert]" primer.
-- **Design rationale:** Non-obvious choices the executing agent should understand.
-- **External skills used.**
-- **Script Opportunity Discovery:** Walk through planned steps with the user — identify deterministic operations that should be scripts, not prompts. Load `references/script-opportunities-reference.md`. List any non-stdlib dependencies and get user approval before proceeding (`uv` required).
-- **Creates output documents?** If yes, will use `{document_output_language}`.
-
-**Simple Utility:** input/output format, standalone?, composability.
-
-**Simple Workflow:** named sections inline in SKILL.md (`## Discovery`, `## Constraints`, `## Finalize`, etc.), config variables. `bmad-product-brief` is the model — multi-stage coaching workflow, single SKILL.md.
-
-**Complex Workflow:** SKILL.md (Overview, Activation, routing) + carved sections in `references/` with descriptive filenames (no numbered prefixes). This is reserved for workflows whose SKILL.md genuinely won't fit inline. Default to Simple Workflow and only escalate when the file gets too big to scan.
-
-**Module capability metadata (if part of a module):** phase-name, after (dependencies), before (downstream), is-required, description (short — what it produces, not how).
-
-**Customization opt-in (ask once, default no):**
+The customization opt-in question (interactive only):
 
 > "Should this support end-user customization (activation hooks, swappable templates, output paths)? If no, it ships fixed — users who need changes fork it."
 
-In headless mode, default no unless `--customizable` is passed. Record as `{customizable}`.
+For path conventions and customize.toml schema, see `references/skill-quality-principles.md`.
 
-**Path conventions:** see `references/skill-quality-principles.md` (Path conventions). Bare paths from skill root for everything internal; the Conventions block stamps into SKILL.md when the skill references multiple internal files.
+**On Edit:** spec is already defined by the existing skill. Read what's relevant to the change, ignore the rest. Update the decision-log with what's actually changing and why.
 
-## Phase 3.5: Configurability Discovery (only if `{customizable}` is yes)
+## Phase 3: Draft & Refine
 
-Identify what should be swappable without forking. Walk the planned structure with the user and surface candidates:
-
-- **Template files** the workflow loads → `<purpose>_template` scalar.
-- **Output destinations** → `<purpose>_output_path` scalar.
-- **`on_complete` hooks** → `on_<event>` scalar.
-- **`activation_steps_prepend` / `activation_steps_append`** are always present in the override surface — flag them so the user knows.
-
-For each, confirm: name (per `references/standard-fields.md` conventions) and default value. Ask if the user wants to expose anything else — domain knobs (style guides, severity thresholds, section lists) are fine if they're scalars or arrays that fit the merge rules.
-
-In headless mode, auto-promote every template reference and output path the workflow declares. Name from filename stem (`brief-template.md` → `brief_template`). User can prune later.
-
-**Output:** `{name, default, purpose}` tuples that Phase 5 emits to `customize.toml` and references from SKILL.md as `{workflow.<name>}`.
-
-## Phase 4: Draft & Refine
-
-**Load `references/skill-quality-principles.md` before reviewing the plan** — the same principles file the quality scanners verify against. Building against it upfront is cheaper than fixing afterwards.
+**Load `references/skill-quality-principles.md` before reviewing the plan** — same principles file the quality scanners verify against. Building against it upfront is cheaper than fixing afterwards.
 
 Present a plan. Point out vague areas. Iterate with the user until the outcome and shape are clear. Apply the principles file's core test to every planned instruction: **would an LLM do this correctly without being told?** If yes, cut it.
 
-## Phase 5: Build
+## Phase 4: Build
 
 **Load:**
 
-- `references/skill-quality-principles.md` — what earns its place, BMad institutional knowledge, failure modes (already loaded in Phase 4; keep open)
+- `references/skill-quality-principles.md` — what earns its place, BMad institutional knowledge, failure modes (already loaded in Phase 3; keep open)
 - `references/standard-fields.md` — field-by-field schema reference for frontmatter, customize.toml, and the Overview formula
 - `references/complex-workflow-patterns.md` (Complex Workflow only) — config integration, compaction survival, document-as-cache
 
@@ -117,7 +114,7 @@ Load `assets/SKILL-template.md` and `references/template-substitution-rules.md`.
 
 **If `{customizable}` is yes:**
 
-- Emit `customize.toml` alongside SKILL.md from `assets/customize-template.toml`. Fill `[workflow]` with the Phase 3.5 scalars.
+- Emit `customize.toml` alongside SKILL.md from `assets/customize-template.toml`. Fill `[workflow]` with the Phase 2 scalars.
 - In SKILL.md, replace hardcoded references with `{workflow.<name>}` indirection. `assets/brief-template.md` → `{workflow.brief_template}` if lifted.
 - Add the resolver activation step before config load:
 
@@ -132,6 +129,19 @@ Load `assets/SKILL-template.md` and `references/template-substitution-rules.md`.
 - Execute `{workflow.activation_steps_prepend}` before the workflow's first stage and `{workflow.activation_steps_append}` after greet but before Stage 1. Treat `{workflow.persistent_facts}` as foundational context loaded on activation (`file:` prefix = path/glob; bare entries = literal facts).
 
 **If `{customizable}` is no:** no `customize.toml`, no resolver step. SKILL.md uses hardcoded paths throughout.
+
+**If the skill uses the Decision-Log Workspace pattern** (Phase 2 confirmed it produces a revisable artifact):
+
+- Add `output_dir` and `output_folder_name` scalars to `customize.toml [workflow]`. Default shape:
+  - `output_dir = "{planning_artifacts}/<purpose>"` (e.g. `briefs`, `analyses`)
+  - `output_folder_name = "<purpose>-{project_name}-{date}"`
+  - This implies `{customizable}=yes` — if the user declined customization, ask whether to enable it for these two scalars.
+- In SKILL.md Activation, after config resolution: bind `{doc_workspace} = {workflow.output_dir}/{workflow.output_folder_name}/`.
+- For **Create** intent: write the primary `<artifact>.md` skeleton (YAML frontmatter: title, status: draft, created, updated) and `.decision-log.md` to `{doc_workspace}` immediately after intent is confirmed. Tell the user the path.
+- For **Update** intent: read `.decision-log.md`, `addendum.md` (if present), and the primary first. If the change signal contradicts a prior decision, surface the conflict before applying. Append a new decision-log entry per change; overrides also append rejected reasoning to addendum.
+- For **Validate** intent: read `.decision-log.md` first. Critique against user-stated criteria, not generic rubrics.
+- Add a **Finalize** step before terminal handoff: decision-log audit (every meaningful entry → captured in primary, captured in addendum, or explicitly set aside as process noise — the user signs off).
+- If the artifact will feed downstream LLM consumers: offer a `distillate.md` at finalize. Skip with a note if no distillation tool is available; never inline a substitute.
 
 **Skill source tree** (only create folders that are needed):
 
@@ -166,7 +176,7 @@ Never put workflow content (`*.md` prompt files) directly at skill root — that
 2. Fix high/critical findings, re-run (up to 3 attempts per script).
 3. Run unit tests if scripts exist in the built skill.
 
-## Phase 6: Handoff
+## Phase 5: Handoff
 
 **If `{headless_mode}=true`:** output JSON only (no prose, no follow-up offer):
 
@@ -181,5 +191,3 @@ Never put workflow content (`*.md` prompt files) directly at skill root — that
   "warnings": []
 }
 ```
-
-**If interactive:** show the user what was built — location, structure, capabilities, lint results, test results. Remind them to commit before quality analysis. Offer Quality Analysis: if yes, load `references/quality-analysis.md` with the skill path.

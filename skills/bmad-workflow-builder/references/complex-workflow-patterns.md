@@ -1,6 +1,6 @@
 # Complex Workflow Patterns
 
-Patterns for workflows whose SKILL.md got too big and had to carve out to `references/`. The default for any new skill is **inline** — `bmad-product-brief` is the canonical model, a multi-stage coaching workflow that lives in a single SKILL.md. Reach for these patterns only when SKILL.md genuinely won't fit.
+Patterns for workflows whose SKILL.md got too big and had to carve out to `references/`. The default for any new skill is **inline** — a multi-stage coaching workflow lives in a single SKILL.md. Reach for these patterns only when SKILL.md genuinely won't fit.
 
 ## Carve-Out Conventions
 
@@ -35,22 +35,20 @@ If missing: continue with defaults — no mention of a setup skill.
 
 Config variables resolved already contain `{project-root}` — never double-prefix.
 
-## Long-Running Workflows: Compaction Survival
+## Decision-Log Workspace Pattern (canonical compaction survival)
 
-Workflows that run long may trigger context compaction. Critical state must survive in output files.
+For workflows that produce revisable artifacts, the Decision-Log Workspace pattern is the default. See `references/skill-quality-principles.md` for the full treatment.
 
-**The Document-Itself Pattern.** The output document is the cache. Write directly to the file you're creating, updating progressively. The document stores both content and context:
+**The pattern in one paragraph.** The workspace folder (artifact + `.decision-log.md` + optional `addendum.md` + optional `distillate.md`) exists from the moment intent is confirmed. Decision-log captures every meaningful decision and rationale; addendum captures rejected alternatives. Resume on activation, conflict-detect on update, audit at finalize. The decision log is the load-bearing artifact — the document is what the user takes; the log is what carries identity across sessions.
 
-- YAML frontmatter — paths to input files, current status, current phase
-- Draft sections — progressive content as it's built
-- Status marker — which phase is complete
+**For Complex Workflows that route to carved-out files**, each carved file must work standalone (compaction can drop SKILL.md mid-flow). Carved files reference the workspace by config-resolved path (`{workflow.output_dir}/{workflow.output_folder_name}/`) — never assume in-context state.
 
-After the first phase, each subsequent phase reads the output document to recover context. If compacted, re-read input files listed in the YAML frontmatter.
+**YAML frontmatter on the primary artifact** (status + inputs survives compaction):
 
 ```markdown
 ---
 title: 'Analysis: Research Topic'
-status: 'analysis'
+status: 'discovery'
 inputs:
   - '{project-root}/docs/brief.md'
 created: '2025-03-02T10:00:00Z'
@@ -58,7 +56,7 @@ updated: '2025-03-02T11:30:00Z'
 ---
 ```
 
-**Use when:** Guided flows with long documents, yolo flows with multiple turns. **Don't use when:** Short single-turn outputs, purely conversational workflows, multiple independent artifacts (each gets its own file).
+**When NOT to apply:** purely conversational workflows, one-shot single-turn outputs, multi-artifact workflows where each artifact gets its own folder.
 
 ## Routing from SKILL.md
 
@@ -90,6 +88,8 @@ Before finalizing a complex BMad workflow:
 - [ ] Conventions block stamped at top of SKILL.md (when multiple internal files are referenced)
 - [ ] Carve-outs in `references/` use descriptive names, no numbered prefixes
 - [ ] Each carved file works standalone (compaction survival)
-- [ ] Document-as-cache — YAML frontmatter with status and inputs (for long flows)
+- [ ] Decision-Log Workspace pattern applied (or explicit reason for skipping — Simple Utility, one-shot, purely conversational)
+- [ ] Resume protocol — Activation checks for existing workspace and offers to resume
+- [ ] Update mode reads `.decision-log.md` first; surfaces conflicts before applying changes
 - [ ] Final polish — subagent polish step at the end?
-- [ ] Recovery — can resume by reading output doc frontmatter?
+- [ ] Finalize step includes decision-log audit (every entry → primary, addendum, or explicit process noise)

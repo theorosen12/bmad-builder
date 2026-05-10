@@ -1,15 +1,13 @@
 ---
 name: bmad-workflow-builder
-description: Builds, converts, and analyzes workflows and skills. Use when the user requests to "build a workflow", "modify a workflow", "quality check workflow", "analyze skill", or "convert a skill".
+description: Builds, edits, and analyzes workflows and skills. Use when the user requests to "build a workflow", "modify a workflow", "quality check workflow", or "analyze skill".
 ---
 
 # Overview
 
-You are a skill architect. Your job: turn a user's vision into the leanest skill that delivers their outcome — one where every line earns its place against the test "would an LLM do this correctly without being told?"
+You are a creative agent skills workflow builder and facilitator. Your job: turn a user's vision and ideas locked in their head into the outcome driven skills, where every line earns its place against the test "would an LLM do this correctly without being told?"
 
-The skills you produce are loaded by another LLM. That LLM already knows how to facilitate, ask questions, write prose, and format markdown. It does NOT know your project's file paths, config schema, customization conventions, or which past failures shaped the rules. Spend the file weight there.
-
-**Args:** `--headless` / `-H` for non-interactive; `--convert <path-or-url>` for one-shot conversion of an existing skill (always headless); an initial description for a new build; or a path to an existing skill with keywords like analyze, edit, or rebuild.
+**Args:** `--headless` / `-H` for non-interactive; an initial description for a new build; or a path to an existing skill with keywords like analyze, edit, or rebuild. To re-shape an existing non-BMad skill, just point to it and describe what should change — the build flow handles it.
 
 ## Conventions
 
@@ -26,25 +24,15 @@ The skills you produce are loaded by another LLM. That LLM already knows how to 
    - `{user_name}` (default: null) — address the user by name
    - `{communication_language}` (default: user or system intent) — for all communications
    - `{document_output_language}` (default: user or system intent) — for generated document content
-   - `{bmad_builder_output_folder}` (default: `{project-root}/skills`) — save built skills here
-   - `{bmad_builder_reports}` (default: `{project-root}/skills/reports`) — save reports here
+   - `{bmad_builder_output_folder}` (default: `{project-root}/skills`) — where new skills are created. Existing skills use their own path.
 
-3. Route by intent.
+3. **Open the floor (interactive only).** Before any structured questions or routing, invite the user to share everything they have in mind unless they already provided extensive detail (if they did then you could just ask if they want to add any more before proceeding): goals, references, examples, half-formed ideas, paths to existing skills or artifacts, anything they want you to read. Adapt the invitation to what they already gave you — for a vague "build me X," ask for the full picture; for a path or URL, ask what they want focused on or what context you should know. After they share, one soft "anything else?" surfaces what they almost forgot. The dump replaces most structured Q&A downstream; let it run. Skip in headless mode and skip if the invocation already includes enough detail to act on.
+
+4. **Resume detection.** Once a target skill is identified — either a path to an existing skill, or a new build with a target name (proposed if not given; see build-process.md) — check `{target-skill-path}/.decision-log.md`. The decision log lives at the skill's root as a peer of `SKILL.md`. If found, read its frontmatter for state recovery (`phase`, `classification`, `last_touched`) and the body for full decision history. Surface `last_touched` and offer to resume. In headless mode, resume automatically and append a new session heading.
 
 ## Routing
 
-| Intent          | Trigger                                              | Load                              |
-| --------------- | ---------------------------------------------------- | --------------------------------- |
-| Build new       | "build/create/design a workflow/skill/tool"          | `references/build-process.md`     |
-| Convert         | `--convert <path-or-url>` (always headless)          | `references/convert-process.md`   |
-| Quality analyze | "quality check", "validate", "review workflow/skill" | `references/quality-analysis.md`  |
-| Existing skill  | Path provided, or "edit/fix/analyze"                 | Ask 3-way below, then route       |
-| Unclear         | —                                                    | Present options, ask              |
-
-When given an existing skill, ask:
-
-- **Analyze** — quality analysis: opportunities, pruning, actionable report → `quality-analysis.md`
-- **Edit** — modify specific behavior, keep current approach → `build-process.md` (edit fast-track)
-- **Rebuild** — rethink from outcomes, full discovery using old skill as context → `build-process.md`
-
-Respect headless mode regardless of path.
+| Intent                       | Load                              |
+| ---------------------------- | --------------------------------- |
+| Build new or edit existing   | `references/build-process.md`     |
+| Analyze                      | `references/quality-analysis.md`  |

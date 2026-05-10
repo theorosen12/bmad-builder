@@ -1,9 +1,3 @@
----
-name: quality-analysis
-description: Quality analysis for BMad workflows and skills. Runs deterministic lint scripts and parallel LLM scanners against the same principles the build process uses. Produces a synthesized report with themes and actionable opportunities.
-menu-code: QA
----
-
 # Quality Analysis
 
 Communicate with user in `{communication_language}`. Write report content in `{document_output_language}`.
@@ -62,16 +56,16 @@ Each scanner loads `references/skill-quality-principles.md` and writes a free-fo
 
 ## Execution
 
-Create output directory: `{bmad_builder_reports}/{skill-name}/quality-analysis/{date-time-stamp}/`.
+Bind `{quality-report-dir} = {skill-path}/.analysis/{date-time-stamp}/` and create the directory. Use this single name in every script invocation and subagent prompt below. Quality analyses live at the skill's own root, as a peer of `.decision-log.md` and `SKILL.md` — the audit trail travels with the skill.
 
 ### Step 1: Run All Scripts (Parallel)
 
 ```bash
-python3 scripts/scan-path-standards.py {skill-path} -o {report-dir}/path-standards-temp.json
-python3 scripts/scan-scripts.py {skill-path} -o {report-dir}/scripts-temp.json
-uv run scripts/prepass-workflow-integrity.py {skill-path} -o {report-dir}/workflow-integrity-prepass.json
-python3 scripts/prepass-prompt-metrics.py {skill-path} -o {report-dir}/prompt-metrics-prepass.json
-uv run scripts/prepass-execution-deps.py {skill-path} -o {report-dir}/execution-deps-prepass.json
+python3 scripts/scan-path-standards.py {skill-path} -o {quality-report-dir}/path-standards-temp.json
+python3 scripts/scan-scripts.py {skill-path} -o {quality-report-dir}/scripts-temp.json
+uv run scripts/prepass-workflow-integrity.py {skill-path} -o {quality-report-dir}/workflow-integrity-prepass.json
+python3 scripts/prepass-prompt-metrics.py {skill-path} -o {quality-report-dir}/prompt-metrics-prepass.json
+uv run scripts/prepass-execution-deps.py {skill-path} -o {quality-report-dir}/execution-deps-prepass.json
 ```
 
 ### Step 2: Spawn LLM Scanners (Parallel)
@@ -81,19 +75,19 @@ After scripts complete, spawn all four LLM scanners as parallel subagents.
 Each subagent receives:
 - Scanner file to load
 - Skill path: `{skill-path}`
-- Output directory: `{report-dir}`
+- Output directory: `{quality-report-dir}`
 - Pre-pass file paths (L1: P1+P2; L2: P3)
 
-The subagent loads its scanner file (which loads the principles file), analyzes the skill, writes its analysis to the output directory, and returns the filename.
+The subagent loads its scanner file (which loads the principles file), analyzes the skill, writes its analysis to `{quality-report-dir}`, and returns the filename.
 
 ### Step 3: Synthesize Report
 
-After all scanners complete, spawn a subagent with `references/report-quality-scan-creator.md`. Provide `{skill-path}` and `{quality-report-dir}`. The report creator reads everything, synthesizes themes, and writes `quality-report.md` and `report-data.json`.
+After all scanners complete, spawn a subagent with `references/report-quality-scan-creator.md`. Provide `{skill-path}` and `{quality-report-dir}`. The report creator reads everything, synthesizes themes, and writes `quality-report.md` and `report-data.json` to `{quality-report-dir}`.
 
 ### Step 4: Generate HTML Report
 
 ```bash
-python3 scripts/generate-html-report.py {report-dir} --open
+python3 scripts/generate-html-report.py {quality-report-dir} --open
 ```
 
 ## Present to User
