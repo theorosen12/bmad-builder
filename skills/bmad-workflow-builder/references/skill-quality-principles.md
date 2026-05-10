@@ -124,6 +124,10 @@ Carve out to `references/` only when SKILL.md genuinely gets too big to scan. Wh
 - The file uses `{communication_language}` (and `{document_output_language}` if it produces a doc).
 - There are NO exit hooks in the system. Don't add `## On Exit` sections — they'd never run.
 
+### Headless mode
+
+When a skill supports headless invocation, the decision log absorbs every assumption made without the user — intent inference, proposed names, customization defaults, conflict resolutions, lint-fix calls, anything the user would have weighed in on interactively. The JSON return is the smallest set of paths the caller needs (typically `skill` + `decision_log`, plus the report path for analysis flows); the log carries the reasoning. `status` is `complete` or `blocked`; on `blocked`, include a one-line `reason` and still return the log path so the caller can read the detail. Without this discipline, headless silently buries its calls and the audit trail breaks on the next session.
+
 ### Subagent constraints
 - Subagents CANNOT spawn other subagents. Chain through parent.
 - Don't read files in parent if you can delegate the read — parent stays lean.
@@ -198,6 +202,19 @@ Decision-log audit. Every meaningful entry must be either captured in the primar
 - Simple Utilities (no decisions to log; the input/output IS the contract).
 - One-shot code operations (the diff is the decision log).
 - Purely conversational skills (no artifact persists).
+
+### Treatment style (writing it into a skill)
+
+State the principle once where it first applies — typically inside the Create intent description as a single clause ("write the primary skeleton and `.decision-log.md` to the workspace; the decision log is canonical memory"). Mention reads at the moments that matter: Update reads decisions before changing them, Validate reads them before critiquing, Finalize audits the log at handoff. That's the entire treatment.
+
+Do NOT:
+- Open with a "Decision-log discipline" enumeration of what kinds of things to log — the LLM knows. Trust it.
+- Write a separate `## Workspace` section header with meta-explanation of the pattern.
+- Include a tree diagram of the workspace layout — the workspace is just files; the LLM names them as it uses them.
+- Prescribe a YAML frontmatter schema for the decision log — fields are workflow-specific; let the building LLM pick what each workflow needs (or skip frontmatter entirely).
+- Split workspace creation into separate "for new" / "for existing" sub-sections — "create if absent, append a new session heading if present" is one sentence.
+
+The scanner flags skills that bury DLW guidance under ceremony. `bmad-product-brief` is the canonical-brief example: ~5 sentences total, threaded through Create / Update / Validate / Constraints / Finalize at the points where each matters.
 
 ## Failure Modes With Body Count
 

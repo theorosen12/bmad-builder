@@ -90,32 +90,30 @@ After all scanners complete, spawn a subagent with `references/report-quality-sc
 python3 scripts/generate-html-report.py {quality-report-dir} --open
 ```
 
+### Step 5: Log the Run
+
+Append a session heading to `{skill-path}/.decision-log.md` (create the file if absent). Cite the timestamped folder so the skill's history points to this run:
+
+```markdown
+## YYYY-MM-DD — Quality analysis
+
+Grade: <grade from report-data.json>. Report: `.analysis/<timestamp>/quality-report.md`.
+```
+
 ## Present to User
 
-**IF `{headless_mode}=true`:**
-
-Read `report-data.json` and output:
+**Headless** (`{headless_mode}=true`): emit JSON only.
 
 ```json
 {
-  "headless_mode": true,
-  "scan_completed": true,
-  "report_file": "{path}/quality-report.md",
-  "html_report": "{path}/quality-report.html",
-  "data_file": "{path}/report-data.json",
-  "warnings": [],
-  "grade": "Excellent|Good|Fair|Poor",
-  "opportunities": 0,
-  "broken": 0
+  "status": "complete",
+  "intent": "analyze",
+  "skill": "{skill-path}",
+  "decision_log": "{skill-path}/.decision-log.md",
+  "report": "{quality-report-dir}/quality-report.md"
 }
 ```
 
-**IF interactive:**
+Blocked (scanner failure, missing required input, etc.): replace `"complete"` with `"blocked"` and add `"reason": "<one-line cause>"`. The log + any partial report carry the detail.
 
-Read `report-data.json` and present:
-
-1. Grade and narrative — the 2-3 sentence synthesis
-2. Broken items (if any) — critical/high issues prominently
-3. Top opportunities — theme names with finding counts and impact
-4. Reports — "Full report: quality-report.md" and "Interactive HTML opened in browser"
-5. Offer: apply fixes directly, use HTML to select specific items, or discuss findings
+**Interactive:** read `report-data.json` and present grade + 2-3 sentence narrative, broken items if any, top opportunities by theme, paths to the full report and HTML. Offer to apply fixes, walk findings, or discuss.

@@ -1,41 +1,4 @@
-**Decision-log discipline.** Throughout every phase below, capture the load-bearing decisions to `.decision-log.md` in the build session workspace as you go: classification, customization opt-in and each scalar (with rationale), module integration, scripts-vs-prompts choices, pruning calls, user rejections and overrides. Don't log every Q&A — micro-state belongs in the conversation, not the log.
-
-## Build Session Workspace
-
-This skill applies the Decision-Log Workspace pattern to its own build sessions, and demonstrates the pattern visibly: the decision log lives **at the root of the skill being built or modified**, as a peer of `SKILL.md`.
-
-**Skill-root layout (during and after a build or edit):**
-
-```
-{target-skill-path}/
-├── SKILL.md              ← the primary artifact
-├── .decision-log.md      ← peer (frontmatter = state, body = decisions)
-├── addendum.md           ← peer; only when something earns its place
-├── customize.toml        ← if customizable
-├── references/  assets/  scripts/
-└── .analysis/            ← timestamped quality-analysis runs (only after analysis is run)
-```
-
-**Workspace creation timing.** Create immediately after intent is confirmed.
-
-- **For new skills.** If the user gave a target name in the invocation or dump, use it. If not, propose a kebab-case name from what the skill does and confirm (in headless, derive one and proceed). Create `{bmad_builder_output_folder}/{target-skill-name}/` and write `.decision-log.md` inside with initial frontmatter (`target_skill`, `phase: 1-classify`, `last_touched`). Tell the user the path. The user can rename later — that's a logged decision, not a re-do.
-
-- **For existing skills.** The skill folder already exists. If `.decision-log.md` is absent at skill root, create it with fresh frontmatter and a `## YYYY-MM-DD — Edit` heading. If present, append a new `## YYYY-MM-DD — Edit` heading and update the frontmatter (`last_touched`, `phase`).
-
-**Frontmatter on `.decision-log.md` for this skill's sessions:**
-
-```yaml
----
-target_skill: <name>
-phase: <1-classify | 2-spec | 3-draft | 4-build | 5-handoff>
-classification: <simple-utility | simple-workflow | complex-workflow>
-customizable: <yes | no>
-lint_status: <pending | pass | fail>
-last_touched: <YYYY-MM-DD>
----
-```
-
-Update the frontmatter as phases complete. Other skills built with this builder may use entirely different frontmatter (or none); that's the LLM's call per workflow needs.
+**Workspace.** Once intent is clear and the target skill is named (propose a kebab-case name for new skills if the user didn't give one — they can rename later, that's a logged decision not a redo), write `.decision-log.md` at the skill's root as a peer of `SKILL.md`. The decision log is canonical memory — load-bearing decisions, rejected alternatives, and overrides live on disk, not in the conversation. On resume, append a new session heading; at handoff, audit the log so the user signs off on how their thinking was handled.
 
 ## Phase 1: Classify
 
@@ -137,10 +100,7 @@ Load `assets/SKILL-template.md` and `references/template-substitution-rules.md`.
   - `output_folder_name = "<purpose>-{project_name}-{date}"`
   - This implies `{customizable}=yes` — if the user declined customization, ask whether to enable it for these two scalars.
 - In SKILL.md Activation, after config resolution: bind `{doc_workspace} = {workflow.output_dir}/{workflow.output_folder_name}/`.
-- For **Create** intent: write the primary `<artifact>.md` skeleton (YAML frontmatter: title, status: draft, created, updated) and `.decision-log.md` to `{doc_workspace}` immediately after intent is confirmed. Tell the user the path.
-- For **Update** intent: read `.decision-log.md`, `addendum.md` (if present), and the primary first. If the change signal contradicts a prior decision, surface the conflict before applying. Append a new decision-log entry per change; overrides also append rejected reasoning to addendum.
-- For **Validate** intent: read `.decision-log.md` first. Critique against user-stated criteria, not generic rubrics.
-- Add a **Finalize** step before terminal handoff: decision-log audit (every meaningful entry → captured in primary, captured in addendum, or explicitly set aside as process noise — the user signs off).
+- Wire Create / Update / Validate intents and a Finalize audit per `references/skill-quality-principles.md` § Decision-Log Workspace Pattern. Follow the **Treatment style** sub-section there: state the principle once where it first applies, mention reads at the moments that matter, no prescribed frontmatter schema, no `## Workspace` header, no tree diagram. The workspace is just files.
 - If the artifact will feed downstream LLM consumers: offer a `distillate.md` at finalize. Skip with a note if no distillation tool is available; never inline a substitute.
 
 **Skill source tree** (only create folders that are needed):
@@ -178,16 +138,17 @@ Never put workflow content (`*.md` prompt files) directly at skill root — that
 
 ## Phase 5: Handoff
 
-**If `{headless_mode}=true`:** output JSON only (no prose, no follow-up offer):
+**Interactive:** show what was built, lint results, and offer next steps (commit, run quality analysis). Decision log is at `{target-skill-path}/.decision-log.md`.
+
+**Headless** (`{headless_mode}=true`): emit JSON only. `intent` is `"build"` for new, `"edit"` for existing.
 
 ```json
 {
-  "headless_mode": true,
-  "build_completed": true,
-  "skill_path": "{built-skill-path}",
-  "files_created": ["SKILL.md", "..."],
-  "lint_passed": true,
-  "lint_findings_count": 0,
-  "warnings": []
+  "status": "complete",
+  "intent": "build",
+  "skill": "{target-skill-path}",
+  "decision_log": "{target-skill-path}/.decision-log.md"
 }
 ```
+
+Blocked (ambiguous intent that couldn't be inferred, persistent lint failures, etc.): replace `"complete"` with `"blocked"` and add `"reason": "<one-line cause>"`. The log carries the detail.
