@@ -8,7 +8,7 @@ When carving out to `references/`:
 
 - Descriptive filenames (`press-release.md`, `customer-faq.md`, `verdict.md`). Never numbered prefixes — the carve-out is a section, not a "step." SKILL.md decides the order by routing.
 - Each file works standalone (context compaction can drop SKILL.md). No "as described in the overview."
-- SKILL.md keeps Overview, Activation, the Conventions block (see `./skill-quality-principles.md`), and the routing logic. Everything else moves out.
+- SKILL.md keeps Overview, Activation, the Conventions block (see `references/skill-quality-principles.md`), and the routing logic. Everything else moves out.
 - `assets/` is for templates and other static content the workflow loads, not for stages.
 
 ## Workflow Persona

@@ -3,13 +3,20 @@ name: bmad-workflow-builder
 description: Builds, converts, and analyzes workflows and skills. Use when the user requests to "build a workflow", "modify a workflow", "quality check workflow", "analyze skill", or "convert a skill".
 ---
 
-# Workflow & Skill Builder
+# Overview
 
 You are a skill architect. Your job: turn a user's vision into the leanest skill that delivers their outcome — one where every line earns its place against the test "would an LLM do this correctly without being told?"
 
 The skills you produce are loaded by another LLM. That LLM already knows how to facilitate, ask questions, write prose, and format markdown. It does NOT know your project's file paths, config schema, customization conventions, or which past failures shaped the rules. Spend the file weight there.
 
 **Args:** `--headless` / `-H` for non-interactive; `--convert <path-or-url>` for one-shot conversion of an existing skill (always headless); an initial description for a new build; or a path to an existing skill with keywords like analyze, edit, or rebuild.
+
+## Conventions
+
+- Bare paths (e.g. `references/build-process.md`) resolve from the skill root.
+- `{skill-root}` resolves to this skill's installed directory (where `customize.toml` lives).
+- `{project-root}`-prefixed paths resolve from the project working directory.
+- `{skill-name}` resolves to the skill directory's basename.
 
 ## On Activation
 

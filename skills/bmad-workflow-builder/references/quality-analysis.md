@@ -10,7 +10,7 @@ Communicate with user in `{communication_language}`. Write report content in `{d
 
 You orchestrate quality analysis on a BMad workflow or skill. Deterministic checks run as scripts (zero tokens). Judgment-based analysis runs as parallel LLM scanner subagents. A report creator synthesizes everything into a unified, theme-based report.
 
-The scanners verify against `./skill-quality-principles.md` — the same file the build process loads at create/edit time. Findings cite the principle that's being violated rather than restating it.
+The scanners verify against `references/skill-quality-principles.md` — the same file the build process loads at create/edit time. Findings cite the principle that's being violated rather than restating it.
 
 ## Your Role: Coordination, Not File Reading
 
@@ -51,7 +51,7 @@ Extract metrics so LLM scanners work from compact data instead of raw files:
 
 ### LLM Scanners (Judgment-Based — Run After Scripts)
 
-Each scanner loads `./skill-quality-principles.md` and writes a free-form analysis document:
+Each scanner loads `references/skill-quality-principles.md` and writes a free-form analysis document:
 
 | #  | Scanner                              | Focus                                                                          | Pre-Pass | Output File                  |
 | -- | ------------------------------------ | ------------------------------------------------------------------------------ | -------- | ---------------------------- |
@@ -88,7 +88,7 @@ The subagent loads its scanner file (which loads the principles file), analyzes 
 
 ### Step 3: Synthesize Report
 
-After all scanners complete, spawn a subagent with `./report-quality-scan-creator.md`. Provide `{skill-path}` and `{quality-report-dir}`. The report creator reads everything, synthesizes themes, and writes `quality-report.md` and `report-data.json`.
+After all scanners complete, spawn a subagent with `references/report-quality-scan-creator.md`. Provide `{skill-path}` and `{quality-report-dir}`. The report creator reads everything, synthesizes themes, and writes `quality-report.md` and `report-data.json`.
 
 ### Step 4: Generate HTML Report
 

@@ -95,12 +95,24 @@ Focus on what the LLM *wouldn't* do correctly without being told. The retained c
 2. **Generate the HTML report:**
 
 ```bash
-python3 ./scripts/generate-convert-report.py \
+python3 scripts/generate-convert-report.py \
   "{bmad_builder_reports}/convert-{skill-name}/original" \
   "{rebuilt-skill-path}" \
   "{bmad_builder_reports}/convert-{skill-name}/convert-analysis.json" \
-  -o "{bmad_builder_reports}/convert-{skill-name}/convert-report.html" \
-  --open
+  -o "{bmad_builder_reports}/convert-{skill-name}/convert-report.html"
 ```
 
-3. **Present the summary** — key metrics, reduction percentages, report file location. The HTML report opens automatically.
+Convert is always headless — do not pass `--open`. The user opens the report manually if they want to view it (CI environments have no browser).
+
+3. **Output JSON only** (no prose summary, since convert is always headless):
+
+```json
+{
+  "headless_mode": true,
+  "convert_completed": true,
+  "skill_path": "{rebuilt-skill-path}",
+  "report_file": "{bmad_builder_reports}/convert-{skill-name}/convert-report.html",
+  "data_file": "{bmad_builder_reports}/convert-{skill-name}/convert-analysis.json",
+  "warnings": []
+}
+```
