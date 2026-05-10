@@ -227,8 +227,10 @@ function normalize(d) {
     r.rank = r.rank || i + 1;
   });
   // Fix journeys: persona→archetype, friction→friction_points
-  if (d.detailed_analysis && d.detailed_analysis.experience) {
-    d.detailed_analysis.experience.journeys = (d.detailed_analysis.experience.journeys || []).map(j => ({
+  // Accept both `enhancement` (new) and `experience` (legacy) section keys
+  const expSection = d.detailed_analysis && (d.detailed_analysis.enhancement || d.detailed_analysis.experience);
+  if (expSection) {
+    expSection.journeys = (expSection.journeys || []).map(j => ({
       archetype: j.archetype || j.persona || j.name || 'Unknown',
       summary: j.summary || j.journey_summary || j.description || j.friction || '',
       friction_points: j.friction_points || (j.friction ? [j.friction] : []),
@@ -352,12 +354,10 @@ function renderDetailed() {
   const da = DATA.detailed_analysis;
   if (!da) return;
   const dims = [
-    ['structure', 'Structure & Integrity'],
-    ['craft', 'Craft & Writing Quality'],
-    ['cohesion', 'Cohesion & Design'],
-    ['efficiency', 'Execution Efficiency'],
-    ['experience', 'User Experience'],
-    ['scripts', 'Script Opportunities']
+    ['architecture', 'Architecture (Structure, Craft, Cohesion)'],
+    ['determinism', 'Determinism & Distribution'],
+    ['customization', 'Customization Surface'],
+    ['enhancement', 'User Experience']
   ];
   let html = `<div class="section"><div class="section-header" onclick="toggleSection(this)">`;
   html += `<span class="arrow">&#9654;</span><span class="label">Detailed Analysis</span>`;
