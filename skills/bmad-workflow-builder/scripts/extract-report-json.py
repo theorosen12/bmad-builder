@@ -88,25 +88,93 @@ def extract_autonomous(content: str) -> dict:
 
 
 def extract_findings_from_md(content: str, source_scanner: str) -> list[dict]:
-    """Extract individual findings from analysis markdown."""
+    """Extract individual findings from analysis markdown.
+
+    Handles multiple formats:
+    - Architecture: level 4 headings under severity sections (### HIGH, etc)
+    - Determinism: bold headings with severity markers [HIGH], [LOW]
+    - Customization: bold headings with opportunity markers (HIGH-OPPORTUNITY, etc)
+    - Enhancement: numbered findings with severity/opportunity markers
+    """
     findings = []
-    # Match bold titles that look like findings
-    pattern = r'\*\*([^*]+)\*\*\s*(?:\(([A-Z]+)(?:\s*—|-)?\s*)?(?:.*?)?\n'
 
-    for match in re.finditer(pattern, content):
-        title = match.group(1).strip()
-        severity = match.group(2) if match.group(2) else "medium"
-        severity = severity.lower()
+    if source_scanner == 'architecture':
+        # Architecture format: ### SEVERITY followed by #### N. Title
+        severity_pattern = r'^###\s+(CRITICAL|HIGH|MEDIUM|LOW)\s*$'
+        severity_sections = re.split(severity_pattern, content, flags=re.MULTILINE)
 
-        # Skip section headers
-        if title in ['Assessment', 'Findings', 'Strengths', 'Recommendations', 'User Journey Analysis']:
-            continue
+        for i in range(1, len(severity_sections), 2):
+            severity = severity_sections[i].lower() if i < len(severity_sections) else "medium"
+            section_content = severity_sections[i + 1] if i + 1 < len(severity_sections) else ""
 
-        findings.append({
-            'title': title,
-            'severity': severity,
-            'source': source_scanner
-        })
+            if not section_content.strip() or section_content.strip() == "None":
+                continue
+
+            # Extract level 4 findings (#### N. Title)
+            finding_pattern = r'^####\s+(\d+\.\s+)?(.+?)$'
+            for match in re.finditer(finding_pattern, section_content, re.MULTILINE):
+                finding_title = match.group(2).strip()
+                if finding_title:
+                    findings.append({
+                        'title': finding_title,
+                        'severity': severity,
+                        'source': source_scanner
+                    })
+
+    elif source_scanner == 'determinism':
+        # Determinism format: ### **[SEVERITY] Title**
+        pattern = r'###\s+\*\*\[([A-Z]+)\]\s+([^*]+)\*\*'
+        for match in re.finditer(pattern, content, re.MULTILINE):
+            severity = match.group(1).lower()
+            title = match.group(2).strip()
+            if title:
+                findings.append({
+                    'title': title,
+                    'severity': severity,
+                    'source': source_scanner
+                })
+
+    elif source_scanner == 'customization':
+        # Customization format: ### N. **Title** (OPPORTUNITY-TYPE)
+        pattern = r'###\s+\d+\.\s+\*\*([^*]+)\*\*\s+\(([A-Z-]+)\)'
+        for match in re.finditer(pattern, content, re.MULTILINE):
+            title = match.group(1).strip()
+            opportunity = match.group(2).lower()
+            # Map opportunity to severity
+            severity = 'high' if 'high' in opportunity else 'medium' if 'medium' in opportunity else 'low'
+            if title:
+                findings.append({
+                    'title': title,
+                    'severity': severity,
+                    'source': source_scanner
+                })
+
+    elif source_scanner == 'enhancement':
+        # Enhancement format: ### LEVEL Findings section followed by #### N. Title
+        # Extract opportunity sections (HIGH-OPPORTUNITY, SECONDARY-OPPORTUNITY, etc)
+        opportunity_pattern = r'^###\s+([A-Z-]+)\s+(?:Findings|Opportunities?)'
+        opportunity_sections = re.split(opportunity_pattern, content, flags=re.MULTILINE)
+
+        for i in range(1, len(opportunity_sections), 2):
+            opportunity = opportunity_sections[i].lower() if i < len(opportunity_sections) else "medium"
+            section_content = opportunity_sections[i + 1] if i + 1 < len(opportunity_sections) else ""
+
+            if not section_content.strip():
+                continue
+
+            # Map opportunity to severity
+            severity = 'high' if 'high' in opportunity else 'medium' if 'secondary' in opportunity else 'low'
+
+            # Extract level 4 findings (#### N. Title)
+            finding_pattern = r'^####\s+(\d+\.\s+)?(.+?)$'
+            for match in re.finditer(finding_pattern, section_content, re.MULTILINE):
+                finding_title = match.group(2).strip()
+                if finding_title:
+                    findings.append({
+                        'title': finding_title,
+                        'severity': severity,
+                        'source': source_scanner
+                    })
 
     return findings
 
