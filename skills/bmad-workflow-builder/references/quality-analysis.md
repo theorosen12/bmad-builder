@@ -86,48 +86,39 @@ Each subagent receives:
 
 The subagent loads its scanner file (which loads the principles file), analyzes the skill, writes its analysis to `{quality-report-dir}`, and returns the filename.
 
-### Step 3: Extract Report JSON (Fast, Deterministic)
+### Step 3: Synthesize Report (Parallel with Scanner 4)
 
-After all scanners complete, extract structured data from analysis files into `report-data.json`. This is fast (<10s) and captures all scanner output without lossy synthesis:
+Spawn report creator to synthesize scanner outputs into `report-data.json` and `quality-report.md`. This can run in parallel with the last scanner finishing.
 
 ```bash
-python3 scripts/extract-report-json.py {skill-path} {quality-report-dir} -o {quality-report-dir}/report-data.json
+# Spawn as background task — does not block step 4
+Agent(description="Synthesize quality report", subagent_type="report-creator", run_in_background=true, prompt="...")
 ```
 
-This extracts:
-- Assessment and findings from all 4 analysis files (architecture, determinism, customization, enhancement)
-- All user journey archetypes, bright spots, friction points from enhancement
-- Headless/automation potential from enhancement
-- Prepass metrics from JSON files
-- Complete, lossless `report-data.json` suitable for HTML generation
+The report creator:
+- Reads all 4 analysis files + prepass JSON
+- Identifies thematic clusters (root-cause synthesis)
+- Writes `report-data.json` with: broken, opportunities, strengths, recommendations, detailed_analysis
+- Writes `quality-report.md` for archival
 
-### Step 4: Generate & Open HTML Report
+### Step 4: Generate & Open HTML Report (Do Not Block on Markdown)
 
-Generate the interactive HTML report from the JSON data (no wait for markdown):
+As soon as `report-data.json` exists (the report creator writes it mid-synthesis), generate the interactive HTML report:
 
 ```bash
 python3 scripts/generate-html-report.py {quality-report-dir} --open
 ```
 
-The HTML report is now interactive and auto-opens. No blocking on markdown synthesis.
+**Important:** Do not wait for `quality-report.md` to be written. The JSON is the complete data source. Open HTML immediately. The markdown report finishes asynchronously and provides archival context.
 
-### Step 5: Create Markdown Report (Optional, Background)
+### Step 5: Log the Run
 
-After HTML is generated, optionally spawn a background task with `references/report-quality-scan-creator.md` to synthesize markdown report. This is asynchronous; the user has their HTML. The report creator provides:
-- Thematic synthesis (finds root-cause clusters across scanners)
-- Markdown report with "What's Broken", "Opportunities", "Strengths", "Recommendations"
-- Grade and narrative assessment
-
-If synthesis time is a concern, this step can be omitted; the JSON + HTML are the primary deliverables. The markdown is archival.
-
-### Step 6: Log the Run
-
-Append a session heading to `{skill-path}/.decision-log.md` (create the file if absent). Cite the timestamped folder so the skill's history points to this run:
+After HTML opens, append a session heading to `{skill-path}/.decision-log.md`:
 
 ```markdown
 ## YYYY-MM-DD — Quality analysis
 
-Grade: <grade from HTML>. Report: `.analysis/<timestamp>/quality-report.html`. Markdown: `.analysis/<timestamp>/quality-report.md` (if generated).
+Grade: <grade from report-data.json>. Interactive HTML: `.analysis/<timestamp>/quality-report.html`. Full markdown: `.analysis/<timestamp>/quality-report.md`.
 ```
 
 ## Present to User
