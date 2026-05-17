@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.8.1] - 2026-05-17
+
+### 🐛 Fixes
+
+* **Module help catalog header alignment** — Renamed `after`/`before` columns in all `module-help.csv` files (module-level, setup-skill, builder template, samples) to `preceded-by`/`followed-by` to match the canonical 13-column schema introduced in BMAD-METHOD v6.6.0. Warning-only fix; data was already loaded positionally (#89).
+
 ## [1.8.0] - 2026-05-10
 
 ### 🎁 Features
