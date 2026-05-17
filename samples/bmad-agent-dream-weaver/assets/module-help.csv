@@ -1,4 +1,4 @@
-module,skill,display-name,menu-code,description,action,args,phase,after,before,required,output-location,outputs
+module,skill,display-name,menu-code,description,action,args,phase,preceded-by,followed-by,required,output-location,outputs
 Dream Weaver,bmad-agent-dream-weaver,Dream Capture,DL,"Capture and log a dream through guided conversation.",dream-log,,anytime,,,false,,journal entry
 Dream Weaver,bmad-agent-dream-weaver,Dream Interpretation,DI,"Analyze a dream for symbolism, meaning, and personal connections.",dream-interpret,,anytime,dw:dream-log,,false,,interpretation
 Dream Weaver,bmad-agent-dream-weaver,Recall Training,RT,"Dream recall exercises and progress tracking.",recall-training,,anytime,,,false,,coaching updates
