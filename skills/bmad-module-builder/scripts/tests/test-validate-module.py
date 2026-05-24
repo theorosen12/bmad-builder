@@ -12,7 +12,8 @@ from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parent.parent / "validate-module.py"
 
-CSV_HEADER = "module,skill,display-name,menu-code,description,action,args,phase,after,before,required,output-location,outputs\n"
+CSV_HEADER = "module,skill,display-name,menu-code,description,action,args,phase,preceded-by,followed-by,required,output-location,outputs\n"
+LEGACY_CSV_HEADER = "module,skill,display-name,menu-code,description,action,args,phase,after,before,required,output-location,outputs\n"
 
 
 def create_module(tmp: Path, skills: list[str] | None = None, csv_rows: str = "",
@@ -162,6 +163,49 @@ def test_empty_csv():
         assert len(empty) == 1
 
 
+def test_canonical_header_accepted():
+    """The canonical preceded-by/followed-by header must NOT produce a header finding."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        csv_rows = 'Test Module,tst-foo,Do Foo,DF,Does foo,run,,anytime,,,false,output_folder,report\n'
+        module_dir = create_module(tmp, skills=["tst-foo"], csv_rows=csv_rows)
+
+        code, data = run_validate(module_dir)
+        header_findings = [f for f in data["findings"] if f["category"] == "csv-header"]
+        assert header_findings == [], f"unexpected header findings: {header_findings}"
+
+
+def test_legacy_after_before_header_flagged():
+    """A module-help.csv using the old after/before column names must be flagged as
+    a header mismatch — canonical is preceded-by/followed-by (matches the templates
+    and bmad-help). Regression for the CSV_HEADER drift in validate-module.py."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        module_dir = tmp / "module"
+        module_dir.mkdir()
+        setup = module_dir / "tst-setup"
+        setup.mkdir()
+        (setup / "SKILL.md").write_text("---\nname: tst-setup\n---\n# Setup\n")
+        (setup / "assets").mkdir()
+        (setup / "assets" / "module.yaml").write_text(
+            'code: tst\nname: "Test Module"\ndescription: "A test module"\n'
+        )
+        (setup / "assets" / "module-help.csv").write_text(
+            LEGACY_CSV_HEADER
+            + 'Test Module,tst-foo,Do Foo,DF,Does foo,run,,anytime,,,false,output_folder,report\n'
+        )
+        (module_dir / "tst-foo").mkdir()
+        (module_dir / "tst-foo" / "SKILL.md").write_text("---\nname: tst-foo\n---\n# tst-foo\n")
+
+        code, data = run_validate(module_dir)
+        header_findings = [f for f in data["findings"] if f["category"] == "csv-header"]
+        assert len(header_findings) == 1, f"expected a csv-header finding: {data['findings']}"
+        msg = header_findings[0]["message"]
+        # missing the new names, has the legacy ones
+        assert "preceded-by" in msg and "followed-by" in msg
+        assert "after" in msg and "before" in msg
+
+
 def create_standalone_module(tmp: Path, skill_name: str = "my-skill",
                              csv_rows: str = "", yaml_content: str = "",
                              include_setup_md: bool = True,
@@ -290,6 +334,8 @@ if __name__ == "__main__":
         test_invalid_before_after_ref,
         test_missing_yaml_fields,
         test_empty_csv,
+        test_canonical_header_accepted,
+        test_legacy_after_before_header_flagged,
         test_valid_standalone_module,
         test_standalone_missing_module_setup_md,
         test_standalone_missing_merge_scripts,

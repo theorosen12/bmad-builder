@@ -13,7 +13,7 @@ Performs deterministic structural checks:
 - All skill folders have at least one capability entry in the CSV
 - No orphan CSV entries pointing to nonexistent skills
 - Menu codes are unique
-- Before/after references point to real capability entries
+- preceded-by/followed-by references point to real capability entries
 - Required module.yaml fields are present
 - CSV column count is consistent
 """
@@ -28,7 +28,7 @@ from pathlib import Path
 REQUIRED_YAML_FIELDS = {"code", "name", "description"}
 CSV_HEADER = [
     "module", "skill", "display-name", "menu-code", "description",
-    "action", "args", "phase", "after", "before", "required",
+    "action", "args", "phase", "preceded-by", "followed-by", "required",
     "output-location", "outputs",
 ]
 
@@ -220,7 +220,7 @@ def validate(module_dir: Path, verbose: bool = False) -> dict:
         if len(names) > 1:
             finding("high", "duplicate-menu-code", f"Menu code '{code}' used by multiple entries: {', '.join(names)}")
 
-    # 10. Before/after reference validation
+    # 10. preceded-by/followed-by reference validation
     # Build set of valid capability references (skill:action)
     valid_refs = set()
     for row in rows:
@@ -231,7 +231,7 @@ def validate(module_dir: Path, verbose: bool = False) -> dict:
 
     for row in rows:
         display = row.get("display-name", "?")
-        for field in ("after", "before"):
+        for field in ("preceded-by", "followed-by"):
             value = row.get(field, "").strip()
             if not value:
                 continue
