@@ -16,7 +16,7 @@ evals/<skill-name>/
 ├── setup/                # Base overlay applied to every eval
 │   └── .claude/
 │       └── skills/
-│           └── bmad-distillator/
+│           └── bmad-editorial-review-prose/
 ├── A1/
 │   └── setup/            # Per-eval overlay applied on top of base
 ├── files/                # Fixture files staged via the eval's `files` field
@@ -73,13 +73,13 @@ Each entry in `files` is staged into the eval's workspace before execution.
 
 ### Per-Eval Timeout
 
-When omitted, the runner's default applies (currently 600 seconds, overridable via `--timeout`). Set per-eval timeouts when an eval invokes a slow dependency. Example for an eval that triggers a distillator subagent:
+When omitted, the runner's default applies (currently 600 seconds, overridable via `--timeout`). Set per-eval timeouts when an eval invokes a slow dependency. Example for an eval that triggers a long-running subagent:
 
 ```json
 {
   "id": "B8",
   "timeout": 900,
-  "prompt": "Run headless. Create a product brief ... and generate a distillate."
+  "prompt": "Run headless. Create a product brief ... and run editorial polish."
 }
 ```
 
@@ -130,7 +130,6 @@ Files at `evals/<skill-name>/setup/` are applied to every eval. Use this for dep
 evals/bmad-product-brief/setup/
 └── .claude/
     └── skills/
-        ├── bmad-distillator/
         ├── bmad-editorial-review-prose/
         └── bmad-editorial-review-structure/
 ```
@@ -193,15 +192,15 @@ The `bmad-product-brief` skill in the BMad Method repository ships a complete ev
 | Group | What It Covers                                                                                       |
 | ----- | ---------------------------------------------------------------------------------------------------- |
 | A1-A8 | Output grading: brief content, frontmatter, source-filtering, right-sizing across 8 product scenarios |
-| B1-B8 | Transcript grading: decision-log fidelity, polish phase ordering, read-only Validate, distillate flow |
+| B1-B8 | Transcript grading: decision-log fidelity, polish phase ordering, read-only Validate                |
 | C1    | Configuration compliance: custom output paths, document language, communication style                 |
 | Triggers | 15 queries (positive + negative) covering create, update, validate intents and adjacent skills      |
 
 What it shows in practice:
 
-- Setup overlays for dependency skills (`bmad-distillator`, editorial review skills) under `evals/setup/.claude/skills/`
+- Setup overlays for dependency skills (editorial review skills) under `evals/setup/.claude/skills/`
 - Per-eval setup overlay at `evals/bmad-product-brief/C1/setup/_bmad/` for custom configuration
-- Per-eval `timeout` override on B8 (the distillator-invoking eval)
+- Per-eval `timeout` override on B8 (the slowest scenario)
 - Read-only fixture staging for Validate-mode evals (A4, B5, B6, B7) using the `files` field
 - Mixed expectations in the same eval: some assertions check files, others scan the transcript for tool-call ordering
 
