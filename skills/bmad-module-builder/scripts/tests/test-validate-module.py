@@ -225,6 +225,8 @@ def test_short_row_does_not_crash():
         # Valid JSON with findings means the script completed instead of crashing
         # with an uncaught traceback (which run_validate would surface as raw_*).
         assert "findings" in data, f"validator crashed instead of reporting: {data}"
+        # A short row is a medium-severity finding: reported, but non-fatal.
+        assert code == 0 and data["status"] == "pass", f"expected non-fatal pass: {data}"
         col_findings = [f for f in data["findings"] if f["category"] == "csv-columns"]
         assert len(col_findings) == 1, f"expected a csv-columns finding: {data['findings']}"
         assert "5 columns" in col_findings[0]["message"]
