@@ -171,6 +171,8 @@ def test_canonical_header_accepted():
         module_dir = create_module(tmp, skills=["tst-foo"], csv_rows=csv_rows)
 
         code, data = run_validate(module_dir)
+        assert code == 0, f"expected a clean pass: {data}"
+        assert data["status"] == "pass"
         header_findings = [f for f in data["findings"] if f["category"] == "csv-header"]
         assert header_findings == [], f"unexpected header findings: {header_findings}"
 
@@ -198,12 +200,34 @@ def test_legacy_after_before_header_flagged():
         (module_dir / "tst-foo" / "SKILL.md").write_text("---\nname: tst-foo\n---\n# tst-foo\n")
 
         code, data = run_validate(module_dir)
+        assert code == 1, f"expected fail (high-severity header finding): {data}"
+        assert data["status"] == "fail"
         header_findings = [f for f in data["findings"] if f["category"] == "csv-header"]
         assert len(header_findings) == 1, f"expected a csv-header finding: {data['findings']}"
         msg = header_findings[0]["message"]
         # missing the new names, has the legacy ones
         assert "preceded-by" in msg and "followed-by" in msg
         assert "after" in msg and "before" in msg
+
+
+def test_short_row_does_not_crash():
+    """A CSV row with fewer fields than the header must not crash the validator and
+    must be reported as a column-count mismatch. DictReader fills the missing
+    columns with None by default, so the validator's `.strip()` calls would raise
+    AttributeError on a short row — restval="" keeps them safe. Regression test."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        # Only 5 of the 13 columns present (the remaining 8 are missing entirely).
+        csv_rows = 'Test Module,tst-foo,Do Foo,DF,Does foo\n'
+        module_dir = create_module(tmp, skills=["tst-foo"], csv_rows=csv_rows)
+
+        code, data = run_validate(module_dir)
+        # Valid JSON with findings means the script completed instead of crashing
+        # with an uncaught traceback (which run_validate would surface as raw_*).
+        assert "findings" in data, f"validator crashed instead of reporting: {data}"
+        col_findings = [f for f in data["findings"] if f["category"] == "csv-columns"]
+        assert len(col_findings) == 1, f"expected a csv-columns finding: {data['findings']}"
+        assert "5 columns" in col_findings[0]["message"]
 
 
 def create_standalone_module(tmp: Path, skill_name: str = "my-skill",
@@ -336,6 +360,7 @@ if __name__ == "__main__":
         test_empty_csv,
         test_canonical_header_accepted,
         test_legacy_after_before_header_flagged,
+        test_short_row_does_not_crash,
         test_valid_standalone_module,
         test_standalone_missing_module_setup_md,
         test_standalone_missing_merge_scripts,
