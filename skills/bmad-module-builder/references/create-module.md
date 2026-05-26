@@ -167,15 +167,18 @@ Iterate until the user confirms everything is correct.
 
 #### Multi-skill modules (setup skill approach)
 
-Write the confirmed module.yaml and module-help.csv content to temporary files at `{bmad_builder_reports}/{module-code}-temp-module.yaml` and `{bmad_builder_reports}/{module-code}-temp-help.csv`. Run the scaffold script:
+Write the confirmed module.yaml and module-help.csv content to a freshly-created temp directory (e.g. via `mktemp -d`) — these are ephemeral scaffolding inputs, not user-visible artifacts. Bind the path to `{tmp-dir}` and run the scaffold script:
 
 ```bash
+TMP_DIR=$(mktemp -d)
+# Write {tmp-dir}/{module-code}-temp-module.yaml and {tmp-dir}/{module-code}-temp-help.csv ...
 python3 ./scripts/scaffold-setup-skill.py \
   --target-dir "{skills-folder}" \
   --module-code "{code}" \
   --module-name "{name}" \
-  --module-yaml "{bmad_builder_reports}/{module-code}-temp-module.yaml" \
-  --module-csv "{bmad_builder_reports}/{module-code}-temp-help.csv"
+  --module-yaml "$TMP_DIR/{module-code}-temp-module.yaml" \
+  --module-csv "$TMP_DIR/{module-code}-temp-help.csv"
+rm -rf "$TMP_DIR"
 ```
 
 This creates `{code}-setup/` in the user's skills folder containing:

@@ -194,5 +194,5 @@ Use `{project-root}/...` for any path relative to the project root:
 Use directly — they already contain `{project-root}` in their resolved values:
 
 - `{output_folder}/file.md`
-- Correct: `{bmad_builder_output_folder}/agent.md`
-- Wrong: `{project-root}/{bmad_builder_output_folder}/agent.md` (double-prefix)
+- Correct: `{builder_output_folder}/agent.md`
+- Wrong: `{project-root}/{builder_output_folder}/agent.md` (double-prefix)

@@ -1,0 +1,14 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-eval-runner.
+#
+# Override files (not edited here):
+#   {project-root}/_bmad/custom/bmad-eval-runner.toml         (team)
+#   {project-root}/_bmad/custom/bmad-eval-runner.user.toml    (personal)
+
+[workflow]
+
+# Fallback for --output-dir when no flag is passed and ~/bmad-evals/ is not
+# desired. Eval runs land under {builder_output_folder}/eval-runs/<run-id>/.
+# Override in team/user TOML to redirect, or pass --output-dir per invocation.
+builder_output_folder = "{project-root}/skills"

@@ -1,0 +1,14 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-workflow-builder.
+#
+# Override files (not edited here):
+#   {project-root}/_bmad/custom/bmad-workflow-builder.toml         (team)
+#   {project-root}/_bmad/custom/bmad-workflow-builder.user.toml    (personal)
+
+[workflow]
+
+# Where new workflow / utility skills land. Existing skills are edited in
+# place at their own path; this only applies when creating a fresh skill.
+# Override in team/user TOML to redirect.
+builder_output_folder = "{project-root}/skills"

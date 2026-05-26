@@ -64,7 +64,7 @@ Each scanner writes a free-form analysis document:
 
 ## Execution
 
-First create output directory: `{bmad_builder_reports}/{skill-name}/quality-analysis/{date-time-stamp}/`
+First create output directory: `{target-skill-path}/reports/quality-analysis/{date-time-stamp}/` — reports always land next to the skill being analyzed, never in a central bucket.
 
 ### Step 1: Run All Scripts (Parallel)
 

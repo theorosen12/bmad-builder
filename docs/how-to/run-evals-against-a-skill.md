@@ -76,7 +76,7 @@ The runner stages each eval's workspace, executes `claude -p` against the prompt
 
 When the run finishes, the runner emits two paths:
 
-- The run folder, at `~/bmad-evals/<run-id>/` (or your configured `bmad_builder_reports` location)
+- The run folder, at `~/bmad-evals/<run-id>/` (or `{builder_output_folder}/eval-runs/<run-id>/` if `bmad-eval-runner`'s `customize.toml` is resolvable)
 - An HTML report at `<run-folder>/report.html`
 
 Open the report for the summary view. Drop into the run folder for full transcripts, artifacts, and grading details for any eval you want to examine.

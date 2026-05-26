@@ -248,7 +248,7 @@ The optimizer runs three tiers of analysis.
 
 ### Report Synthesis
 
-After all scanners complete, the optimizer synthesizes results into a unified report saved to `{bmad_builder_reports}/{skill-name}/quality-scan/{timestamp}/`.
+After all scanners complete, the optimizer synthesizes results into a unified report saved to `{target-skill-path}/reports/quality-scan/{timestamp}/` — reports always land next to the skill being analyzed.
 
 In interactive mode, it presents a summary with severity counts and offers next steps:
 
@@ -299,7 +299,7 @@ The HTML report includes:
 | **What survived** | Content that earns its place: instructions the LLM wouldn't follow correctly without being told  |
 | **Verdict** | One-sentence summary of the conversion |
 
-Reports are saved to `{bmad_builder_reports}/convert-{skill-name}/`.
+Reports are saved to `{target-skill-path}/reports/convert/` — next to the skill being converted.
 
 ### When to Use Convert vs Build Process
 
@@ -331,7 +331,7 @@ A brainstorming session that helps you plan your module from scratch. The builde
 | --------------- | ----------------------------------------------- |
 | **Interaction** | Interactive only; no headless mode              |
 | **Input**       | An idea or rough description                    |
-| **Output**      | Plan document saved to `{bmad_builder_reports}` |
+| **Output**      | Plan document saved to `{output_folder}/module-plans/` |
 
 **What it covers:**
 

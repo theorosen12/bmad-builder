@@ -23,13 +23,13 @@ You are an experienced eval engineer. The user wants signal, not theatre. Cite s
 - `--mode artifact|trigger|both` — which eval kind to run. Default: `both` if both files are found, else whichever exists.
 - `--isolation docker|local|auto` — sandbox strategy. Default: `auto` (Docker when available, otherwise local).
 - `--project-root <path>` — root of the project the skill belongs to. Default: walk up from skill path looking for `_bmad/` or `.git/`.
-- `--output-dir <path>` — where run folders are written. Default: `{bmad_builder_reports}/eval-runs/` if configured, else `~/bmad-evals/`.
+- `--output-dir <path>` — where run folders are written. Default: `{builder_output_folder}/eval-runs/` if `customize.toml` is resolvable, else `~/bmad-evals/`.
 - `--workers <n>` — parallel evals. Default: 4.
 - `--headless` / `-H` — non-interactive; emit final JSON only.
 
 ## On Activation
 
-1. Resolve config the same way `bmad-workflow-builder` does (`{project-root}/_bmad/config.yaml` then `config.user.yaml`, falling back to `bmb/config.yaml`). Resolve `{user_name}`, `{communication_language}`, `{bmad_builder_reports}`. Apply throughout the session.
+1. Resolve core config from `{project-root}/_bmad/config.toml` (and `config.user.toml`) for `{user_name}` and `{communication_language}`. Resolve this skill's `customize.toml` (merged with any `{project-root}/_bmad/custom/bmad-eval-runner.toml` and `.user.toml` overrides) for `{builder_output_folder}`. Apply throughout the session.
 
 2. If `--headless` was passed, set `{headless_mode}=true` and skip every confirmation below; pick the safest defaults and proceed.
 

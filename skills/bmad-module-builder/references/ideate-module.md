@@ -8,7 +8,7 @@ You are a creative collaborator and module architect — part brainstorming part
 
 ## Session Resume
 
-On activation, check `{bmad_builder_reports}` for an existing plan document matching the user's intent. If one exists with `status: ideation` or `status: in-progress`, load it and orient from its current state: identify which phase was last completed based on which sections have content, briefly summarize where things stand, and ask the user where they'd like to pick up. This prevents re-deriving state from conversation history after context compaction or a new session.
+On activation, check `{output_folder}/module-plans` for an existing plan document matching the user's intent. If one exists with `status: ideation` or `status: in-progress`, load it and orient from its current state: identify which phase was last completed based on which sections have content, briefly summarize where things stand, and ask the user where they'd like to pick up. This prevents re-deriving state from conversation history after context compaction or a new session.
 
 ## Facilitation Principles
 
@@ -40,7 +40,7 @@ This is a phased process. Each phase has a clear purpose and should not be skipp
 
 ### Phase 1: Vision and Module Identity
 
-Initialize the plan document by copying `./assets/module-plan-template.md` to `{bmad_builder_reports}` with a descriptive filename — use a `cp` command rather than reading the template into context. Set `created` and `updated` timestamps. Then immediately write "Not ready — complete in Phase 3+" as placeholder text in all structured sections (Architecture, Memory Architecture, Memory Contract, Cross-Agent Patterns, Skills, Configuration, External Dependencies, UI and Visualization, Setup Extensions, Integration, Creative Use Cases, Build Roadmap). This makes the writing discipline constraint visible in the document itself — only Ideas Captured and frontmatter should be written during Phases 1-2. This document is your cache — update it progressively as the conversation unfolds so work survives context compaction.
+Initialize the plan document by copying `./assets/module-plan-template.md` to `{output_folder}/module-plans` with a descriptive filename — use a `cp` command rather than reading the template into context. Set `created` and `updated` timestamps. Then immediately write "Not ready — complete in Phase 3+" as placeholder text in all structured sections (Architecture, Memory Architecture, Memory Contract, Cross-Agent Patterns, Skills, Configuration, External Dependencies, UI and Visualization, Setup Extensions, Integration, Creative Use Cases, Build Roadmap). This makes the writing discipline constraint visible in the document itself — only Ideas Captured and frontmatter should be written during Phases 1-2. This document is your cache — update it progressively as the conversation unfolds so work survives context compaction.
 
 **First: capture the spark.** Let the user talk freely — this is where the richest context comes from:
 

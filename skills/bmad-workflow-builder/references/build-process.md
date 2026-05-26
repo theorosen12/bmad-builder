@@ -62,7 +62,7 @@ Present a plan. Point out vague areas. Iterate with the user until the outcome a
 - `references/standard-fields.md` — field-by-field schema reference for frontmatter, customize.toml, and the Overview formula
 - `references/complex-workflow-patterns.md` (Complex Workflow only) — config integration, compaction survival, document-as-cache
 
-Load `assets/SKILL-template.md` and `references/template-substitution-rules.md`. Default to writing the entire workflow inline in SKILL.md as named sections. Carve out to `references/` ONLY when SKILL.md would otherwise be too big to scan; when you do, use descriptive filenames (`press-release.md`), never numbered prefixes (`01-discover.md`). Output to `{bmad_builder_output_folder}`.
+Load `assets/SKILL-template.md` and `references/template-substitution-rules.md`. Default to writing the entire workflow inline in SKILL.md as named sections. Carve out to `references/` ONLY when SKILL.md would otherwise be too big to scan; when you do, use descriptive filenames (`press-release.md`), never numbered prefixes (`01-discover.md`). Output to `{builder_output_folder}`.
 
 **If the SKILL.md references multiple internal files** (anything in `references/`, `assets/`, `scripts/`, `agents/`), stamp the Conventions block at the top of SKILL.md (after Overview, before On Activation):
 

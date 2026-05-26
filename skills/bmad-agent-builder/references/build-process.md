@@ -208,7 +208,7 @@ Load `./references/sample-capability-prompt.md` as a quality reference for capab
 - `./references/skill-best-practices.md` — outcome-driven authoring, patterns, anti-patterns
 - `./references/quality-dimensions.md` — build quality checklist
 
-Build the agent using templates from `./assets/` and rules from `./references/template-substitution-rules.md`. Output to `{bmad_builder_output_folder}`.
+Build the agent using templates from `./assets/` and rules from `./references/template-substitution-rules.md`. Output to `{builder_output_folder}`.
 
 ### Emit `customize.toml` (always, every archetype)
 

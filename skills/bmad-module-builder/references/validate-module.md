@@ -65,7 +65,7 @@ Combine script findings and quality assessment into a clear report:
 
 For each finding, explain what's wrong and suggest the fix. Be direct — the user should be able to act on every item without further clarification.
 
-After presenting the report, offer to save findings to a durable file: "Save validation report to `{bmad_builder_reports}/module-validation-{module-code}-{date}.md`?" This gives the user a reference they can share, track as a checklist, and review in future sessions.
+After presenting the report, offer to save findings to a durable file: "Save validation report to `{target-module-path}/reports/validation-{date}.md`?" The report lands next to the module being validated, never in a central bucket. This gives the user a reference they can share, track as a checklist, and review in future sessions.
 
 **Completion:** After presenting results, explicitly state: "Validation complete." If findings exist, offer to walk through fixes. If the module passes cleanly, confirm it's ready for use. Do not continue the conversation beyond what the user requests — the session is done once results are delivered and any follow-up questions are answered.
 

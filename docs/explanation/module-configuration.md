@@ -127,7 +127,7 @@ module,skill,display-name,menu-code,description,action,args,phase,preceded-by,fo
 | **preceded-by**     | Capabilities that should complete before this one (this capability is preceded by them): format `skill-name:action`, comma-separated for multiple |
 | **followed-by**     | Capabilities that should run after this one (this capability is followed by them), same format as `preceded-by`                              |
 | **required**        | `true` if this is a blocking gate for phase progression, `false` otherwise                                                                   |
-| **output-location** | Config variable name (e.g., `output_folder`, `bmad_builder_reports`); `bmad-help` resolves from config to scan for completion artifacts     |
+| **output-location** | Config variable name (e.g., `output_folder`, `builder_output_folder`); `bmad-help` resolves from config to scan for completion artifacts. Leave blank when output is per-invocation (e.g., reports that land next to whatever's being analyzed) — completion detection is skipped for those rows. |
 | **outputs**         | File patterns `bmad-help` looks for in the output location to detect completion (e.g., "quality report", "agent skill")                      |
 
 ### How bmad-help Uses These Entries

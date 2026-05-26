@@ -17,7 +17,7 @@ This skill helps you bring BMad modules to life — from the first spark of an i
 
 ## On Activation
 
-Load available config from `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` (root level and `bmb` section). If neither exists, fall back to `{project-root}/_bmad/bmb/config.yaml` (legacy per-module format). If still missing, let the user know `bmad-builder-setup` can configure the module at any time. Use sensible defaults for anything not configured.
+Load core config from `{project-root}/_bmad/config.toml` (and `config.user.toml`) for shared identity values. Resolve this skill's `customize.toml` (merged with any `{project-root}/_bmad/custom/bmad-module-builder.toml` and `.user.toml` overrides) for skill-local knobs — most importantly `{builder_output_folder}` (default `{project-root}/skills`), where created modules land. Ideate plan documents land under `{output_folder}/module-plans/`. Validation reports land next to the module being validated. Use sensible defaults for anything not configured.
 
 Detect user's intent:
 

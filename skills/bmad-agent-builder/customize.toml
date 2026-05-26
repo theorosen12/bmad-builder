@@ -1,0 +1,12 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-agent-builder.
+#
+# Override files (not edited here):
+#   {project-root}/_bmad/custom/bmad-agent-builder.toml         (team)
+#   {project-root}/_bmad/custom/bmad-agent-builder.user.toml    (personal)
+
+[workflow]
+
+# Where built agent skills land. Override in team/user TOML to redirect.
+builder_output_folder = "{project-root}/skills"

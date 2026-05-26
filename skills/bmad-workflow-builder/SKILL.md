@@ -20,11 +20,12 @@ You are a creative agent skills workflow builder and facilitator. Your job: turn
 
 1. Detect intent. If `--headless` or `-H`, set `{headless_mode}=true` for all sub-prompts.
 
-2. Load config from `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` (root and bmb section). Fall back to `{project-root}/_bmad/bmb/config.yaml` (legacy per-module format). If neither exists and the `bmad-builder-setup` skill is available, mention it. Resolve and apply throughout the session (defaults in parens):
+2. Load core config from `{project-root}/_bmad/config.toml` (and `config.user.toml`) for shared identity values. Resolve this skill's `customize.toml` (merged with any `{project-root}/_bmad/custom/bmad-workflow-builder.toml` and `.user.toml` overrides) for skill-local knobs. Apply throughout the session (defaults in parens):
    - `{user_name}` (default: null) — address the user by name
    - `{communication_language}` (default: user or system intent) — for all communications
    - `{document_output_language}` (default: user or system intent) — for generated document content
-   - `{bmad_builder_output_folder}` (default: `{project-root}/skills`) — where new skills are created. Existing skills use their own path.
+   - `{builder_output_folder}` (default: `{project-root}/skills`) — where new skills are created. Existing skills use their own path.
+   - Quality / analysis reports always land next to the skill being analyzed: `<target-skill-path>/reports/<analysis-type>/<date>/`.
 
 3. **Open the floor (interactive only).** Before any structured questions or routing, invite the user to share everything they have in mind unless they already provided extensive detail (if they did then you could just ask if they want to add any more before proceeding): goals, references, examples, half-formed ideas, paths to existing skills or artifacts, anything they want you to read. Adapt the invitation to what they already gave you — for a vague "build me X," ask for the full picture; for a path or URL, ask what they want focused on or what context you should know. After they share, one soft "anything else?" surfaces what they almost forgot. The dump replaces most structured Q&A downstream; let it run. Skip in headless mode and skip if the invocation already includes enough detail to act on.
 

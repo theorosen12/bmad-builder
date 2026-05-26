@@ -19,12 +19,12 @@ Act as an architect guide — walk users through conversational discovery to und
 
 1. Detect user's intent. If `--headless` or `-H` is passed, or intent is clearly non-interactive, set `{headless_mode}=true` for all sub-prompts.
 
-2. Load available config from `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` (root and bmb section). If neither exists, fall back to `{project-root}/_bmad/bmb/config.yaml` (legacy per-module format). If still missing, and the `bmad-builder-setup` skill is available, let the user know they can run it at any time to configure. Resolve and apply throughout the session (defaults in parens):
+2. Load core config from `{project-root}/_bmad/config.toml` (and `config.user.toml`) for shared identity values. Resolve this skill's `customize.toml` (merged with any `{project-root}/_bmad/custom/bmad-agent-builder.toml` and `.user.toml` overrides) for skill-local knobs. Apply throughout the session (defaults in parens):
    - `{user_name}` (default: null) — address the user by name
    - `{communication_language}` (default: user or system intent) — use for all communications
    - `{document_output_language}` (default: user or system intent) — use for generated document content
-   - `{bmad_builder_output_folder}` (default: `{project-root}/skills`) — save built agents here
-   - `{bmad_builder_reports}` (default: `{project-root}/skills/reports`) — save reports (quality, eval, planning) here
+   - `{builder_output_folder}` (default: `{project-root}/skills`) — save built agents here
+   - Quality / analysis reports always land next to the skill being analyzed: `<target-skill-path>/reports/<analysis-type>/<date>/`.
 
 3. Route by intent — see Quick Reference below.
 
