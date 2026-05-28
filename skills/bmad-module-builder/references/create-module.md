@@ -75,8 +75,8 @@ Build the help CSV entries for each skill. A single skill can have multiple capa
 | **action**          | The capability/action name within the skill                            |
 | **args**            | Supported arguments (e.g., `[-H] [path]`)                              |
 | **phase**           | When it can run — usually "anytime"                                    |
-| **after**           | Capabilities that should come before this one (format: `skill:action`) |
-| **before**          | Capabilities that should come after this one (format: `skill:action`)  |
+| **preceded-by**     | Capabilities that should come before this one (this capability is preceded by them; format: `skill:action`) |
+| **followed-by**     | Capabilities that should come after this one (this capability is followed by them; format: `skill:action`)  |
 | **required**        | Is this capability required before others can run?                     |
 | **output-location** | Where output goes (config variable name or path)                       |
 | **outputs**         | What it produces                                                       |
@@ -85,12 +85,12 @@ Ask the user about:
 
 - How capabilities should be ordered — are there natural sequences?
 - Which capabilities are prerequisites for others?
-- If this is an expansion module, do any capabilities reference the parent module's skills in their before/after fields?
+- If this is an expansion module, do any capabilities reference the parent module's skills in their preceded-by/followed-by fields?
 
 **Standalone modules:** All entries map to the same skill. Include a capability entry for the `setup`/`configure` action (menu-code `SU` or similar, action `configure`, phase `anytime`). Populate columns correctly for bmad-help consumption:
 
 - `phase`: typically `anytime`, but use workflow phases (`1-analysis`, `2-planning`, etc.) if the skill fits a natural workflow sequence
-- `after`/`before`: dependency chain between capabilities, format `skill-name:action`
+- `preceded-by`/`followed-by`: dependency chain between capabilities, format `skill-name:action`
 - `required`: `true` for blocking gates, `false` for optional capabilities
 - `output-location`: use config variable names (e.g., `output_folder`) not literal paths — bmad-help resolves these from config
 - `outputs`: describe file patterns bmad-help should look for to detect completion (e.g., "quality report", "converted skill")

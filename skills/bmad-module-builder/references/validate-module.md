@@ -25,7 +25,7 @@ Run the structural/CSV validator for deterministic checks:
 python3 ./scripts/validate-module.py "{module-skills-folder}"
 ```
 
-This checks: module structure (setup skill or standalone), module.yaml completeness, CSV integrity (missing entries, orphans, duplicate menu codes, broken before/after references, missing required fields). For standalone modules, it also verifies the presence of module-setup.md and merge scripts.
+This checks: module structure (setup skill or standalone), module.yaml completeness, CSV integrity (missing entries, orphans, duplicate menu codes, broken preceded-by/followed-by references, missing required fields). For standalone modules, it also verifies the presence of module-setup.md and merge scripts.
 
 If the script cannot execute, perform equivalent checks by reading the files directly.
 
@@ -61,7 +61,7 @@ This is where LLM judgment matters. For 4 or fewer skills, read all SKILL.md fil
 - Specific — avoids vague language ("helps with things", "manages stuff")
 - Not overly verbose — one sentence, no filler
 
-**Ordering and relationships** — Do the before/after references make sense given what the skills actually do? Are required flags set appropriately?
+**Ordering and relationships** — Do the preceded-by/followed-by references make sense given what the skills actually do? Are required flags set appropriately?
 
 **Menu codes** — Are they intuitive? Do they relate to the display name in a way users can remember?
 
