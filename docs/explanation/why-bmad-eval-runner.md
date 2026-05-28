@@ -13,7 +13,7 @@ Why this matters: skills are sensitive to context. Your global `~/.claude/CLAUDE
 
 ## Dependency Staging
 
-Real BMad skills compose. A product brief skill calls a distillator skill, which calls editorial review skills. The runner stages dependencies through a setup overlay system: directories at `evals/setup/` (base, applied to every eval) and `evals/<eval-id>/setup/` (per-eval, applied on top) are rsynced into the workspace before the skill under test is staged.
+Real BMad skills compose. A product brief skill calls editorial review skills, which surface improvement suggestions. The runner stages dependencies through a setup overlay system: directories at `evals/setup/` (base, applied to every eval) and `evals/<eval-id>/setup/` (per-eval, applied on top) are rsynced into the workspace before the skill under test is staged.
 
 Drop the dependency skills into `evals/setup/.claude/skills/` and they are available inside the sandbox. Drop a per-eval `_bmad/config.user.yaml` into `evals/C1/setup/` and it overrides the base for that eval only.
 
