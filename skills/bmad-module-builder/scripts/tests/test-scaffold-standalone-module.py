@@ -39,6 +39,8 @@ def run_scaffold(skill_dir: Path, **kwargs) -> tuple[int, dict]:
         "--module-code", kwargs.get("module_code", "tst"),
         "--module-name", kwargs.get("module_name", "Test Module"),
     ]
+    if kwargs.get("also_marketplace"):
+        cmd.append("--also-marketplace")
     if "marketplace_dir" in kwargs:
         cmd.extend(["--marketplace-dir", str(kwargs["marketplace_dir"])])
     if kwargs.get("verbose"):
@@ -68,27 +70,41 @@ def test_basic_scaffold():
         # merge scripts placed in scripts/
         assert (skill_dir / "scripts" / "merge-config.py").is_file()
         assert (skill_dir / "scripts" / "merge-help-csv.py").is_file()
-        # marketplace.json at parent level
-        assert (tmp / ".claude-plugin" / "marketplace.json").is_file()
+        # marketplace.json is NOT written by default — plugin.json is canonical
+        assert not (tmp / ".claude-plugin" / "marketplace.json").exists()
+        assert data["marketplace_json"] is None
+        assert ".claude-plugin/marketplace.json" not in data["files_created"]
 
 
-def test_marketplace_json_content():
-    """Test that marketplace.json contains correct module metadata."""
+def test_no_marketplace_json_by_default():
+    """Default scaffold must not emit a marketplace.json (deprecated as canonical)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        skill_dir = make_skill_dir(tmp)
+        code, data = run_scaffold(skill_dir)
+        assert code == 0
+        assert data["marketplace_json"] is None
+        assert not (tmp / ".claude-plugin" / "marketplace.json").exists()
+
+
+def test_marketplace_json_content_when_opted_in():
+    """With --also-marketplace, the legacy index is written with correct metadata."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         skill_dir = make_skill_dir(tmp, name="bmad-exc-tools")
 
         code, data = run_scaffold(
-            skill_dir, module_code="exc", module_name="Excalidraw Tools"
+            skill_dir, module_code="exc", module_name="Excalidraw Tools",
+            also_marketplace=True,
         )
         assert code == 0
 
         marketplace = json.loads(
             (tmp / ".claude-plugin" / "marketplace.json").read_text()
         )
-        assert marketplace["name"] == "bmad-exc"
+        assert marketplace["name"] == "exc"
         plugin = marketplace["plugins"][0]
-        assert plugin["name"] == "bmad-exc"
+        assert plugin["name"] == "exc"
         assert plugin["skills"] == ["./bmad-exc-tools"]
         assert plugin["description"] == "A test module"
         assert plugin["version"] == "1.0.0"
@@ -228,7 +244,7 @@ def test_custom_marketplace_dir():
         custom_dir = tmp / "custom-root"
         custom_dir.mkdir()
 
-        code, data = run_scaffold(skill_dir, marketplace_dir=custom_dir)
+        code, data = run_scaffold(skill_dir, marketplace_dir=custom_dir, also_marketplace=True)
         assert code == 0
 
         # Should be at custom location, not default parent
@@ -240,7 +256,8 @@ def test_custom_marketplace_dir():
 if __name__ == "__main__":
     tests = [
         test_basic_scaffold,
-        test_marketplace_json_content,
+        test_no_marketplace_json_by_default,
+        test_marketplace_json_content_when_opted_in,
         test_does_not_overwrite_existing_scripts,
         test_creates_missing_subdirectories,
         test_preserves_existing_skill_files,

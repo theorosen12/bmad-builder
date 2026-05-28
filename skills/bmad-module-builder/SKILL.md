@@ -13,6 +13,8 @@ This skill helps you bring BMad modules to life — from the first spark of an i
 - **Create Module (CM)** — Takes an existing folder of built skills (or a single skill) and scaffolds the module infrastructure that makes it installable. For multi-skill modules, generates a dedicated `-setup` skill. For single skills, embeds self-registration directly into the skill. Supports `--headless` / `-H`.
 - **Validate Module (VM)** — Checks that a module's structure is complete and correct — every skill has its capabilities registered, entries are accurate and well-crafted, and structural integrity is sound. Handles both multi-skill and standalone modules. Supports `--headless` / `-H`.
 
+Modules built here use the **new community module format** (BMAD Module Manifest Spec v1.0.0): the Create Module path emits a canonical `.claude-plugin/plugin.json` manifest, and Validate Module checks it. **Converting an *existing* BMB module to this format** is a separate job — use the sibling **`bmad-module-migrator`** skill ("migrate module" / "convert to plugin.json"), which synthesizes a `plugin.json` for an already-built module non-destructively.
+
 **Args:** Accepts `--headless` / `-H` for CM and VM paths, an initial description for IM, or a path to a skills folder or single SKILL.md file for CM/VM.
 
 ## On Activation

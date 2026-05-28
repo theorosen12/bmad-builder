@@ -38,7 +38,7 @@ Skills without a `customize.toml` are fine — older skills or ones that predate
 >
 > This means:
 > - No separate `-setup` skill to maintain
-> - Simpler distribution (single skill folder + marketplace.json)
+> - Simpler distribution (single skill folder + a canonical `.claude-plugin/plugin.json`)
 > - Users install by adding the skill and running it with `setup`
 >
 > Shall I proceed with the standalone approach, or would you prefer a separate setup skill?"
@@ -49,14 +49,19 @@ If the user overrides the recommendation (e.g., wants a setup skill for a single
 
 ### 2. Gather Module Identity
 
-Collect through conversation (or extract from a plan document in headless mode):
+Collect through conversation (or extract from a plan document in headless mode). These inputs feed both `module.yaml` and the canonical `.claude-plugin/plugin.json` manifest (BMAD Module Manifest Spec v1.0.0):
 
-- **Module name** — Human-friendly display name (e.g., "Creative Intelligence Suite")
-- **Module code** — 2-4 letter abbreviation (e.g., "cis"). Used in skill naming, config sections, and folder conventions
-- **Description** — One-line summary of what the module does
-- **Version** — Starting version (default: 1.0.0)
-- **Module greeting** — Message shown to the user after setup completes
-- **Standalone or expansion?** If expansion: which module does it extend? This affects how help CSV entries may reference capabilities from the parent module
+- **Module display name** — Human-friendly name (e.g., "Creative Intelligence Suite"). Becomes `module.yaml` `name` and `plugin.json` `displayName`.
+- **Module code (`bmad.code`)** — The short install-directory code under `_bmad/<code>/`. MUST match `^[a-z][a-z0-9-]{1,31}$` and **MUST NOT be reserved**. Validate the user's choice live against the reserved set (spec §7.1): `core, bmm, bmb, cis, gds, tea, wds, automator, _config, _memory, custom, agents, hooks, config, commands, skills`. If they pick a reserved code, ask for another. (`build-plugin-json.py` also rejects reserved/invalid codes.)
+- **Global module name (`name`)** — kebab-case, `^[a-z][a-z0-9-]+$`, 3–64 chars, globally unique across the ecosystem. This is the Claude marketplace ID and `bmad-module install` source. Default to a kebab of the display name. **Warn if it starts with `bmad-`** (W02; that prefix is reserved for verified orgs — community modules should drop it).
+- **Description** — One sentence, **10–200 chars** (spec requirement). Used by both `module.yaml` and `plugin.json`.
+- **Version** — Starting version, valid semver (default: `0.1.0`).
+- **BMAD-METHOD compatibility (`bmad.compatibility.bmadMethod`)** — semver range (default `>=6.6.0`). Avoid a range that excludes the latest known BMAD-METHOD (triggers W01).
+- **Category (`bmad.category`)** — e.g. `developer-tools`, `knowledge-management`, `testing`, `game-dev`, `creative`, `business-strategy`, `agents`, `workflows`, `documentation`.
+- **License** — SPDX id (e.g. `MIT`, `Apache-2.0`); ensure a matching `LICENSE` file exists at the module root.
+- **Author / repository / homepage / keywords** — for `plugin.json` metadata (optional but recommended for distribution).
+- **Module greeting** — Message shown to the user after setup completes (`module.yaml`).
+- **Standalone or expansion?** If expansion: which module does it extend? This affects how help CSV entries may reference capabilities from the parent module, and may add a `bmad.dependencies.modules[]` entry.
 
 ### 3. Define Capabilities
 
@@ -201,7 +206,8 @@ This adds to the existing skill:
 - `./assets/module-setup.md` — Self-registration reference (alongside module.yaml and module-help.csv)
 - `./scripts/merge-config.py` — Config merge script
 - `./scripts/merge-help-csv.py` — Help CSV merge script
-- `../.claude-plugin/marketplace.json` — Distribution manifest
+
+The script no longer writes a canonical `marketplace.json` — `.claude-plugin/plugin.json` (emitted next) is the canonical manifest, and a single-module repo needs only that. If this repo publishes **multiple** modules and you want a legacy multi-plugin discovery index too, re-run the script with `--also-marketplace`.
 
 After scaffolding, read the skill's SKILL.md and integrate the registration check into its **On Activation** section. How you integrate depends on whether the skill has an existing first-run init flow:
 
@@ -214,6 +220,52 @@ After scaffolding, read the skill's SKILL.md and integrate the registration chec
 In both cases, the `setup`/`configure` argument should always trigger `./assets/module-setup.md` regardless of whether the module is already registered (for reconfiguration).
 
 Show the user the proposed changes and confirm before writing.
+
+#### Emit the canonical `plugin.json` manifest (both approaches)
+
+After the structural scaffold, generate the canonical `.claude-plugin/plugin.json` using the shared synthesizer. It is deterministic and reads `module.yaml` + the filesystem; preview with `--dry-run`, confirm, then write.
+
+First settle the **module root** — the repo directory that will contain `.claude-plugin/`. For the conventional layout (`<module-root>/skills/...`) it's the parent of the skills folder; for a flat repo where skill dirs sit at the top, it's the skills folder itself. Confirm with the user if ambiguous. `skills[]` and `customize.schemas[]` are discovered from that root, so relative paths come out correct.
+
+**Standalone module:**
+
+```bash
+python3 ./scripts/build-plugin-json.py "{module-root}" \
+  --name "{name}" --code "{code}" \
+  --bmad-method-range "{bmad_method_range}" --version "{version}" \
+  --description "{description}" --display-name "{display_name}" \
+  --category "{category}" --license "{spdx}" \
+  --author-name "{author}" --repository "{repo_url}" --homepage "{homepage}" \
+  --keyword {kw1} --keyword {kw2} \
+  --module-definition "{rel}/{skill-dir}/assets/module.yaml" \
+  --module-help-csv "{rel}/{skill-dir}/assets/module-help.csv" \
+  --dry-run
+```
+
+This yields `skills: ["./{skill-dir}"]`, the discovered `customize.schemas[]`, and no `setupSkill`.
+
+**Multi-skill module:** add the setup-skill wiring so the installer runs setup after copy:
+
+```bash
+python3 ./scripts/build-plugin-json.py "{module-root}" \
+  --name "{name}" --code "{code}" \
+  --bmad-method-range "{bmad_method_range}" --version "{version}" \
+  --description "{description}" --display-name "{display_name}" \
+  --category "{category}" --license "{spdx}" \
+  --author-name "{author}" --repository "{repo_url}" --homepage "{homepage}" \
+  --keyword {kw1} --keyword {kw2} \
+  --setup-skill "{code}-setup" \
+  --module-definition "{rel}/{code}-setup/assets/module.yaml" \
+  --module-help-csv "{rel}/{code}-setup/assets/module-help.csv" \
+  --post-install-skill "{code}-setup" \
+  --dry-run
+```
+
+This yields the full `skills[]` (every SKILL.md dir, including `{code}-setup`), `customize.schemas[]`, and the `bmad.setupSkill` / `moduleDefinition` / `moduleHelpCsv` / `install.postInstallSkill` wiring.
+
+Show the user the `.manifest` and any `.warnings` (e.g. a `bmad-` name-prefix W02 warning or a skills/marketplace reconciliation note). Once confirmed, **re-run the same command without `--dry-run`** to write the manifest. Then validate via the Validate Module (VM) path (`validate-plugin-json.py` + the Node gate).
+
+`build-plugin-json.py` computes a sensible `bmad.install.ignore` from the repo's dev cruft; pass `--ignore <pattern>` (repeatable) to override, or `--no-ignore` to omit. It will not emit `install.ignore` if a `.bmadignore` file is present (spec check C15).
 
 ### 8. Confirm and Next Steps
 
@@ -229,11 +281,11 @@ Show what was created — the setup skill folder structure and key file contents
 
 Show what was added to the skill — the new files and the SKILL.md modification. Let the user know:
 
-- The skill is now a self-registering BMad module
+- The skill is now a self-registering BMad module with a canonical `.claude-plugin/plugin.json`
 - Users install by adding the skill and running it with `setup` or `configure`
 - On first normal run, if config is missing, it will automatically trigger registration
-- Review and fill in the `marketplace.json` fields (owner, license, homepage, repository) for distribution
-- The module can be validated with the Validate Module (VM) capability
+- Distribution is by repository URL via the `bmad-module` skill — a single-module repo needs only `plugin.json` (no `marketplace.json`)
+- Validate the module with the Validate Module (VM) capability (runs the §13 `plugin.json` checks plus the authoritative Node gate)
 
 ## Headless Mode
 
@@ -244,19 +296,20 @@ When `--headless` is set, the skill requires either:
 
 **Required inputs** (must be provided or extractable — exit with error if missing):
 
-- Module code (cannot be safely inferred)
+- Module code (`bmad.code`) — cannot be safely inferred; **must be non-reserved** (exit with error if reserved, since headless cannot prompt for a remap)
 - Skills folder path or single skill path
 
 **Inferrable inputs** (will use defaults if not provided — flag as inferred in output):
 
-- Module name (inferred from folder name or skill themes)
-- Description (synthesized from skills)
-- Version (defaults to 1.0.0)
+- Module name / global `name` (inferred from folder name or skill themes; kebab-cased)
+- Description (synthesized from skills; must reach 10–200 chars or error)
+- Version (defaults to `0.1.0`)
+- `bmad.compatibility.bmadMethod` (defaults to `>=6.6.0`)
 - Capability ordering (inferred from skill dependencies)
 
 **Approach auto-detection:** If the path contains a single skill, use the standalone approach automatically. If it contains multiple skills, use the setup skill approach.
 
-In headless mode: skip interactive questions, scaffold immediately, and return structured JSON:
+In headless mode: skip interactive questions, scaffold immediately, emit `plugin.json` via `build-plugin-json.py` (no `--dry-run`), and return structured JSON:
 
 ```json
 {
@@ -266,12 +319,14 @@ In headless mode: skip interactive questions, scaffold immediately, and return s
   "setup_skill": "{code}-setup",
   "skill_dir": "/path/to/skill/",
   "location": "/path/to/...",
+  "plugin_json": "/path/to/.claude-plugin/plugin.json",
   "files_created": ["..."],
   "inferred": { "module_name": "...", "description": "..." },
+  "manifest_warnings": ["..."],
   "warnings": []
 }
 ```
 
-For multi-skill modules: `setup_skill` and `location` point to the generated setup skill. For standalone modules: `skill_dir` points to the modified skill and `location` points to the marketplace.json parent.
+For multi-skill modules: `setup_skill` and `location` point to the generated setup skill. For standalone modules: `skill_dir` points to the modified skill. `plugin_json` is the written manifest path and `manifest_warnings[]` carries any `build-plugin-json.py` warnings (e.g. `bmad-` name prefix, version reconciliation).
 
-The `inferred` object lists every value that was not explicitly provided, so the caller can spot wrong inferences. If critical information is missing and cannot be inferred, return `{ "status": "error", "message": "..." }`.
+The `inferred` object lists every value that was not explicitly provided, so the caller can spot wrong inferences. If critical information is missing and cannot be inferred (or `bmad.code` is reserved, or `description` can't reach 10–200 chars), return `{ "status": "error", "message": "..." }`.

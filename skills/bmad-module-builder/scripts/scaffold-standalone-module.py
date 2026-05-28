@@ -4,10 +4,15 @@
 # ///
 """Scaffold standalone module infrastructure into an existing skill.
 
-Copies template files (module-setup.md, merge scripts) into the skill directory
-and generates a .claude-plugin/marketplace.json for distribution. The LLM writes
-module.yaml and module-help.csv directly to the skill's assets/ folder before
-running this script.
+Copies template files (module-setup.md, merge scripts) into the skill directory.
+The LLM writes module.yaml and module-help.csv directly to the skill's assets/
+folder before running this script.
+
+The canonical distribution manifest for a module is now `.claude-plugin/plugin.json`,
+emitted by create-module.md via `build-plugin-json.py` (BMAD Module Manifest Spec
+v1.0.0). A single-module repo needs only `plugin.json`. The legacy multi-plugin
+`.claude-plugin/marketplace.json` index is written only when `--also-marketplace`
+is passed (e.g. a repo that publishes several modules for cross-tool discovery).
 """
 
 import argparse
@@ -36,9 +41,15 @@ def main() -> int:
         help="Module display name (e.g. 'Excalidraw Tools')",
     )
     parser.add_argument(
+        "--also-marketplace",
+        action="store_true",
+        help="Also write a legacy multi-plugin .claude-plugin/marketplace.json index "
+        "(canonical manifest is plugin.json, emitted separately by build-plugin-json.py)",
+    )
+    parser.add_argument(
         "--marketplace-dir",
         default=None,
-        help="Directory to create .claude-plugin/ in (defaults to skill-dir parent)",
+        help="Directory to create .claude-plugin/ in for --also-marketplace (defaults to skill-dir parent)",
     )
     parser.add_argument(
         "--verbose", action="store_true", help="Print progress to stderr"
@@ -124,52 +135,56 @@ def main() -> int:
             dst.chmod(0o755)
             files_created.append(f"scripts/{script_name}")
 
-    # 3. Generate marketplace.json
-    plugin_dir = marketplace_dir / ".claude-plugin"
-    plugin_dir.mkdir(parents=True, exist_ok=True)
-    marketplace_json = plugin_dir / "marketplace.json"
+    # 3. Optionally generate a legacy multi-plugin marketplace.json index.
+    # The canonical manifest (plugin.json) is emitted by build-plugin-json.py;
+    # only write marketplace.json when explicitly requested.
+    marketplace_json = None
+    if args.also_marketplace:
+        plugin_dir = marketplace_dir / ".claude-plugin"
+        plugin_dir.mkdir(parents=True, exist_ok=True)
+        marketplace_json = plugin_dir / "marketplace.json"
 
-    # Read module.yaml for description and version
-    module_yaml_path = skill_dir / "assets" / "module.yaml"
-    module_description = ""
-    module_version = "1.0.0"
-    try:
-        yaml_text = module_yaml_path.read_text(encoding="utf-8")
-        for line in yaml_text.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("description:"):
-                module_description = stripped.split(":", 1)[1].strip().strip('"').strip("'")
-            elif stripped.startswith("module_version:"):
-                module_version = stripped.split(":", 1)[1].strip().strip('"').strip("'")
-    except Exception:
-        pass
+        # Read module.yaml for description and version
+        module_yaml_path = skill_dir / "assets" / "module.yaml"
+        module_description = ""
+        module_version = "1.0.0"
+        try:
+            yaml_text = module_yaml_path.read_text(encoding="utf-8")
+            for line in yaml_text.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("description:"):
+                    module_description = stripped.split(":", 1)[1].strip().strip('"').strip("'")
+                elif stripped.startswith("module_version:"):
+                    module_version = stripped.split(":", 1)[1].strip().strip('"').strip("'")
+        except Exception:
+            pass
 
-    skill_dir_name = skill_dir.name
-    marketplace_data = {
-        "name": args.module_code,
-        "owner": {"name": ""},
-        "license": "",
-        "homepage": "",
-        "repository": "",
-        "keywords": ["bmad"],
-        "plugins": [
-            {
-                "name": args.module_code,
-                "source": "./",
-                "description": module_description,
-                "version": module_version,
-                "author": {"name": ""},
-                "skills": [f"./{skill_dir_name}"],
-            }
-        ],
-    }
+        skill_dir_name = skill_dir.name
+        marketplace_data = {
+            "name": args.module_code,
+            "owner": {"name": ""},
+            "license": "",
+            "homepage": "",
+            "repository": "",
+            "keywords": ["bmad"],
+            "plugins": [
+                {
+                    "name": args.module_code,
+                    "source": "./",
+                    "description": module_description,
+                    "version": module_version,
+                    "author": {"name": ""},
+                    "skills": [f"./{skill_dir_name}"],
+                }
+            ],
+        }
 
-    if args.verbose:
-        print(f"Writing marketplace.json to {marketplace_json}", file=sys.stderr)
-    marketplace_json.write_text(
-        json.dumps(marketplace_data, indent=2) + "\n", encoding="utf-8"
-    )
-    files_created.append(".claude-plugin/marketplace.json")
+        if args.verbose:
+            print(f"Writing marketplace.json to {marketplace_json}", file=sys.stderr)
+        marketplace_json.write_text(
+            json.dumps(marketplace_data, indent=2) + "\n", encoding="utf-8"
+        )
+        files_created.append(".claude-plugin/marketplace.json")
 
     # --- Result ---
 
@@ -180,7 +195,9 @@ def main() -> int:
         "files_created": files_created,
         "files_skipped": files_skipped,
         "warnings": warnings,
-        "marketplace_json": str(marketplace_json),
+        "marketplace_json": str(marketplace_json) if marketplace_json else None,
+        "next_step": "Emit the canonical .claude-plugin/plugin.json with build-plugin-json.py "
+        "(see create-module.md Step 7).",
     }
     print(json.dumps(result, indent=2))
     return 0

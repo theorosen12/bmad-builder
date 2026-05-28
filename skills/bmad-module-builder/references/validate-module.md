@@ -10,14 +10,16 @@ You are a module quality reviewer. Your job is to verify that a BMad module's st
 
 ### 1. Locate the Module
 
-Ask the user for the path to their module's skills folder (or a single skill folder for standalone modules). The validation script auto-detects the module type:
+Ask the user for the path to their module's skills folder (or a single skill folder for standalone modules), and identify the **module root** — the repo directory that holds `.claude-plugin/`. The validation auto-detects type:
 
 - **Multi-skill module:** Identifies the setup skill (`*-setup`) and all other skill folders
 - **Standalone module:** Detected when no setup skill exists and the folder contains a single skill with `assets/module.yaml`. Validates: `assets/module-setup.md`, `assets/module.yaml`, `assets/module-help.csv`, `scripts/merge-config.py`, `scripts/merge-help-csv.py`
 
+**Detect the manifest format.** If `<module-root>/.claude-plugin/plugin.json` exists, this is a **new-format community module** — validate the manifest against the spec (Step 2a) *in addition to* the structural/quality checks below. If only a legacy `marketplace.json` (or neither) is present, run the structural/quality checks and recommend migrating to `plugin.json` via the `bmad-module-migrator` skill.
+
 ### 2. Run Structural Validation
 
-Run the validation script for deterministic checks:
+Run the structural/CSV validator for deterministic checks:
 
 ```bash
 python3 ./scripts/validate-module.py "{module-skills-folder}"
@@ -26,6 +28,23 @@ python3 ./scripts/validate-module.py "{module-skills-folder}"
 This checks: module structure (setup skill or standalone), module.yaml completeness, CSV integrity (missing entries, orphans, duplicate menu codes, broken before/after references, missing required fields). For standalone modules, it also verifies the presence of module-setup.md and merge scripts.
 
 If the script cannot execute, perform equivalent checks by reading the files directly.
+
+### 2a. Validate the `plugin.json` manifest (new-format modules)
+
+When `<module-root>/.claude-plugin/plugin.json` exists, also run the spec §13 validator (the in-repo, no-Node mirror — checks C01–C15 and warnings W01–W04):
+
+```bash
+python3 ./scripts/validate-plugin-json.py "{module-root}"           # human-readable
+python3 ./scripts/validate-plugin-json.py "{module-root}" --json    # machine-readable
+```
+
+Exit `0` = clean (warnings allowed), `1` = at least one error, `2` = usage error. Then run the **authoritative** Node gate when the marketplace repo is available, from that repo so it resolves its `node_modules`:
+
+```bash
+node "<bmad-marketplace>/scripts/validate-module.mjs" "{module-root}"
+```
+
+The marketplace's `validate-module.mjs` is the source of truth; surface its result verbatim. If the Python mirror and the Node gate disagree, **trust Node** and note the divergence (the Python port can be refined — diff the `--json` `results[]` by `id`). A module is release-ready only when the Node gate reports `0 fail`.
 
 ### 3. Quality Assessment
 
@@ -59,9 +78,10 @@ Flag drift: if the roster says `icon: 🎨` but the agent's own `customize.toml`
 
 Combine script findings and quality assessment into a clear report:
 
-- **Structural issues** (from script) — list with severity
+- **Manifest validation** (new-format modules) — the `plugin.json` C01–C15 errors and W01–W04 warnings from `validate-plugin-json.py`, and the authoritative Node gate result. Errors here block release.
+- **Structural issues** (from `validate-module.py`) — list with severity
 - **Quality findings** (from your review) — specific, actionable suggestions per entry
-- **Overall assessment** — is this module ready for use, or does it need fixes?
+- **Overall assessment** — is this module ready for use, or does it need fixes? A new-format module is ready only when the Node gate reports `0 fail` and the quality review is clean.
 
 For each finding, explain what's wrong and suggest the fix. Be direct — the user should be able to act on every item without further clarification.
 
@@ -77,10 +97,17 @@ When `--headless` is set, run the full validation (script + quality assessment) 
 {
   "status": "pass|fail",
   "module_code": "...",
+  "manifest_validation": {
+    "format": "plugin.json|legacy|none",
+    "python_ok": true,
+    "node_ok": true,
+    "node_run": true,
+    "results": [{ "id": "C01", "kind": "pass|warn|error", "message": "..." }]
+  },
   "structural_issues": [{ "severity": "...", "message": "...", "file": "..." }],
   "quality_findings": [{ "severity": "...", "skill": "...", "message": "...", "suggestion": "..." }],
   "summary": "Module is ready for use.|Module has N issues requiring attention."
 }
 ```
 
-This enables CI pipelines to gate on module quality before release.
+For new-format modules, `manifest_validation.results` carries the merged C/W findings (use `validate-plugin-json.py --json`), and `status` is `fail` if the Node gate reports any error. The `manifest_validation` block is omitted (or `format: "none"`) for modules without a `plugin.json`. This enables CI pipelines to gate on both manifest conformance and module quality before release.
