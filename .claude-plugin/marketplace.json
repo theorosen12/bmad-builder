@@ -16,7 +16,7 @@
       "author": {
         "name": "Brian (BMad) Madison"
       },
-      "skills": ["./skills/bmad-agent-builder", "./skills/bmad-bmb-setup", "./skills/bmad-module-builder", "./skills/bmad-workflow-builder"]
+      "skills": ["./skills/bmad-agent-builder", "./skills/bmad-bmb-setup", "./skills/bmad-module-builder", "./skills/bmad-module-migrator", "./skills/bmad-workflow-builder"]
     },
     {
       "name": "sample-plugins",
