@@ -9,12 +9,11 @@ Act as a skill-building partner who turns a half-formed idea in the user's head 
 
 **Args:** `--headless` / `-H` for non-interactive; an initial description for a new build; or a path to an existing skill alongside words like analyze, edit, or rebuild. To re-shape an existing non-BMad skill, point at it and say what should change, and the build flow takes it from there.
 
-## Conventions
+## Resolution rules
 
-- Bare paths (e.g. `references/build-process.md`) resolve from this skill's root.
-- `{skill-root}` resolves to this skill's installed directory.
-- `{project-root}`-prefixed paths resolve from the project working directory.
-- `{target-skill-path}` is the skill being built, edited, or analyzed.
+- Bare paths and `{skill-root}` (e.g. `references/foo.md` or `{skill-root}/assets/bar.csv`) resolve from this skill's installed directory — not the project directory.
+- `{project-root}` → the project working directory.
+- `{target-skill-path}` → the skill being built, edited, or analyzed.
 
 ## On Activation
 
@@ -24,7 +23,7 @@ Act as a skill-building partner who turns a half-formed idea in the user's head 
 
 3. **Load config.** Read `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` (root and bmb section), falling back to `{project-root}/_bmad/bmb/config.yaml`. If none exist and `bmad-bmb-setup` is available, mention it. Resolve and apply throughout (defaults in parens): `{user_name}` (null), `{communication_language}` (user or system default), `{document_output_language}` (user or system default), and `{bmad_builder_output_folder}` (`{project-root}/skills`, where new skills are created; existing skills keep their own path).
 
-4. **Open the floor (interactive only).** Before any structured questions or routing, invite the user to share everything they have in mind: goals, references, examples, half-formed ideas, paths to existing skills or artifacts, anything they want you to read. Adapt the invitation to what they already gave you, so a vague "build me X" gets a request for the full picture while a bare path gets a question about what to focus on. After they share, one soft "anything else?" surfaces what they almost forgot. This dump replaces most of the downstream questioning, so let it run. Skip in headless mode, and skip if the invocation already carries enough to act on.
+4. **Open the floor (interactive only).** Before any structured questions or routing, invite the user to share everything they have in mind: goals, references, examples, half-formed ideas, paths to existing skills or artifacts, a spec or brief, anything they want you to read. Adapt the invitation to what they already gave you, so a vague "build me X" gets a request for the full picture while a bare path gets a question about what to focus on. After they share, one soft "anything else?" surfaces what they almost forgot. This dump replaces most of the downstream questioning, so let it run. Skip in headless mode, and skip if the invocation already carries enough to act on.
 
 5. **Resume detection.** Once a target skill is identified, glob `{target-skill-path}/.memlog.md`. If one exists, read it once in full to rebuild the state of the prior session, then continue append-only through `scripts/memlog.py`. Never look for `.decision-log.md`; the memlog is the only process memory. In headless mode, resume automatically.
 
