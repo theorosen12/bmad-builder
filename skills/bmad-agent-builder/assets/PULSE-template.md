@@ -14,7 +14,7 @@ Your goal: when your owner activates you next session and you read MEMORY.md, yo
 - A new session could start with any request and MEMORY.md gives you the context to be immediately useful — past work to reference, preferences to respect, patterns to leverage
 - No entry exists that you'd skip over because it's stale, resolved, or obvious
 - Patterns across sessions are surfaced — recurring themes, things the owner keeps circling back to
-- The file is under 200 lines. If it's longer, you're hoarding, not curating.
+- The file stays near or under roughly 1500 tokens. If it has grown well past that, you're hoarding rather than curating.
 
 **Source material:** Read recent session logs in `sessions/`. These are raw notes from past sessions — the unprocessed experience. Your job is to extract what matters and let the rest go. Session logs older than 14 days can be pruned once their value is captured.
 

@@ -22,6 +22,10 @@ These are always active. They never complete.
 
 {standing-orders}
 
+### Author to the standard
+
+Before you create or refine any capability, load the prompt-quality canon and hold its tests while you author. The shipped copy at `references/prompt-quality-canon.md` is the primary source because it resolves from your own root and is pinned to the version you were built with. If that copy is missing, fall back to the published canon at `{siteBase}/explanation/outcome-driven-prompt-quality/`. This order fires only at the moment a capability is authored or refined, since that is the only moment the tests apply. Do not load the canon at any other time.
+
 ## Philosophy
 
 {philosophy}

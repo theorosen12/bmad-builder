@@ -1,6 +1,6 @@
 # Agent Type Guidance
 
-Use this during Phase 1 to determine what kind of agent the user is describing. The three agent types are a gradient, not separate architectures. Surface them as feature decisions, not hard forks.
+Use this during discovery to determine what kind of agent the user is describing. The three agent types are a gradient, not separate architectures. Surface them as feature decisions, not hard forks.
 
 ## The Three Types
 
@@ -60,15 +60,17 @@ After determining the agent type, assess relationship depth. This informs which 
 
 Confirm your assessment with the user: "It sounds like this is more of a [long-term creative partnership / focused domain tool] — does that feel right?"
 
-## Customization Surface by Archetype
+## Customization by Archetype
 
-Every agent emits a `customize.toml` — the metadata block (`code`, `name`, `title`, `icon`, `description`, `agent_type`) is required for all three types to satisfy the module.yaml roster contract. The override surface beneath it is opt-in and differs by archetype:
+This is the authority on which customization default each archetype gets. The mechanism itself, that `customize.toml` is the sole build-time config surface and what is forbidden in it, lives in `references/agent-quality-principles.md`; this section only decides the override-surface default per type.
 
-- **Stateless agent** — natural candidate for the override surface. Exposes `activation_steps_prepend/append`, `persistent_facts`, and any agent-specific scalars (e.g. swappable reference docs, output paths). Offer the opt-in during Phase 3; accept either answer.
+The opt-in override surface is offered or declined by archetype:
 
-- **Memory agent** — sanctum is the primary behavior-customization surface. PERSONA.md, CREED.md, BOND.md, CAPABILITIES.md are calibrated by First Breath and evolved by the owner. A TOML override surface competes with that. **Default the opt-in to no.** Opt in only when the user has a specific pre-sanctum-load need (e.g. org-mandated compliance preload) that the sanctum cannot express.
+- **Stateless agent** — the natural candidate. Offer the opt-in during the customization decision and accept either answer, since swappable reference docs, output paths, and pre/post-activation steps are reasonable for a stateless expert.
 
-- **Autonomous agent** — same as memory. PULSE.md already owns autonomous behavior configuration. Default to no; opt in only with cause.
+- **Memory agent** — the sanctum is the primary behavior-customization surface, calibrated by First Breath and evolved by the owner, so a TOML override surface competes with it. **Default the opt-in to no.** Opt in only when the user has a specific pre-sanctum-load need, such as an org-mandated compliance preload, that the sanctum cannot express.
+
+- **Autonomous agent** — same as memory, and PULSE already owns autonomous behavior. Default to no; opt in only with cause.
 
 ### First-Breath-Named Agents
 

@@ -140,7 +140,7 @@ All scripts use PEP 723 and `--help`. When a skill's prompt needs to invoke a sc
 
 ### 4. Token Counter
 
-> **Status: IMPLEMENTED** in `./scripts/prepass-prompt-metrics.py`. Computes file-level token estimates (chars / 4 approximation), section sizes, and content density metrics as part of the prompt craft prepass.
+> **Status: IMPLEMENTED** in `./scripts/count_tokens.py` (the tiktoken metric, with a chars/4 fallback), surfaced per file by `./scripts/prepass.py`. Token counts are the length metric; there is no line-count gate.
 
 **What:** Count tokens in each file of an agent
 
@@ -253,7 +253,7 @@ Validate that the activation sequence is logically ordered (e.g., config loads b
 
 ### 9. Agent Health Check
 
-> **Status: IMPLEMENTED** via `./scripts/generate-html-report.py`. Reads aggregated report-data.json (produced by the quality analysis workflow) and generates an interactive HTML report with branding, capability dashboards, findings, and opportunity themes.
+> **Status: IMPLEMENTED** via the report pipeline: the lenses return findings JSON in-context, `references/report-author.md` fills the single JSON island in `assets/report-shell.html`, and the shell renders branding, capability dashboards, findings, and opportunity themes. There is no separate renderer script and no report-data.json on disk.
 
 **What:** Run all validation scripts and aggregate results
 
@@ -349,17 +349,16 @@ The Quality Analysis skill should:
 
 ```bash
 # Run prepass scripts for fast, deterministic checks
-uv run ./scripts/prepass-structure-capabilities.py --agent-path {path}
-uv run ./scripts/prepass-prompt-metrics.py --agent-path {path}
-uv run ./scripts/prepass-execution-deps.py --agent-path {path}
-uv run ./scripts/prepass-sanctum-architecture.py --agent-path {path}
-uv run ./scripts/scan-path-standards.py --agent-path {path}
-uv run ./scripts/scan-scripts.py --agent-path {path}
+uv run ./scripts/prepass.py {path}
+uv run ./scripts/prepass-structure-capabilities.py {path}
+uv run ./scripts/prepass-execution-deps.py {path}
+uv run ./scripts/prepass-sanctum-architecture.py {path}
+uv run ./scripts/scan-path-standards.py {path}
+uv run ./scripts/scan-scripts.py {path}
 
-# Collect JSON outputs
-# Spawn sub-agents only for semantic checks
-# Synthesize complete report, then generate HTML:
-uv run ./scripts/generate-html-report.py {quality-report-dir}
+# Collect JSON outputs (prepass.py carries token counts via count_tokens.py)
+# Run the semantic lenses; each returns findings JSON in-context
+# Merge in-context, then references/report-author.md fills assets/report-shell.html
 ```
 
 ---
@@ -373,7 +372,7 @@ uv run ./scripts/generate-html-report.py {quality-report-dir}
 
 **Phase 2 (Enhanced validation):** DONE
 
-4. Token Counter -- implemented in `prepass-prompt-metrics.py`
+4. Token Counter -- implemented in `count_tokens.py` (surfaced by `prepass.py`)
 5. Subagent Pattern Detector -- implemented in `prepass-execution-deps.py`
 6. Activation Flow Analyzer -- implemented in `prepass-structure-capabilities.py`
 
@@ -381,7 +380,7 @@ uv run ./scripts/generate-html-report.py {quality-report-dir}
 
 7. Dependency Graph Generator -- implemented in `prepass-execution-deps.py`
 8. Memory Structure Validator -- superseded by `prepass-sanctum-architecture.py`
-9. Agent Health Check orchestrator -- implemented in `generate-html-report.py`
+9. Agent Health Check orchestrator -- implemented via `references/report-author.md` + `assets/report-shell.html`
 
 **Phase 4 (Comparison tools):** NOT YET IMPLEMENTED
 

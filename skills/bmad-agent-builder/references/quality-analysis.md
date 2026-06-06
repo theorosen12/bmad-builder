@@ -1,139 +1,123 @@
 ---
 name: quality-analysis
-description: Comprehensive quality analysis for BMad agents. Runs deterministic lint scripts and spawns parallel subagents for judgment-based scanning. Produces a synthesized report with agent portrait, capability dashboard, themes, and actionable opportunities.
+description: The Analyze orchestrator for BMad agents. Runs the deterministic pre-pass, dispatches the quality lenses in parallel, merges their findings in-context, and hands one report-author the island it renders into the stable shell. No per-subagent files.
 ---
 
 **Language:** Use `{communication_language}` for all output.
 
-# BMad Method · Quality Analysis
+# Analyze: Quality Analysis for a BMad Agent
 
-You orchestrate quality analysis on a BMad agent. Deterministic checks run as scripts (fast, zero tokens). Judgment-based analysis runs as LLM subagents. A report creator synthesizes everything into a unified, theme-based report with agent portrait and capability dashboard.
+Personality is investment, not waste. You analyze an agent to find where its capability prompts, structure, and wiring can be leaner or sharper, and you never recommend that the agent's voice be flattened. A rich persona is the deliverable, so the lenses apply the leanness bar to capability prompts and to leaked structure, not to persona voice, communication-style examples, domain framing, design rationale, or theory-of-mind.
 
-## Your Role
+`{target-agent-path}` is the agent directory under analysis, a directory containing a `SKILL.md`. You orchestrate: the pre-pass classifies and counts, the lenses judge, and the report-author renders. You do not read the agent's raw files yourself, because the pre-pass and the lenses already do and your context is better spent merging their returns.
 
-**DO NOT read the target agent's files yourself.** Scripts and subagents do all analysis. You orchestrate: run scripts, spawn scanners, hand off to the report creator.
+## Headless mode
 
-## Headless Mode
+If `{headless_mode}=true`, skip user interaction, take safe defaults, note any warning rather than asking, and emit the structured JSON described under Present. This is the builder's own headless mode and has nothing to do with a built autonomous agent's runtime Quiet Rebirth; the two share a flag name and nothing else.
 
-If `{headless_mode}=true`, skip all user interaction, use safe defaults, note warnings, and output structured JSON as specified in Present to User.
+## Pre-scan check
 
-## Pre-Scan Checks
+Confirm the agent is resolvable at `{target-agent-path}` and that a `SKILL.md` is present. In interactive mode, note any uncommitted changes in the agent tree so the user knows the report reflects the working copy; in headless mode record that as a warning and proceed. You do not commit, stage, or push anything.
 
-Check for uncommitted changes. In headless mode, note warnings and proceed. In interactive mode, inform the user and confirm. Also confirm the agent is currently functioning.
+## Run the deterministic pre-pass first
 
-## Analysis Principles
-
-**Effectiveness over efficiency.** Agent personality is investment, not waste. The report presents opportunities — the user applies judgment. Never suggest flattening an agent's voice unless explicitly asked.
-
-## Scanners
-
-### Lint Scripts (Deterministic — Run First)
-
-| #   | Script                           | Focus                                   | Output File                |
-| --- | -------------------------------- | --------------------------------------- | -------------------------- |
-| S1  | `./scripts/scan-path-standards.py` | Path conventions                        | `path-standards-temp.json` |
-| S2  | `./scripts/scan-scripts.py`        | Script portability, PEP 723, unit tests | `scripts-temp.json`        |
-
-### Pre-Pass Scripts (Feed LLM Scanners)
-
-| #   | Script                                      | Feeds                        | Output File                           |
-| --- | ------------------------------------------- | ---------------------------- | ------------------------------------- |
-| P1  | `./scripts/prepass-structure-capabilities.py` | structure scanner            | `structure-capabilities-prepass.json` |
-| P2  | `./scripts/prepass-prompt-metrics.py`         | prompt-craft scanner         | `prompt-metrics-prepass.json`         |
-| P3  | `./scripts/prepass-execution-deps.py`         | execution-efficiency scanner | `execution-deps-prepass.json`         |
-| P4  | `./scripts/prepass-sanctum-architecture.py`   | sanctum architecture scanner | `sanctum-architecture-prepass.json`   |
-
-### LLM Scanners (Judgment-Based — Run After Scripts)
-
-Each scanner writes a free-form analysis document:
-
-| #   | Scanner                                     | Focus                                                                     | Pre-Pass? | Output File                             |
-| --- | ------------------------------------------- | ------------------------------------------------------------------------- | --------- | --------------------------------------- |
-| L1  | `quality-scan-structure.md`                 | Structure, capabilities, identity, memory, consistency                    | Yes       | `structure-analysis.md`                 |
-| L2  | `quality-scan-prompt-craft.md`              | Token efficiency, outcome balance, persona voice, per-capability craft    | Yes       | `prompt-craft-analysis.md`              |
-| L3  | `quality-scan-execution-efficiency.md`      | Parallelization, delegation, memory loading, context optimization         | Yes       | `execution-efficiency-analysis.md`      |
-| L4  | `quality-scan-agent-cohesion.md`            | Persona-capability alignment, identity coherence, per-capability cohesion | No        | `agent-cohesion-analysis.md`            |
-| L5  | `quality-scan-enhancement-opportunities.md` | Edge cases, experience gaps, user journeys, headless potential            | No        | `enhancement-opportunities-analysis.md` |
-| L6  | `quality-scan-script-opportunities.md`      | Deterministic operations that should be scripts                           | No        | `script-opportunities-analysis.md`      |
-| L7  | `quality-scan-sanctum-architecture.md`      | Sanctum architecture (memory agents only)                                 | Yes       | `sanctum-architecture-analysis.md`      |
-| L8  | `quality-scan-customization-surface.md`     | Customization opportunities and abuse; metadata validity                  | No        | `customization-surface-analysis.md`     |
-
-**L7 only runs for memory agents.** The prepass (P4) detects whether the agent is a memory agent. If the prepass reports `is_memory_agent: false`, skip L7 entirely.
-
-**L8 runs for all archetypes.** The scanner internally branches on `agent_type` to apply different rigor (metadata validity always; override-surface opportunities for stateless; sanctum-conflict detection for memory/autonomous).
-
-## Execution
-
-First create output directory: `{bmad_builder_reports}/{skill-name}/quality-analysis/{date-time-stamp}/`
-
-### Step 1: Run All Scripts (Parallel)
+Run the pre-pass once, before any lens sees the agent, so every lens reads a compact classification and token picture instead of re-deriving it from raw text:
 
 ```bash
-uv run ./scripts/scan-path-standards.py {skill-path} -o {report-dir}/path-standards-temp.json
-uv run ./scripts/scan-scripts.py {skill-path} -o {report-dir}/scripts-temp.json
-uv run ./scripts/prepass-structure-capabilities.py {skill-path} -o {report-dir}/structure-capabilities-prepass.json
-uv run ./scripts/prepass-prompt-metrics.py {skill-path} -o {report-dir}/prompt-metrics-prepass.json
-uv run ./scripts/prepass-execution-deps.py {skill-path} -o {report-dir}/execution-deps-prepass.json
-uv run ./scripts/prepass-sanctum-architecture.py {skill-path} -o {report-dir}/sanctum-architecture-prepass.json
+python3 scripts/prepass.py {target-agent-path}
 ```
 
-### Step 2: Spawn LLM Scanners (Parallel)
+It prints one JSON object on stdout, the pinned pre-pass shape:
 
-After scripts complete, spawn all scanners as parallel subagents.
-
-**With pre-pass (L1, L2, L3, L7):** provide pre-pass JSON path.
-**Without pre-pass (L4, L5, L6, L8):** provide skill path and output directory.
-
-**Memory agent check:** Read `sanctum-architecture-prepass.json`. If `is_memory_agent` is `true`, include L7 in the parallel spawn. If `false`, skip L7.
-
-Each subagent loads the scanner file, analyzes the agent, writes analysis to the output directory, returns the filename.
-
-### Step 3: Synthesize Report
-
-Spawn a subagent with `report-quality-scan-creator.md`.
-
-Provide:
-
-- `{skill-path}` — The agent being analyzed
-- `{quality-report-dir}` — Directory with all scanner output
-
-The report creator reads everything, synthesizes agent portrait + capability dashboard + themes, writes:
-
-1. `quality-report.md` — Narrative markdown with BMad Method branding
-2. `report-data.json` — Structured data for HTML
-
-### Step 4: Generate HTML Report
-
-```bash
-uv run ./scripts/generate-html-report.py {report-dir} --open
+```json
+{
+  "agent_type": "stateless | memory | autonomous",
+  "is_memory_agent": true,
+  "skill_md_tokens": 0,
+  "files": [{ "path": "SKILL.md", "tokens": 0 }]
+}
 ```
 
-## Present to User
+Hold that object. `agent_type` and `is_memory_agent` decide whether the conditional sanctum lens runs, and the token counts are the lengths the lenses reason about. Lengths come from tokens here, never line counts. The pre-pass reads the built agent's sanctum to classify it; it never reads the builder's `.memlog.md`, and neither do you.
 
-**IF `{headless_mode}=true`:**
+## Dispatch the lenses in parallel
 
-Read `report-data.json` and output:
+Hand each lens the pre-pass JSON and `{target-agent-path}`, and run them as parallel subagents. Each lens loads `references/agent-quality-principles.md` (which cedes the universal core to `references/prompt-quality-canon.md`), stays in its lane, and returns its findings to you in-context. No lens writes a file or a per-subagent analysis document.
+
+Six base lenses run for every agent:
+
+| Lens | File | Owns |
+| --- | --- | --- |
+| Leanness | `references/scan-leanness.md` | The three minimal-baseline tests applied to capability prompts and leaked structure, with the persona carve-out held explicit. The only lens that fills `proposed_smallest` and `predicted_delta`. |
+| Architecture | `references/scan-architecture.md` | Frontmatter, topology, progressive disclosure, headless soundness, ordering, parallelization, read-avoidance. |
+| Determinism | `references/scan-determinism.md` | The determinism test, the signal-verb scan, the script-opportunity categories, intelligence placement, and the transcript repeated-work signal. |
+| Customization | `references/scan-customization.md` | The customize.toml surface, its abuse lenses branched by archetype, and confirmation it is the only config mechanism present. |
+| Enhancement | `references/scan-enhancement.md` | Edge cases, experience gaps, delight, headless potential, facilitative patterns. |
+| Agent cohesion | `references/scan-agent-cohesion.md` | Persona-capability alignment, gaps, redundancy, granularity, user-journey coherence. |
+
+One conditional lens runs only when the pre-pass classified the agent as memory or autonomous:
+
+| Lens | File | Runs when |
+| --- | --- | --- |
+| Sanctum architecture | `references/scan-sanctum-architecture.md` | `is_memory_agent` is `true`. Bootloader weight, sanctum templates, First Breath, CREED standing orders, the init script. Skipped entirely for a stateless agent. |
+
+Read `is_memory_agent` from the pre-pass. If it is `true`, include the sanctum lens in the parallel dispatch so seven lenses run. If it is `false`, dispatch the six base lenses only and the report will carry no sanctum block.
+
+Every lens returns the same JSON shape (schema_version 1):
+
+```json
+{
+  "lens": "leanness | architecture | determinism | customization | enhancement | agent-cohesion | sanctum-architecture",
+  "verdict": "<one line for this lens>",
+  "findings": [
+    {
+      "id": "<lens>-<n>",
+      "severity": "critical | high | medium | low",
+      "location": "<file:region or file>",
+      "evidence": "<what was observed>",
+      "recommendation": "<the fix, including a cut where it applies>",
+      "proposed_smallest": "<leanness only, else null>",
+      "predicted_delta": "<leanness only, else null>"
+    }
+  ]
+}
+```
+
+Only the leanness lens fills `proposed_smallest` and `predicted_delta`. Those two fields let you route a defend-against-absence finding to the eval-runner's variant mode for a real cut-or-keep verdict rather than a guess; that routing happens in the build flow, not here.
+
+## Merge in-context, then build the island
+
+Merge the lens returns into one findings list, keeping each finding's `id` so it stays traceable to the lens that raised it. Tally the severity counts across all findings for the summary. Do this in your own context; there is no `report-data.json` on disk and no extract-and-reassemble round-trip.
+
+Build the one island the report-author will render, conforming to the pinned island schema (schema_version 1). It carries the merged findings plus the agent blocks:
+
+- `agent_profile`: the portrait. `name`, `title`, `icon`, `agent_type` (straight from the pre-pass), and a one-line `mission`. Draw the name, title, and icon from the agent's `[agent]` metadata as the lenses reported it.
+- `capabilities`: the dashboard, a list of `{ name, kind, note }` where `kind` is the capability form (prompt, script, multi-file, external skill) and `note` is one line on what it does. Built from what the architecture and agent-cohesion lenses observed.
+- `detailed_analysis`: keyed by lens name, each value the lens's one-line `verdict`. This is an additive block the shell tolerates; it preserves the per-lens read for anyone inspecting the island.
+- `sanctum`: conditional. Include it only when the agent is memory or autonomous, carrying `{ present: true, location, files, note }` where `location` is `{project-root}/_bmad/memory/{skillName}/`, `files` lists the sanctum templates present, and `note` states that the sanctum is the built agent's runtime memory, distinct from the builder's `.memlog.md`. Omit the block for a stateless agent, or set `present: false`, and the shell renders no sanctum panel.
+- `experience`: `{ journeys, headless }`. `journeys` is a list of `{ name, steps }` capturing the main paths a user takes through the agent, and `headless` is one line on the agent's headless story (for a memory agent, whether a Quiet Rebirth path is wired; for stateless, that headless is not applicable).
+
+The agent blocks are optional in the shell's normalize(), so a sparse island still renders. Populate every block you have signal for, and leave out only what genuinely does not apply.
+
+## Hand off to the report-author
+
+Invoke `references/report-author.md` as one subagent. Give it the merged island JSON you built, the subject (the agent name or `{target-agent-path}`), and the run folder to write into (beside the agent's `.memlog.md`, under a timestamped analysis directory). The report-author reads `assets/report-shell.html`, replaces the single `report-data` island with your JSON, and writes the output HTML. It renders what you hand it and invents nothing.
+
+The shell parses its island in a loud try/catch and shows a visible banner if the JSON is malformed, never a blank page. An empty findings array renders an explicit no-findings panel, so a clean agent still produces a real report. Open the resulting HTML for the user.
+
+## Present
+
+**IF `{headless_mode}=true`:** emit
 
 ```json
 {
   "headless_mode": true,
   "scan_completed": true,
-  "report_file": "{path}/quality-report.md",
-  "html_report": "{path}/quality-report.html",
-  "data_file": "{path}/report-data.json",
-  "grade": "Excellent|Good|Fair|Poor",
-  "opportunities": 0,
-  "broken": 0
+  "agent_type": "stateless | memory | autonomous",
+  "html_report": "{path}/agent-analysis-report.html",
+  "summary": { "critical": 0, "high": 0, "medium": 0, "low": 0 },
+  "top_findings": ["<id>: <title>", "..."]
 }
 ```
 
-**IF interactive:**
-
-Read `report-data.json` and present:
-
-1. Agent portrait — icon, name, title
-2. Grade and narrative
-3. Capability dashboard summary
-4. Top opportunities
-5. Reports — paths and "HTML opened in browser"
-6. Offer: apply fixes, use HTML to select items, discuss findings
+**IF interactive:** present the agent portrait (icon, name, title, type), the one-line verdict, the severity tally, the capability dashboard summary, and the top findings. Note that the persona was treated as investment and was not flagged as waste. Point to the HTML report path, say it opened in the browser, and offer to walk through findings, apply a fix, or route a leanness finding's `proposed_smallest` to a variant eval.

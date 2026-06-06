@@ -10,6 +10,12 @@ and auto-generates CAPABILITIES.md from capability prompt frontmatter.
 After this script runs, the sanctum is fully self-contained — the agent does
 not depend on the skill bundle location for normal operation.
 
+This initializes the agent's runtime sanctum memory, not build-time config. It
+reads config.yaml and config.user.yaml strictly to substitute values into the
+sanctum templates, and it never writes or authors any config file. Build-time
+customization is owned by customize.toml, a separate surface this script never
+touches.
+
 Usage:
     python3 init-sanctum.py <project-root> <skill-path>
 
