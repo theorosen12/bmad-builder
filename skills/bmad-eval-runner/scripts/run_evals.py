@@ -2,31 +2,52 @@
 # /// script
 # requires-python = ">=3.9"
 # ///
-"""Run a skill's artifact evals in isolated workspaces.
+"""Run eval cases through the configured platform adapter.
 
-For each eval, the runner:
-  1. Stages a fresh workspace (Docker container or local tmp dir under ~/bmad-evals).
-  2. Applies the setup overlay (base then per-eval) so _bmad/ config and dependency
-     skills land in the workspace BEFORE the skill is staged — the skill's own copy
-     always wins over overlay content.
-  3. Copies the skill into .claude/skills/ so it is discoverable by claude.
-  4. Stages any fixture files declared in the eval's `files` list.
-  5. Runs `claude -p '<prompt>' --output-format stream-json --verbose`, capturing
-     the transcript. The Skill tool is available in -p mode and fires for installed
-     skills, so dependency skills provided by the setup overlay are properly invokable.
-  6. Rsyncs any files claude wrote into `<run-dir>/<eval-id>/artifacts/`.
-  7. Writes `metrics.json` (tool-call counts, timing, output sizes).
+A case is `input + rubric + optional state_prefix`. This runner does the
+runtime-specific part of an eval: it takes a case, builds the prompt the
+adapter understands, runs it in a clean working directory, and records the
+transcript plus timing and token usage. Grading happens elsewhere; the grader
+subagent reads the transcript and artifacts this runner leaves behind.
 
-Grading is performed separately by the parent skill's grader subagents.
+What this runner deliberately does NOT do:
+  - No Docker, no PTY, no keychain staging, no dual-isolation strategy.
+  - No hardcoded model. Everything runtime-specific comes from the adapter.
+
+The adapter seam (see references/platform-adapter.md) exposes exactly three
+things, read here from an adapter config file (JSON):
+
+  invocation : argv template for running one prompt. The token "{prompt}" is
+               replaced with the case prompt; "{cwd}" is replaced with the
+               clean working directory. Example for a Claude Code runtime:
+                 ["claude", "-p", "{prompt}", "--output-format", "stream-json",
+                  "--verbose", "--dangerously-skip-permissions"]
+  auth_env   : name of the environment variable that carries auth (e.g.
+               "ANTHROPIC_API_KEY"). The runner passes it through unchanged.
+               No model id ever appears here.
+  transcript : how to read the run's output. One of:
+                 {"format": "stdout-jsonl"}  capture stdout as JSONL transcript
+                 {"format": "file", "path": "transcript.jsonl"}
+                                              adapter writes a file in cwd
+
+If no adapter config is found, the runner degrades gracefully: it stages every
+case (clean cwd, prompt with state_prefix applied) and writes a manifest, but
+records each result as "skipped: no runtime adapter configured" instead of
+crashing. A human or a configured runtime can then complete the run.
+
+state_prefix handling: when a case carries a state_prefix, it is PREPENDED to
+the input to place the skill mid-workflow in one shot. The composed prompt is
+recorded so the grader sees exactly what ran.
 
 Usage:
   python3 run_evals.py \\
-    --skill-path PATH \\
-    --evals-file PATH/evals.json \\
-    --project-root PATH \\
-    --output-dir PATH \\
-    --isolation docker|local \\
-    [--workers N] [--timeout SECS] [--eval-ids A1,B3] [--quiet]
+    --cases CASES.json \\
+    --output-dir DIR \\
+    [--adapter ADAPTER.json] \\
+    [--case-ids A1,B3] [--timeout SECS] [--workers N] [--quiet]
+
+CASES.json is either a list of cases or {"cases": [...]}. Each case:
+  {"id": "...", "input": "...", "rubric": [...], "state_prefix": "..."?}
 """
 
 from __future__ import annotations
@@ -34,452 +55,371 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-from utils import (  # noqa: E402
-    apply_setup_overlay,
-    discover_setup_dirs,
-    new_run_id,
-    parse_skill_md,
-    read_json,
-    read_macos_keychain_credentials,
-    stage_credentials,
-    utc_now_iso,
-    write_json,
-)
+# --- small self-contained helpers (no Docker/keychain imports) -------------
 
-DOCKER_IMAGE = "bmad-eval-runner:latest"
-_KEYCHAIN_CREDS: str | None = read_macos_keychain_credentials()
-RSYNC_EXCLUDES = (
-    ".git", ".bare", "node_modules", ".venv", "__pycache__",
-    ".pytest_cache", ".next", "dist", "build", ".cache",
-    ".DS_Store", "*.pyc",
-)
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def stage_workspace_local(
-    workspace: Path,
-    project_root: Path,
-    skill_path: Path,
-    fixtures: list[tuple[Path, str]],
-    setup_dirs: list[Path] | None = None,
-) -> Path:
-    """Build a clean local workspace. Returns the project root inside workspace."""
-    workspace.mkdir(parents=True, exist_ok=True)
-    project_dest = workspace / "project"
-    home_dir = workspace / ".home"
-    (home_dir / ".claude").mkdir(parents=True, exist_ok=True)
-
-    excludes: list[str] = []
-    for pat in RSYNC_EXCLUDES:
-        excludes.extend(["--exclude", pat])
-
-    if shutil.which("rsync"):
-        subprocess.run(
-            ["rsync", "-a", *excludes, f"{project_root}/", f"{project_dest}/"],
-            check=True,
-        )
-    else:
-        shutil.copytree(project_root, project_dest, dirs_exist_ok=True,
-                        ignore=shutil.ignore_patterns(*RSYNC_EXCLUDES))
-
-    # Apply setup overlay before staging the skill — the skill's own copy wins.
-    if setup_dirs:
-        apply_setup_overlay(setup_dirs, project_dest)
-
-    skill_link_dir = project_dest / ".claude" / "skills"
-    skill_link_dir.mkdir(parents=True, exist_ok=True)
-    skill_dest = skill_link_dir / skill_path.name
-    if not skill_dest.exists():
-        try:
-            os.symlink(skill_path, skill_dest)
-        except OSError:
-            shutil.copytree(skill_path, skill_dest, dirs_exist_ok=True)
-
-    for src, dest_rel in fixtures:
-        dest = project_dest / dest_rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
-
-    return project_dest
+def new_run_id(label: str) -> str:
+    return f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{label}"
 
 
-def run_eval_local(
-    eval_item: dict,
-    run_dir: Path,
-    skill_path: Path,
-    project_root: Path,
-    timeout: int,
-    setup_dirs: list[Path] | None = None,
-) -> dict:
-    eval_id = str(eval_item.get("id", "unnamed"))
-    eval_dir = run_dir / eval_id
-    workspace_root = eval_dir / "workspace"
-    artifacts_dir = eval_dir / "artifacts"
-    transcript_path = eval_dir / "transcript.jsonl"
-
-    eval_dir.mkdir(parents=True, exist_ok=True)
-    artifacts_dir.mkdir(parents=True, exist_ok=True)
-
-    fixtures = resolve_fixtures(eval_item.get("files", []), project_root)
-    workspace_project = stage_workspace_local(
-        workspace_root, project_root, skill_path, fixtures, setup_dirs
-    )
-
-    (eval_dir / "prompt.txt").write_text(eval_item["prompt"], encoding="utf-8")
-    workspace_snapshot_before = snapshot_files(workspace_project)
-
-    home_dir = workspace_root / ".home"
-    stage_credentials(home_dir / ".claude", _KEYCHAIN_CREDS)
-    env = {
-        "HOME": str(home_dir),
-        "CLAUDE_CONFIG_DIR": str(home_dir / ".claude"),
-        "PATH": os.environ.get("PATH", ""),
-        "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY", ""),
-    }
-
-    cmd = [
-        "claude",
-        "-p", eval_item["prompt"],
-        "--output-format", "stream-json",
-        "--verbose",
-        "--dangerously-skip-permissions",
-    ]
-
-    start = time.time()
-    try:
-        with transcript_path.open("wb") as out:
-            proc = subprocess.run(
-                cmd,
-                stdout=out,
-                stderr=subprocess.PIPE,
-                cwd=str(workspace_project),
-                env=env,
-                timeout=timeout,
-            )
-        elapsed = time.time() - start
-        return_code = proc.returncode
-        stderr_tail = (proc.stderr or b"").decode("utf-8", errors="replace")[-2000:]
-    except subprocess.TimeoutExpired as e:
-        elapsed = time.time() - start
-        return_code = -1
-        stderr_tail = f"TIMEOUT after {timeout}s"
-        if e.stderr:
-            stderr_tail += "\n" + e.stderr.decode("utf-8", errors="replace")[-2000:]
-
-    new_files = diff_workspace(workspace_project, workspace_snapshot_before)
-    sync_artifacts(workspace_project, new_files, artifacts_dir)
-
-    metrics = compute_metrics(transcript_path, artifacts_dir, elapsed, return_code, stderr_tail)
-    write_json(eval_dir / "metrics.json", metrics)
-
-    return {
-        "eval_id": eval_id,
-        "elapsed_s": elapsed,
-        "return_code": return_code,
-        "transcript": str(transcript_path.relative_to(run_dir)),
-        "artifacts_dir": str(artifacts_dir.relative_to(run_dir)),
-        "metrics": metrics,
-    }
+def write_json(path: Path, data: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
-def run_eval_docker(
-    eval_item: dict,
-    run_dir: Path,
-    skill_path: Path,
-    project_root: Path,
-    timeout: int,
-    setup_dirs: list[Path] | None = None,
-) -> dict:
-    eval_id = str(eval_item.get("id", "unnamed"))
-    eval_dir = run_dir / eval_id
-    artifacts_dir = eval_dir / "artifacts"
-    transcript_path = eval_dir / "transcript.jsonl"
-
-    eval_dir.mkdir(parents=True, exist_ok=True)
-    artifacts_dir.mkdir(parents=True, exist_ok=True)
-    fixtures_staging = eval_dir / "fixtures_in"
-    fixtures_staging.mkdir(parents=True, exist_ok=True)
-
-    fixtures = resolve_fixtures(eval_item.get("files", []), project_root)
-    for src, dest_rel in fixtures:
-        dest = fixtures_staging / dest_rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
-
-    (eval_dir / "prompt.txt").write_text(eval_item["prompt"], encoding="utf-8")
-
-    # Pre-merge setup overlay dirs on the host; mount as /setup:ro in the container.
-    setup_merged: Path | None = None
-    if setup_dirs:
-        setup_merged = eval_dir / "setup_merged"
-        apply_setup_overlay(setup_dirs, setup_merged)
-        if not any(setup_merged.iterdir()):
-            setup_merged = None
-
-    creds_dir: Path | None = None
-    if _KEYCHAIN_CREDS:
-        creds_dir = eval_dir / "creds"
-        creds_dir.mkdir(parents=True, exist_ok=True)
-        (creds_dir / ".credentials.json").write_text(_KEYCHAIN_CREDS, encoding="utf-8")
-
-    container_script = r"""
-set -e
-mkdir -p /workspace
-rsync -a \
-  --exclude=.git --exclude=.bare --exclude=node_modules --exclude=.venv \
-  --exclude=__pycache__ --exclude=.pytest_cache --exclude=.next \
-  --exclude=dist --exclude=build --exclude=.cache --exclude=.DS_Store \
-  /project/ /workspace/
-if [ -d /setup ]; then
-  rsync -a /setup/ /workspace/
-fi
-mkdir -p /workspace/.claude/skills
-cp -R "$SKILL_SRC" "/workspace/.claude/skills/$SKILL_NAME"
-if [ -d /fixtures ]; then
-  cp -R /fixtures/. /workspace/
-fi
-if [ -f /creds/.credentials.json ]; then
-  mkdir -p /home/evaluator/.claude
-  cp /creds/.credentials.json /home/evaluator/.claude/.credentials.json
-fi
-cd /workspace
-claude -p "$EVAL_PROMPT" \
-  --output-format stream-json --verbose \
-  --dangerously-skip-permissions \
-  > /output/transcript.jsonl 2> /output/stderr.log || true
-mkdir -p /output/artifacts
-rsync -a --exclude=.claude --exclude=node_modules --exclude=.git \
-  --filter='+ */' --filter='+ *' \
-  /workspace/ /output/artifacts/
-"""
-
-    skill_name = skill_path.name
-    cmd = [
-        "docker", "run", "--rm",
-        "-v", f"{project_root}:/project:ro",
-        "-v", f"{skill_path}:/skill_src:ro",
-        "-v", f"{eval_dir}:/output",
-        "-e", "ANTHROPIC_API_KEY",
-        "-e", f"EVAL_PROMPT={eval_item['prompt']}",
-        "-e", f"SKILL_SRC=/skill_src",
-        "-e", f"SKILL_NAME={skill_name}",
-    ]
-    if creds_dir:
-        cmd += ["-v", f"{creds_dir}:/creds:ro"]
-    if fixtures:
-        cmd += ["-v", f"{fixtures_staging}:/fixtures:ro"]
-    if setup_merged:
-        cmd += ["-v", f"{setup_merged}:/setup:ro"]
-    cmd += [DOCKER_IMAGE, "bash", "-c", container_script]
-
-    start = time.time()
-    try:
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            timeout=timeout + 30,
-        )
-        elapsed = time.time() - start
-        return_code = proc.returncode
-        stderr_tail = proc.stderr.decode("utf-8", errors="replace")[-2000:]
-        if proc.stdout:
-            (eval_dir / "docker.stdout.log").write_bytes(proc.stdout)
-    except subprocess.TimeoutExpired as e:
-        elapsed = time.time() - start
-        return_code = -1
-        stderr_tail = f"TIMEOUT after {timeout}s"
-        if e.stderr:
-            stderr_tail += "\n" + e.stderr.decode("utf-8", errors="replace")[-2000:]
-
-    metrics = compute_metrics(transcript_path, artifacts_dir, elapsed, return_code, stderr_tail)
-    write_json(eval_dir / "metrics.json", metrics)
-    shutil.rmtree(fixtures_staging, ignore_errors=True)
-
-    return {
-        "eval_id": eval_id,
-        "elapsed_s": elapsed,
-        "return_code": return_code,
-        "transcript": str(transcript_path.relative_to(run_dir)),
-        "artifacts_dir": str(artifacts_dir.relative_to(run_dir)),
-        "metrics": metrics,
-    }
+def read_json(path: Path) -> object:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def resolve_fixtures(files: list[str], project_root: Path) -> list[tuple[Path, str]]:
-    out: list[tuple[Path, str]] = []
-    for entry in files:
-        candidate = (project_root / entry).resolve()
-        if not candidate.is_file():
-            alt = Path(entry).resolve()
-            if alt.is_file():
-                candidate = alt
-            else:
-                print(f"Warning: fixture not found: {entry}", file=sys.stderr)
-                continue
-        out.append((candidate, entry))
-    return out
+# --- adapter ----------------------------------------------------------------
+
+def find_adapter(explicit: Path | None, cases_file: Path) -> Path | None:
+    """Locate the adapter config. Returns None when none is configured."""
+    if explicit is not None:
+        return explicit if explicit.is_file() else None
+    env_path = os.environ.get("BMAD_EVAL_ADAPTER")
+    if env_path and Path(env_path).is_file():
+        return Path(env_path)
+    for candidate in (
+        cases_file.parent / "adapter.json",
+        cases_file.parent / ".bmad-eval-adapter.json",
+    ):
+        if candidate.is_file():
+            return candidate
+    return None
 
 
-def snapshot_files(root: Path) -> set[str]:
-    snap: set[str] = set()
-    for p in root.rglob("*"):
-        if p.is_file():
-            snap.add(str(p.relative_to(root)))
-    return snap
+def load_adapter(path: Path) -> dict:
+    cfg = read_json(path)
+    if not isinstance(cfg, dict):
+        raise ValueError(f"adapter config must be a JSON object: {path}")
+    if "invocation" not in cfg or not isinstance(cfg["invocation"], list):
+        raise ValueError("adapter config missing 'invocation' argv list")
+    return cfg
 
 
-def diff_workspace(root: Path, before: set[str]) -> list[str]:
-    after = snapshot_files(root)
-    return sorted(after - before)
+def build_argv(invocation: list, prompt: str, cwd: str) -> list[str]:
+    argv: list[str] = []
+    for tok in invocation:
+        tok = str(tok)
+        tok = tok.replace("{prompt}", prompt).replace("{cwd}", cwd)
+        argv.append(tok)
+    return argv
 
 
-def sync_artifacts(workspace: Path, new_files: list[str], dest: Path) -> None:
-    for rel in new_files:
-        src = workspace / rel
-        if not src.is_file():
-            continue
-        if any(part in (".claude", "node_modules", ".git", ".venv") for part in src.parts):
-            continue
-        target = dest / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, target)
+# --- case composition -------------------------------------------------------
+
+def compose_prompt(case: dict) -> str:
+    """Apply state_prefix by prepending it to the input.
+
+    The state_prefix is a bracketed prime that places the skill mid-workflow in
+    one shot. Prepending keeps the input intact and visible to the grader.
+    """
+    input_text = str(case.get("input", ""))
+    prefix = case.get("state_prefix")
+    if prefix:
+        return f"{str(prefix).rstrip()}\n\n{input_text}"
+    return input_text
 
 
-def compute_metrics(transcript: Path, artifacts: Path, elapsed: float,
-                    rc: int, stderr_tail: str) -> dict:
-    tool_calls: dict[str, int] = {}
-    total_steps = 0
-    if transcript.is_file():
-        for raw in transcript.read_text(encoding="utf-8", errors="replace").splitlines():
-            raw = raw.strip()
-            if not raw:
-                continue
-            try:
-                evt = json.loads(raw)
-            except json.JSONDecodeError:
-                continue
-            if evt.get("type") == "assistant":
-                total_steps += 1
-                for item in evt.get("message", {}).get("content", []):
-                    if item.get("type") == "tool_use":
-                        name = item.get("name", "?")
-                        tool_calls[name] = tool_calls.get(name, 0) + 1
+# --- transcript + token accounting -----------------------------------------
 
-    output_chars = 0
-    for f in artifacts.rglob("*"):
+def read_transcript(transcript_cfg: dict, captured_stdout: bytes,
+                    cwd: Path) -> tuple[str, str]:
+    """Return (transcript_text, source). Source names where it came from."""
+    fmt = (transcript_cfg or {}).get("format", "stdout-jsonl")
+    if fmt == "file":
+        rel = (transcript_cfg or {}).get("path", "transcript.jsonl")
+        f = cwd / rel
         if f.is_file():
-            try:
-                output_chars += f.stat().st_size
-            except OSError:
-                pass
+            return f.read_text(encoding="utf-8", errors="replace"), f"file:{rel}"
+        return "", f"file:{rel} (missing)"
+    return captured_stdout.decode("utf-8", errors="replace"), "stdout"
+
+
+def account_transcript(transcript_text: str) -> dict:
+    """Pull timing/token usage from a JSONL transcript when present.
+
+    Reads usage out of the completion notification immediately, so tokens are
+    captured at run time rather than recomputed later. Recognizes the common
+    `result` event with a usage block and per-message usage blocks; unknown
+    shapes degrade to zero counts without failing.
+    """
+    input_tokens = 0
+    output_tokens = 0
+    total_steps = 0
+    tool_calls: dict[str, int] = {}
+    found_usage = False
+
+    for raw in transcript_text.splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            evt = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(evt, dict):
+            continue
+        etype = evt.get("type")
+        if etype == "assistant":
+            total_steps += 1
+            msg = evt.get("message", {})
+            usage = msg.get("usage") if isinstance(msg, dict) else None
+            if isinstance(usage, dict):
+                found_usage = True
+                input_tokens += int(usage.get("input_tokens", 0) or 0)
+                output_tokens += int(usage.get("output_tokens", 0) or 0)
+            for item in (msg.get("content", []) if isinstance(msg, dict) else []):
+                if isinstance(item, dict) and item.get("type") == "tool_use":
+                    name = item.get("name", "?")
+                    tool_calls[name] = tool_calls.get(name, 0) + 1
+        elif etype == "result":
+            usage = evt.get("usage")
+            if isinstance(usage, dict):
+                found_usage = True
+                # result usage is authoritative; prefer it over the running sum
+                input_tokens = int(usage.get("input_tokens", input_tokens) or input_tokens)
+                output_tokens = int(usage.get("output_tokens", output_tokens) or output_tokens)
 
     return {
-        "elapsed_s": round(elapsed, 2),
-        "return_code": rc,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": input_tokens + output_tokens,
+        "tokens_reported": found_usage,
+        "total_steps": total_steps,
         "tool_calls": tool_calls,
         "total_tool_calls": sum(tool_calls.values()),
-        "total_steps": total_steps,
-        "output_chars": output_chars,
-        "transcript_chars": transcript.stat().st_size if transcript.is_file() else 0,
-        "stderr_tail": stderr_tail,
     }
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Run a skill's artifact evals in isolation")
-    parser.add_argument("--skill-path", required=True, type=Path)
-    parser.add_argument("--evals-file", required=True, type=Path)
-    parser.add_argument("--project-root", required=True, type=Path)
-    parser.add_argument("--output-dir", required=True, type=Path)
-    parser.add_argument("--isolation", choices=("docker", "local"), required=True)
-    parser.add_argument("--workers", type=int, default=8)
-    parser.add_argument("--timeout", type=int, default=600)
-    parser.add_argument("--eval-ids", default=None, help="Comma-separated subset of eval ids to run")
-    parser.add_argument("--quiet", action="store_true")
-    args = parser.parse_args()
+# --- per-case execution -----------------------------------------------------
 
-    skill_path = args.skill_path.resolve()
-    project_root = args.project_root.resolve()
-    evals_file = args.evals_file.resolve()
-    if not evals_file.is_file():
-        print(f"evals file not found: {evals_file}", file=sys.stderr)
+def run_case(case: dict, run_dir: Path, adapter: dict | None,
+             timeout: int) -> dict:
+    case_id = str(case.get("id", "unnamed"))
+    case_dir = run_dir / case_id
+    cwd = case_dir / "cwd"
+    cwd.mkdir(parents=True, exist_ok=True)
+
+    prompt = compose_prompt(case)
+    (case_dir / "prompt.txt").write_text(prompt, encoding="utf-8")
+    write_json(case_dir / "case.json", case)
+
+    if adapter is None:
+        result = {
+            "case_id": case_id,
+            "status": "skipped",
+            "reason": "no runtime adapter configured",
+            "prompt_chars": len(prompt),
+            "cwd": str(cwd.relative_to(run_dir)),
+        }
+        write_json(case_dir / "timing.json", {
+            "case_id": case_id, "status": "skipped",
+            "captured_at": utc_now_iso(),
+        })
+        return result
+
+    transcript_path = case_dir / "transcript.jsonl"
+    argv = build_argv(adapter["invocation"], prompt, str(cwd))
+
+    env = dict(os.environ)
+    auth_env = adapter.get("auth_env")
+    if auth_env:
+        # Pass the named auth var through unchanged; never inject a model id.
+        env[auth_env] = os.environ.get(auth_env, "")
+
+    start = time.time()
+    captured = b""
+    return_code = 0
+    error_tail = ""
+    status = "ok"
+    try:
+        proc = subprocess.run(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(cwd),
+            env=env,
+            timeout=timeout,
+        )
+        captured = proc.stdout or b""
+        return_code = proc.returncode
+        error_tail = (proc.stderr or b"").decode("utf-8", errors="replace")[-2000:]
+        if return_code != 0:
+            status = "error"
+    except FileNotFoundError as e:
+        # Adapter invocation command is not on PATH: degrade, do not crash.
+        elapsed = time.time() - start
+        write_json(case_dir / "timing.json", {
+            "case_id": case_id, "status": "adapter-missing",
+            "elapsed_s": round(elapsed, 3), "captured_at": utc_now_iso(),
+        })
+        return {
+            "case_id": case_id,
+            "status": "adapter-missing",
+            "reason": f"invocation command not found: {e}",
+            "cwd": str(cwd.relative_to(run_dir)),
+        }
+    except subprocess.TimeoutExpired as e:
+        captured = e.stdout or b""
+        return_code = -1
+        status = "timeout"
+        error_tail = f"TIMEOUT after {timeout}s"
+    elapsed = time.time() - start
+
+    transcript_text, source = read_transcript(
+        adapter.get("transcript", {}), captured, cwd
+    )
+    transcript_path.write_text(transcript_text, encoding="utf-8")
+
+    accounting = account_transcript(transcript_text)
+
+    # Capture timing/tokens immediately to timing.json (run-time snapshot).
+    timing = {
+        "case_id": case_id,
+        "status": status,
+        "elapsed_s": round(elapsed, 3),
+        "return_code": return_code,
+        "transcript_source": source,
+        "input_tokens": accounting["input_tokens"],
+        "output_tokens": accounting["output_tokens"],
+        "total_tokens": accounting["total_tokens"],
+        "tokens_reported": accounting["tokens_reported"],
+        "total_steps": accounting["total_steps"],
+        "total_tool_calls": accounting["total_tool_calls"],
+        "captured_at": utc_now_iso(),
+    }
+    write_json(case_dir / "timing.json", timing)
+
+    return {
+        "case_id": case_id,
+        "status": status,
+        "elapsed_s": round(elapsed, 3),
+        "return_code": return_code,
+        "transcript": str(transcript_path.relative_to(run_dir)),
+        "cwd": str(cwd.relative_to(run_dir)),
+        "tokens": accounting["total_tokens"],
+        "tool_calls": accounting["tool_calls"],
+        "error_tail": error_tail,
+    }
+
+
+# --- main -------------------------------------------------------------------
+
+def load_cases(cases_file: Path) -> list[dict]:
+    data = read_json(cases_file)
+    if isinstance(data, dict) and "cases" in data:
+        cases = data["cases"]
+    elif isinstance(data, list):
+        cases = data
+    else:
+        raise ValueError("cases file must be a list or {'cases': [...]}")
+    if not isinstance(cases, list):
+        raise ValueError("'cases' must be a list")
+    return cases
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("--cases", required=True, type=Path)
+    p.add_argument("--output-dir", required=True, type=Path)
+    p.add_argument("--adapter", type=Path, default=None,
+                   help="adapter config JSON; defaults to BMAD_EVAL_ADAPTER env "
+                        "or adapter.json beside the cases file")
+    p.add_argument("--case-ids", default=None,
+                   help="comma-separated subset of case ids to run")
+    p.add_argument("--timeout", type=int, default=600)
+    p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--label", default="evals", help="label for the run id")
+    p.add_argument("--quiet", action="store_true")
+    args = p.parse_args(argv)
+
+    cases_file = args.cases.resolve()
+    if not cases_file.is_file():
+        print(f"cases file not found: {cases_file}", file=sys.stderr)
         return 2
 
-    skill_name, _, _ = parse_skill_md(skill_path)
-    data = read_json(evals_file)
-    evals = data["evals"] if isinstance(data, dict) and "evals" in data else data
+    cases = load_cases(cases_file)
+    if args.case_ids:
+        wanted = {x.strip() for x in args.case_ids.split(",") if x.strip()}
+        cases = [c for c in cases if str(c.get("id")) in wanted]
 
-    if args.eval_ids:
-        wanted = {x.strip() for x in args.eval_ids.split(",") if x.strip()}
-        evals = [e for e in evals if str(e.get("id")) in wanted]
+    adapter_path = find_adapter(args.adapter, cases_file)
+    adapter: dict | None = None
+    adapter_note = "none"
+    if adapter_path is not None:
+        try:
+            adapter = load_adapter(adapter_path)
+            adapter_note = str(adapter_path)
+        except Exception as e:
+            print(f"adapter config invalid ({e}); degrading to skip-only",
+                  file=sys.stderr)
+            adapter = None
+            adapter_note = f"invalid: {e}"
 
-    run_id = new_run_id(skill_name)
+    run_id = new_run_id(args.label)
     run_dir = (args.output_dir / run_id).resolve()
     run_dir.mkdir(parents=True, exist_ok=True)
 
     write_json(run_dir / "run.json", {
         "run_id": run_id,
-        "skill_name": skill_name,
-        "skill_path": str(skill_path),
-        "project_root": str(project_root),
-        "evals_file": str(evals_file),
-        "isolation": args.isolation,
+        "cases_file": str(cases_file),
+        "adapter": adapter_note,
         "started_at": utc_now_iso(),
-        "eval_count": len(evals),
+        "case_count": len(cases),
     })
 
-    runner = run_eval_docker if args.isolation == "docker" else run_eval_local
+    if adapter is None and not args.quiet:
+        print("[run_evals] no runtime adapter configured; staging cases only "
+              "(no crash). Configure an adapter to execute.", file=sys.stderr)
 
     results: list[dict] = []
     if not args.quiet:
-        print(
-            f"[run_evals] {len(evals)} evals, isolation={args.isolation}, run_dir={run_dir}",
-            file=sys.stderr,
-        )
+        print(f"[run_evals] {len(cases)} cases, run_dir={run_dir}",
+              file=sys.stderr)
 
-    with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        future_to_eval = {
-            pool.submit(
-                runner,
-                item,
-                run_dir,
-                skill_path,
-                project_root,
-                int(item.get("timeout", args.timeout)),
-                discover_setup_dirs(evals_file, str(item.get("id", ""))),
-            ): item
-            for item in evals
+    with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
+        fut_to_case = {
+            pool.submit(run_case, c, run_dir, adapter,
+                        int(c.get("timeout", args.timeout))): c
+            for c in cases
         }
-        for fut in as_completed(future_to_eval):
-            item = future_to_eval[fut]
+        for fut in as_completed(fut_to_case):
+            c = fut_to_case[fut]
             try:
                 res = fut.result()
             except Exception as e:
-                res = {"eval_id": str(item.get("id")), "error": str(e), "return_code": -1}
+                res = {"case_id": str(c.get("id")), "status": "exception",
+                       "reason": str(e)}
             results.append(res)
             if not args.quiet:
-                rc = res.get("return_code")
-                status = "ok" if rc == 0 else f"rc={rc}"
-                print(
-                    f"  [{status}] eval {res.get('eval_id')} ({res.get('elapsed_s', 0):.1f}s)",
-                    file=sys.stderr,
-                )
+                print(f"  [{res.get('status')}] case {res.get('case_id')} "
+                      f"({res.get('elapsed_s', 0)}s)", file=sys.stderr)
 
     summary = {
         "run_id": run_id,
         "completed_at": utc_now_iso(),
-        "total": len(evals),
-        "executed": len(results),
-        "exec_failures": sum(1 for r in results if r.get("return_code") != 0),
+        "total": len(cases),
+        "executed": sum(1 for r in results if r.get("status") == "ok"),
+        "skipped": sum(1 for r in results if r.get("status") == "skipped"),
+        "failures": sum(1 for r in results
+                        if r.get("status") in ("error", "timeout", "exception",
+                                               "adapter-missing")),
         "run_dir": str(run_dir),
         "results": results,
     }

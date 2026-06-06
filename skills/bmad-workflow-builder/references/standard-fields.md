@@ -1,196 +1,188 @@
-# Standard Workflow/Skill Fields
+# Standard Fields and Naming Conventions
 
-## Frontmatter Fields
+Frontmatter, body fields, stage naming, hook naming, and the customize.toml field conventions for skills the builder produces. Stage names are descriptive and unnumbered everywhere, matching the no-numbered-prefix rule.
 
-Only these fields go in the YAML frontmatter block:
+## Frontmatter fields
 
-| Field         | Description                                          | Example                                       |
-| ------------- | ---------------------------------------------------- | --------------------------------------------- |
-| `name`        | Full skill name (kebab-case, same as folder name)    | `validate-json`, `cis-brainstorm` |
-| `description` | [5-8 word summary]. [Use when user says 'X' or 'Y'.] | See Description Format below                  |
+Only these two fields go in the YAML frontmatter block:
 
-## Content Fields (All Types)
+| Field | Description | Example |
+| --- | --- | --- |
+| `name` | Full skill name, hyphen-case, same as the folder name | `validate-json`, `cis-brainstorm` |
+| `description` | A 5-8 word summary, then a trigger clause naming what the user says | See Description Format below |
 
-These are used within the SKILL.md body — never in frontmatter:
+Nothing else belongs in frontmatter. Role, stages, hooks, and config all live in the body or in customize.toml.
 
-| Field           | Description                   | Example                           |
-| --------------- | ----------------------------- | --------------------------------- |
-| `role-guidance` | Brief expertise primer        | "Act as a senior DevOps engineer" |
-| `module-code`   | Module code (if module-based) | `bmb`, `cis`                      |
+## Body fields
 
-## Simple Utility Fields
+These describe the skill inside SKILL.md, never in frontmatter:
 
-| Field           | Description                         | Example                                     |
-| --------------- | ----------------------------------- | ------------------------------------------- |
-| `input-format`  | What it accepts                     | JSON file path, stdin text                  |
-| `output-format` | What it returns                     | Validated JSON, error report                |
-| `standalone`    | Fully standalone, no config needed? | true/false                                  |
-| `composability` | How other skills use it             | "Called by quality scanners for validation" |
+| Field | Description | Example |
+| --- | --- | --- |
+| `role-guidance` | A brief expertise primer | "Act as a senior DevOps engineer" |
+| `module-code` | Module code, only when the skill ships inside a module | `bmb`, `cis` |
+| `input-format` | What the skill accepts | JSON file path, stdin text |
+| `output-format` | What the skill returns | Validated JSON, error report |
+| `composability` | How other skills call this one | "Called by quality scanners for validation" |
 
-## Simple Workflow Fields
+## Stage naming
 
-| Field        | Description           | Example                                   |
-| ------------ | --------------------- | ----------------------------------------- |
-| `steps`      | Numbered inline steps | "1. Load config 2. Read input 3. Process" |
-| `tools-used` | CLIs/tools/scripts    | gh, jq, python scripts                    |
-| `output`     | What it produces      | PR, report, file                          |
+Stages get descriptive, unnumbered names that say what the stage is for. Numbered prefixes are forbidden because they imply a fixed order the model must march through, they break under context compaction when a stage references SKILL.md, and they fight the outcome-driven shape the builder teaches. Name the stage by its goal and let the routing or the prose carry the order where order actually matters.
 
-## Complex Workflow Fields
+| Use | Not |
+| --- | --- |
+| `discover`, `plan`, `build` | `01-discover`, `02-plan`, `03-build` |
+| `gather-input`, `draft`, `finalize` | `step-1-gather`, `step-2-draft` |
 
-| Field                    | Description                       | Example                               |
-| ------------------------ | --------------------------------- | ------------------------------------- |
-| `stages`                 | Named numbered stages             | "01-discover, 02-plan, 03-build"      |
-| `progression-conditions` | When stages complete              | "User approves outline"               |
-| `headless-mode`          | Supports autonomous?              | true/false                            |
-| `config-variables`       | Beyond core vars                  | `planning_artifacts`, `output_folder` |
-| `output-artifacts`       | What it creates (output-location) | "PRD document", "agent skill"         |
+The same rule covers stage files on disk: a stage file is `discover.md`, not `01-discover.md`. When a stage genuinely must precede another (a later stage consumes an earlier stage's output), state the dependency in the prose rather than encoding it in a number, so the constraint is explicit and the name stays descriptive.
 
-## Customization Surface (`customize.toml`, opt-in)
+A simple utility usually needs no stages at all; it does one deterministic thing and returns. Reach for named stages only when the work has distinct phases a reader needs to navigate.
 
-Emitted only when the skill author opts in during Phase 3.5 (Configurability Discovery). The file sits next to SKILL.md and is loaded via `{project-root}/_bmad/scripts/resolve_customization.py` at activation.
+## Hook naming
 
-### Always-present fields (when opted in)
+Hook points use the `on_<event>` form, where the event names the moment the hook fires. The hook value is a prompt string or a command the skill runs at that point, empty by default.
 
-| Field                      | Type          | Purpose                                                                    |
-| -------------------------- | ------------- | -------------------------------------------------------------------------- |
-| `activation_steps_prepend` | array[string] | Steps run before standard activation. Overrides append.                    |
-| `activation_steps_append`  | array[string] | Steps run after greet, before the workflow's first stage. Overrides append. |
-| `persistent_facts`         | array[string] | Facts (literal or `file:` prefixed paths/globs) loaded on activation. Overrides append. |
+| Hook | Fires |
+| --- | --- |
+| `on_complete` | After the skill finishes its work |
+| `on_start` | Before the skill's first stage runs |
+| `on_error` | When the skill hits an unrecoverable error |
 
-### Workflow-specific scalars (lifted during Phase 3.5)
+Keep hooks to real moments the skill reaches. Do not invent hook points for events the skill never produces.
 
-Named by purpose and suffix. Override wins (scalar merge rule).
+## customize.toml field conventions
 
-| Naming pattern      | Use for                                              | Example                                             |
-| ------------------- | ---------------------------------------------------- | --------------------------------------------------- |
-| `<purpose>_template` | File path for templates the workflow loads          | `brief_template = "assets/brief-template.md"`    |
-| `<purpose>_output_path` | Writable destination paths                       | `output_path = "{project-root}/docs/briefs"`        |
-| `on_<event>`        | Prompt or command executed at a hook point           | `on_complete = ""`                                  |
+customize.toml is the only customizability mechanism, emitted only when the author accepts the customization offer (default no). The file sits next to SKILL.md and the resolver merges it with team and user override files at activation. The `references/customize-toml-guide.md` file owns the merge rules, the baked defaults, and the offer flow; this section covers field naming.
 
-**Path resolution within scalar values:**
+### Always-present fields when customization is accepted
 
-- Bare paths (e.g. `assets/brief-template.md`) resolve from the skill root.
-- `{project-root}/...` resolves from the project working directory — use for org-owned overrides.
-- Never mix `{project-root}` with config variables that already contain it (no double-prefix).
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `activation_steps_prepend` | array of string | Steps that run before standard activation |
+| `activation_steps_append` | array of string | Steps that run after greeting, before the first stage |
+| `persistent_facts` | array of string | Facts, literal or `file:`-prefixed paths and globs, loaded on activation |
+| `on_complete` | string | Hook prompt or command, empty by default |
 
-### How SKILL.md references the resolved values
+### Skill-specific scalars, offered only where the matching stage exists
 
-After the resolver step runs, read customized values as `{workflow.<name>}`:
+Named by purpose plus a conventional suffix. Scalars follow the last-wins override rule.
+
+| Naming pattern | Use for | Example |
+| --- | --- | --- |
+| `<purpose>_template` | A file path for a template the skill loads | `brief_template = "assets/brief-template.md"` |
+| `<purpose>_output_path` | A writable destination path | `output_path = "{project-root}/docs/briefs"` |
+| `run_folder_pattern` | The dated run-folder shape for artifact producers | `run_folder_pattern = "{date}-{slug}"` |
+| `on_<event>` | A prompt or command run at a hook point | `on_complete = ""` |
+
+### Standards-not-options arrays, offered only where the stage exists
+
+These arrays append rather than replace, so a team adds to the standard rather than swapping it out. Offer each one only when the skill has a finalize, review, or handoff stage that consumes it.
+
+| Array | Offered when | Entry forms |
+| --- | --- | --- |
+| `doc_standards` | The skill has a finalize or review stage | `skill:`, `file:`, or plain text |
+| `finalize_reviewers` | The skill gates output through reviewers | `skill:` or plain text |
+| `external_sources` | The skill pulls in outside context | `file:` or plain text |
+| `external_handoffs` | The skill hands off to another stage or tool | `tool:`, `skill:`, or plain text |
+
+## Path resolution inside scalar values
+
+- A bare path like `assets/brief-template.md` resolves from the skill root.
+- A `{project-root}/...` path resolves from the project working directory; use it for org-owned overrides.
+- Never mix `{project-root}` with a config variable that already contains it, which would double-prefix.
+
+## How SKILL.md reads resolved values
+
+After the resolver step runs, SKILL.md reads a customized value as `{workflow.<name>}`:
 
 ```markdown
 Load the brief template from `{workflow.brief_template}`.
 ```
 
-At runtime, that resolves to whatever the merged `[workflow].brief_template` scalar is — the default, a team override, or a personal override.
+At runtime that resolves to the merged `[workflow].brief_template` scalar, whether the default, a team override, or a personal override. A hardcoded path written beside a declared scalar silently no-ops the override, so SKILL.md must reference the resolved value, never the raw path. The customization scanner flags this.
 
-### Override files
+## Override files
 
-Teams and users override without editing `customize.toml` in the skill, and instead modify the following:
+Teams and users override without editing the skill's customize.toml:
 
 - Team: `{project-root}/_bmad/custom/{skill-name}.toml`
 - Personal: `{project-root}/_bmad/custom/{skill-name}.user.toml`
 
-Both use the same `[workflow]` block shape. Merge order: base (skill's `customize.toml`) → team → user.
+Both use the same `[workflow]` block shape. Merge order is the skill's customize.toml, then team, then user.
 
-## Overview Section Format
+## Overview section
 
-The Overview is the first section after the title — it primes the AI for everything that follows.
+The Overview is the first section after the title and primes the model for everything that follows. State what the skill does, how it works, and the outcome it delivers.
 
-**3-part formula:**
+| Skill type | Shape |
+| --- | --- |
+| Complex workflow | This skill helps you {outcome} through {approach}. Act as {role}, guiding users through {key stages}. The output is {deliverable}. |
+| Simple workflow | This skill {what it does} by {approach}. Act as {role}. Use when {triggers}. Produces {output}. |
+| Simple utility | This skill {what it does}. Use when {when to use}. Returns {output format}. |
 
-1. **What** — What this workflow/skill does
-2. **How** — How it works (approach, key stages)
-3. **Why/Outcome** — Value delivered, quality standard
+## Description format
 
-**Templates by skill type:**
+The frontmatter `description` is the primary trigger mechanism; it decides when the model invokes the skill. Most BMad skills are invoked by name, so the description stays conservative to avoid accidental triggering.
 
-**Complex Workflow:**
+The format is two parts, one sentence each: a 5-8 word statement of what the skill does, then a trigger clause naming the phrases the user would actually say.
 
-```markdown
-This skill helps you {outcome} through {approach}. Act as {role-guidance}, guiding users through {key stages}. Your output is {deliverable}.
-```
+| Activation style | Trigger clause |
+| --- | --- |
+| Explicit, the default | `Use when the user requests to 'create a PRD' or 'edit an existing PRD'.` Quoted phrases, conservative, will not fire on a casual mention. |
+| Organic or reactive | `Trigger when code imports the anthropic SDK, or the user asks to use the Claude API.` For lightweight skills that activate on contextual signals. |
 
-**Simple Workflow:**
+Good explicit: `Builds workflows and skills through conversational discovery. Use when the user requests to 'build a workflow', 'modify a workflow', or 'quality check workflow'.`
 
-```markdown
-This skill {what it does} by {approach}. Act as {role-guidance}. Use when {trigger conditions}. Produces {output}.
-```
+Bad, too vague: `Helps with PRDs and product requirements.` This would fire on any passing mention of a PRD.
 
-**Simple Utility:**
+Bad, over-broad: `Use on any mention of workflows, building, or creating things.` This would hijack unrelated conversations.
 
-```markdown
-This skill {what it does}. Use when {when to use}. Returns {output format} with {key feature}.
-```
+Default to explicit invocation unless the author describes organic activation during discovery.
 
-## SKILL.md Description Format
+## Role guidance
 
-The frontmatter `description` is the PRIMARY trigger mechanism — it determines when the AI invokes this skill. Most BMad skills are **explicitly invoked** by name (`/skill-name` or direct request), so descriptions should be conservative to prevent accidental triggering.
-
-**Format:** Two parts, one sentence each:
-
-```
-[What it does in 5-8 words]. [Use when user says 'specific phrase' or 'specific phrase'.]
-```
-
-**The trigger clause** uses one of these patterns depending on the skill's activation style:
-
-- **Explicit invocation (default):** `Use when the user requests to 'create a PRD' or 'edit an existing PRD'.` — Quotes around specific phrases the user would actually say. Conservative — won't fire on casual mentions.
-- **Organic/reactive:** `Trigger when code imports anthropic SDK, or user asks to use Claude API.` — For lightweight skills that should activate on contextual signals, not explicit requests.
-
-**Examples:**
-
-Good (explicit): `Builds workflows and skills through conversational discovery. Use when the user requests to 'build a workflow', 'modify a workflow', or 'quality check workflow'.`
-
-Good (organic): `Initializes BMad project configuration. Trigger when any skill needs module-specific configuration values, or when setting up a new BMad project.`
-
-Bad: `Helps with PRDs and product requirements.` — Too vague, would trigger on any mention of PRD even in passing conversation.
-
-Bad: `Use on any mention of workflows, building, or creating things.` — Over-broad, would hijack unrelated conversations.
-
-**Default to explicit invocation** unless the user specifically describes organic/reactive activation during discovery.
-
-## Role Guidance Format
-
-Every generated workflow SKILL.md includes a brief role statement in the Overview or as a standalone line:
+Every generated SKILL.md carries a brief role statement in the Overview or as a standalone line:
 
 ```markdown
-Act as {role-guidance}. {brief expertise/approach description}.
+Act as {role}. {brief expertise and approach}.
 ```
 
-This provides quick prompt priming for expertise and tone. Workflows may also use full Identity/Communication Style/Principles sections when personality serves the workflow's purpose.
+A skill may use a fuller identity and principles section when personality serves the work, but a single role line is enough for most.
 
-## Path Rules
+## Path rules
 
-### Skill-Internal References
+### Skill-internal references
 
-Use bare paths from the skill root for any file inside this skill — including same-folder references between two files in `references/` or two files in `scripts/`:
+Use bare paths from the skill root for any file inside the skill, including a reference between two files in the same folder:
 
 - `references/build-process.md`
-- `references/standard-fields.md` (referenced from another file in `references/` — still bare path)
+- `references/standard-fields.md` referenced from another file in `references/`, still a bare path
 - `scripts/validate.py`
 - `assets/template.md`
 
-The convention is universal: bare paths from skill root. Never use `./` prefixes — they cause inconsistency and break under context compaction when the working directory shifts.
+The convention is universal: bare paths from the skill root. Never use a `./` prefix, which causes inconsistency and breaks under context compaction when the working directory shifts.
 
-### Project-Scope Paths
+### Project-scope paths
 
 Use `{project-root}/...` for any path relative to the project root:
 
 - `{project-root}/_bmad/planning/prd.md`
 - `{project-root}/docs/report.md`
 
-### Config Variables
+### Config variables
 
-Use directly — they already contain `{project-root}` in their resolved values:
+Use config variables directly, since their resolved values already contain `{project-root}`:
 
 - `{output_folder}/file.md`
 - `{planning_artifacts}/prd.md`
 
-### Anti-patterns (negative examples — fenced so the linter doesn't fire on them)
+### Anti-patterns
+
+These are wrong; the fences keep the path linter from firing on them:
 
 ```text
-{project-root}/{output_folder}/file.md   # WRONG — double-prefix; config var already has {project-root}
-_bmad/planning/prd.md                    # WRONG — bare _bmad must have {project-root} prefix
-./references/foo.md                      # WRONG — never use ./ for skill-internal paths
-./scripts/foo.py                         # WRONG — same; bare paths from skill root only
+{project-root}/{output_folder}/file.md   # WRONG, double-prefix; the config var already has {project-root}
+_bmad/planning/prd.md                    # WRONG, bare _bmad needs a {project-root} prefix
+./references/foo.md                       # WRONG, never use ./ for a skill-internal path
+./scripts/foo.py                          # WRONG, bare paths from skill root only
 ```
