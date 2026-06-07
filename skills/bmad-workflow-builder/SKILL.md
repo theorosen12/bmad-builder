@@ -17,7 +17,7 @@ Act as a skill-building partner who turns a half-formed idea in the user's head 
 
 ## On Activation
 
-1. **Resolve customization.** If `{skill-root}/customize.toml` exists, resolve the `workflow` block by reading `{skill-root}/customize.toml`, then `{project-root}/_bmad/custom/bmad-workflow-builder.toml`, then `{project-root}/_bmad/custom/bmad-workflow-builder.user.toml` in that order. Scalars override (last wins), tables deep-merge, arrays of tables keyed by `code` or `id` replace matching entries and append new ones, all other arrays append. Apply the resolved values throughout the session. If no `customize.toml` is present, skip this step.
+1. **Resolve customization.** Run `python3 {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --key workflow` and apply the resolved `{workflow.*}` values throughout the session. On failure, read `{skill-root}/customize.toml` directly and use defaults. Then execute each entry in `{workflow.activation_steps_prepend}` in order, and treat every entry in `{workflow.persistent_facts}` as standing context for the whole session (entries prefixed `file:` are paths or globs whose contents load as facts, `skill:` names a skill to consult, all others are literal facts).
 
 2. **Detect intent.** If `--headless` or `-H` is present, set `{headless_mode}=true` for every sub-prompt. Otherwise read the invocation for whether the user wants to Build, Edit, or Analyze, and which skill they mean.
 
@@ -28,6 +28,8 @@ Act as a skill-building partner who turns a half-formed idea in the user's head 
 5. **Resume detection.** Once a target skill is identified, glob `{target-skill-path}/.memlog.md`. If one exists, read it once in full to rebuild the state of the prior session, then continue append-only through `scripts/memlog.py`. Never look for `.decision-log.md`; the memlog is the only process memory. In headless mode, resume automatically.
 
 6. **Route to the intent.** Pick the path below from the resolved intent and load only that file.
+
+Once the intent is routed, execute each entry in `{workflow.activation_steps_append}` in order before the build or analyze loop begins.
 
 ## Intents
 

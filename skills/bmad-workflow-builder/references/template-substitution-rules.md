@@ -40,7 +40,7 @@ The builder determines the rest of the skill structure — body sections, phases
 
 ## Path References
 
-All generated skills use paths relative to skill root (cross-directory) or `./` (same-folder):
+All generated skills use bare paths from the skill root (never `./`), per Path rules in `references/standard-fields.md`:
 
 - `references/{reference}.md` — Reference documents loaded on demand
 - `references/{stage}.md` — Stage prompts (complex workflows)

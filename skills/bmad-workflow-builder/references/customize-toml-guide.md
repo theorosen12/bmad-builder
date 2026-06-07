@@ -79,7 +79,7 @@ customize.toml is the sole config mechanism. The build flow never offers any of 
 
 - Installer or install-time questions
 - module.yaml embedding or generation. The workflow-builder captures module-capability metadata as handoff fields only and never authors module.yaml.
-- A separate config.yaml authored by the skill for its own settings. Reading the project's config.yaml at activation is legitimate and stays, because it is not a customization surface.
+- A separate config.yaml authored by the skill for its own settings. (Reading the project's config.yaml at activation is not a customization surface; net-new skills are not generated with it, though a user may wire it in.)
 - Boolean-toggle config that switches behavior on and off
 - Any settings or options concept inside the built skill
 

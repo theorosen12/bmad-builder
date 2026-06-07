@@ -2,11 +2,19 @@
 
 This is one loop, not a sequence of phases. It carries Build and Edit, because an edit is the same loop pointed at a skill that already exists. The order below is the usual order of discovery, but nothing forces you to march through it; you pursue whichever outcome the conversation is ready for and you revisit earlier ones as the picture sharpens. Each outcome is a thing you want to be true, not a step you check off.
 
-Load `references/skill-quality-principles.md` before you draft anything. It is the same institutional-knowledge file the scanners verify against, so building against it from the start is cheaper than fixing later. Load `references/standard-fields.md` for frontmatter and naming conventions, and `references/complex-workflow-patterns.md` only if the skill needs multi-stage routing across carved-out reference files.
+Load `references/skill-quality-principles.md` before you draft anything. It is the same institutional-knowledge file the scanners verify against, so building against it from the start is cheaper than fixing later. Load `references/standard-fields.md` for frontmatter and naming conventions. Load `references/producing-workflow-patterns.md` when the skill produces an artifact, runs across turns, or serves more than one intent (persona, intent modes, graceful degradation). Load `references/working-state-patterns.md` when the skill holds state across turns — it builds something revisable, or an existing skill already carries a `.memlog.md` or a structured working artifact. Load `references/complex-workflow-patterns.md` only when the skill is large enough to carve work out to `references/` (carve-out conventions, multi-stage routing, module metadata).
 
 ## Open by understanding why the user came
 
 Before you read a single artifact, understand what the user is actually trying to get done and what "good" looks like to them. The open-floor invitation in activation does most of this work, so read what they dumped and mine the conversation history for the tools, the sequence, the corrections, and the inputs and outputs they have already shown you. Then ask only the gaps that remain. On an edit, this means reading the part of the existing skill the change touches and ignoring the rest, rather than re-deriving the whole spec.
+
+## Harden the idea before you build it
+
+A skill is cheap to generate and expensive to live with, so push on the idea before drafting rather than building the first description you hear. Pressure-test the shape: is this one skill or three, is it a skill at all or a one-off the user could just ask for directly, what is the single outcome and who consumes it, what real input does it run on, and where would it be thin or fail. Push back where the idea is half-formed, because a builder that accepts a vague idea ships a vague skill.
+
+Calibrate to the user. When they arrive with a hardened, specific idea or say they want to move fast, confirm the shape and proceed without belaboring it. When the idea is raw, stay in the hardening conversation until the outcome and scope are clear, and for a genuinely exploratory idea offer `bmad-forge-idea` to pressure-test it or `bmad-brainstorming` to widen it before building.
+
+Do not reduce this to a few multiple-choice questions and jump to building. The quiz-and-go feels efficient and skips the part that most determines whether the skill is worth building at all.
 
 ## Capture continuously into the memlog
 
@@ -14,11 +22,13 @@ As decisions and directions land, write them to `{target-skill-path}/.memlog.md`
 
 ## Write the minimal outcome-driven version first
 
-Draft the smallest skill that could possibly work. Hold it to four things: the role, the outcome, the consumer of the output, and any rule whose absence has already caused real damage. Everything else stays out until a comparison earns it. Apply the core test to every line you are tempted to write, because a model that already knows how to do the thing does not need to be told how. Default to writing the whole workflow inline in SKILL.md as named sections, and carve into `references/` with descriptive filenames only when SKILL.md grows too large to scan in one pass. Never use numbered prefixes on those files.
+Draft the smallest skill that could possibly work. Hold it to four things: the role, the outcome, the consumer of the output, and any rule whose absence has already caused real damage. Everything else stays out until a comparison earns it. Apply the core test to every line you are tempted to write, because a model that already knows how to do the thing does not need to be told how. Default to writing the whole workflow inline in SKILL.md as named sections, and carve into `references/` with descriptive filenames (preferred over numbered prefixes) only when SKILL.md grows too large to scan in one pass.
 
 ## Run it on real input and reach for eval at the eval beat
 
 A skill that has never run is a guess. Run the minimal version on the real, messy input the user actually has. This is the eval beat, and it is where you invoke `bmad-eval-runner`. Offer baseline mode to confirm the skill beats the bare model on the same input, because a skill that does not beat the bare model has no reason to exist. Offer trigger mode to harden the description against near-miss queries. Both are opt-in; surface them, explain what each one settles, and let the user decide.
+
+`{workflow.evals_required}` overrides the opt-in default. When it is empty (default), the modes stay opt-in as above. When it is set, evals are a ship gate: `"baseline"` requires a passing baseline run before the build is done; `"any"` requires at least one eval case to exist and pass. If a required run fails or cannot be produced, the build is blocked, not shipped.
 
 ## Add scaffolding only when a comparison demands it
 
@@ -34,11 +44,13 @@ Ask once, interactive only, and default to no: "Should this support end-user cus
 
 ## Wire the universal shape, strip ceremony, and ship
 
-Wire in the shape every producing skill shares: memlog capture during the run, a distillation at finalize for skills whose output feeds downstream consumers, projections produced on demand rather than maintained, polish gated on the user's temperament, and a reviewer gate for skills that produce something substantive. Then strip the ceremony. Confirm the skill passes its own leanness scanner before you hand it off, because the builder has no standing to teach leanness while shipping bloat. When the skill is lean, runs on real input, and the user has signed off on the memlog audit, ship it.
+Wire in the shape every producing skill shares: a working-state strategy chosen for this skill (memlog, a structured working artifact, both, or neither — see `references/working-state-patterns.md`), a distillation at finalize for skills whose output feeds downstream consumers, projections produced on demand rather than maintained, polish gated on the user's temperament, and a reviewer gate for skills that produce something substantive. Then strip the ceremony. Confirm the skill passes its own leanness scanner before you hand it off, because the builder has no standing to teach leanness while shipping bloat.
+
+Two org gates apply before ship. Check SKILL.md against the token tiers in `references/skill-quality-principles.md` (Length guidance): warn the user between `{workflow.skill_md_token_desired}` and `{workflow.skill_md_token_budget}`, and if it is over `{workflow.skill_md_token_budget}`, lift sections to `references/` until it is back under. And verify the skill satisfies every directive in `{workflow.build_standards}`; treat each as a required criterion, not a suggestion, and resolve any miss before handoff. When the skill is lean, within budget, conformant, runs on real input, and the user has signed off on the memlog audit, ship it.
 
 ## Handoff
 
-Interactive: show what was built, the lint results, and offer the next steps, which usually means running Analyze over the new skill or moving on. Point the user at the memlog at `{target-skill-path}/.memlog.md` and walk the audit so they confirm their reasoning was handled the way they intended. Before handoff, run the structural lint and path lint over the built skill and fix high or critical findings.
+Interactive: before handing off, run the structural lint and path lint over the built skill and fix high or critical findings. Then show what was built and the lint results, and **offer to run the full validation — the Analyze lenses in `references/scan-orchestration.md` — over the new skill**. This is the default next step, not one option among several: offer it explicitly and proactively rather than waiting for the user to ask. If the user accepts, run the Analyze flow and **open the resulting HTML report for them when it finishes** — that flow produces and opens the report, so do not stop at summarizing findings in chat. Then walk the memlog audit at `{target-skill-path}/.memlog.md` so they confirm their reasoning was handled the way they intended. Once the skill is delivered and the user has been told it is ready, run `{workflow.on_complete}` if non-empty (a string scalar is one instruction, an array is a sequence run in order).
 
 Headless (`{headless_mode}=true`): call `set-complete` on the memlog and emit JSON only.
 

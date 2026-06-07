@@ -52,25 +52,6 @@ The eval-runner produces transcripts when a skill runs on real input. Read them 
 
 This is the strongest possible evidence for a script, because it is not a guess about what the model might do, it is the model demonstrably doing the same deterministic thing repeatedly. When a baseline or quality eval run shows this pattern, the recommendation is a named script, and the next eval run should show the inline derivation gone.
 
-## Native Python is the default
+## Authoring the script
 
-All script logic is native Python so it runs the same on macOS, Linux, and Windows or WSL. The standard library covers most needs: `json`, `pathlib`, `re`, `argparse`, `collections`, `difflib`, `ast`, `csv`, `xml`. Avoid bash for logic, so no piping, `jq`, `grep`, `sed`, `awk`, `find`, `diff`, or `wc` inside a script; use the Python equivalent. The safe shell surface is `git`, `gh`, `uv run`, the node package managers, and `mkdir -p`.
-
-Non-stdlib dependencies are declared with PEP 723 inline script metadata and run with `uv run`, which resolves the declared deps without a separate install step:
-
-```python
-# /// script
-# requires-python = ">=3.10"
-# dependencies = ["tiktoken"]
-# ///
-```
-
-Every script must still run under a plain `python3` invocation, so any non-stdlib dependency needs a graceful fallback when the import fails (count_tokens.py is the model: tiktoken when present, chars-over-four when absent). At build time, confirm the non-stdlib dependencies are available in the target environment before relying on them, and log the confirmation. Confirming script dependencies is a legitimate build check, not a customization surface.
-
-## The --help pattern
-
-Every script declares PEP 723 metadata and implements `--help`. A prompt can point at `scripts/foo.py --help` instead of inlining the interface, which keeps the interface defined in one place and saves prompt tokens.
-
-## Output and authoring conventions
-
-Scripts emit structured JSON and follow the authoring checklist (PEP 723 metadata, skill-path argument, `-o` for output, diagnostics to stderr, exit codes 0 pass / 1 fail / 2 error, no interactive prompts, no network, tests under `scripts/tests/`). The full schema and checklist live in `references/script-standards.md` so they stay defined once.
+Once a candidate is confirmed, `references/script-standards.md` owns how to write it: native Python over bash, stdlib-first, PEP 723 metadata, `uv run` for declared dependencies, a graceful fallback when an optional dependency's import is unavailable, and the `--help`/output/exit-code/testing checklist. One tip worth carrying into the prompt: point it at `scripts/foo.py --help` instead of inlining the interface, so the interface stays defined once and the prompt stays short.

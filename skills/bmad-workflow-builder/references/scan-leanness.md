@@ -15,11 +15,13 @@ Flag lines that re-teach behavior the model already has:
 - Scoring formulas, weighted calibration tables, and decision matrices used for subjective judgment.
 - Format-the-output templates that teach markdown, greeting, or prompt assembly.
 - Defensive padding such as "make sure", "don't forget", and "remember to".
-- Meta-explanation that describes the workflow to itself ("this workflow is designed to...").
-- Mechanics for a tool the model already drives fluently.
-- "Why it matters" prose hung on an obvious check.
+- Meta-explanation that describes the system to itself ("this workflow is designed to..."), and negative-space that narrates what it no longer does (a "what is gone" section, "this no longer uses X").
+- Mechanics for a tool the model already drives fluently, and downstream mechanics living in the wrong file (how a subagent fills a shell, described where you merely invoke it).
+- "Why it matters" prose hung on an obvious check, and facts restated across sections that the reader already carries from the first statement.
 
 The recommendation for a Core Test finding is the cut itself, plus the one line of judgment the section was actually protecting if any survives.
+
+The lens cuts both ways. Also flag the inverse: a non-obvious goal stated without the rationale the reader needs to apply it to a case the author did not foresee. That is under-writing, and the fix is to add the why, not to cut. The reader is an LLM whose only context is the skill's own files, so judge every line by whether it changes how that reader acts or judges.
 
 ## Test 2: defend against its own absence
 
