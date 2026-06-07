@@ -27,7 +27,7 @@ The builder produces agents along one gradient surfaced as feature decisions, no
 
 ## On Activation
 
-1. **Resolve customization.** If `{skill-root}/customize.toml` exists, resolve the `agent` block by reading `{skill-root}/customize.toml`, then `{project-root}/_bmad/custom/bmad-agent-builder.toml`, then `{project-root}/_bmad/custom/bmad-agent-builder.user.toml` in that order. Scalars override (last wins), tables deep-merge, arrays of tables keyed by `code` or `id` replace matching entries and append new ones, all other arrays append. Apply the resolved values throughout the session. If no `customize.toml` is present, skip this step.
+1. **Resolve customization.** Run `python3 {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --key agent` and apply the resolved `{agent.*}` values throughout the session. On failure, read `{skill-root}/customize.toml` directly and use defaults.
 
 2. **Detect intent.** If `--headless` or `-H` is present, set `{headless_mode}=true` for every sub-prompt; this is the builder running non-interactively, and it has nothing to do with a built agent's runtime headless behavior. Otherwise read the invocation for whether the user wants to Create, Edit, or Analyze, and which agent they mean.
 

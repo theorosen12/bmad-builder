@@ -3,9 +3,15 @@
 
 The canon for what earns its place in anything you build with a prompt, whether that is a single capability or a whole flow. The same tests apply everywhere, because every line you write competes with the version of itself that was never written.
 
+## Who reads this
+
+Every line you write is read by a model whose entire world is what you wrote — no author in the room, no context but these files. Write for that reader. This is what makes every test below reader-relative: the question is always whether a line changes how that reader acts or judges, and it cuts both ways. Cut what this reader already knows how to do, and what changes none of its moves — meta-explanation that describes the system to itself, negative-space ("what this no longer does"), restated facts, and mechanics that belong in the file that performs them. But keep the why behind a non-obvious goal: a reader handed a goal without its reason cannot apply it to the case you did not foresee, and may optimize away a constraint it does not understand. A stripped why is under-writing, not leanness.
+
 ## The core test
 
 For every line, ask whether a capable model would do this correctly without being told. If yes, cut it. A line earns its place only by preventing a failure that would otherwise happen, so it must beat its own absence. If you cannot name something the line produces that its absence would not, the line is friction and it goes.
+
+The inverse is also a defect: a goal given without the rationale the reader needs to generalize it is under-written, not lean.
 
 ## The two-version comparison
 
