@@ -4,7 +4,7 @@ What earns its place in a BMad skill, and what should be cut. Loaded at build ti
 
 ## The Core Test
 
-For every line you write or review: **would an LLM do this correctly without being told?** If yes, cut it. The instruction must earn its place by preventing a failure that would otherwise happen.
+For every line you write or review: **would an LLM do this correctly without being told?** If yes, cut it. The instruction must earn its place by preventing a failure that would otherwise happen. But outright cut is the rare verdict; far more often the nudge earns its place and the explanation around it — what it means, why it is obviously good, how to do it — does not, so truncate to the nudge rather than deleting the line or keeping it whole.
 
 The framing underneath every test in this file is the same one. A line must beat its own absence. If you cannot name something the line produces that its absence would not, the line is friction and it goes. This replaces any older "be effective rather than efficient" idea, because effectiveness and efficiency stop competing once you measure each line against what the skill would do without it.
 

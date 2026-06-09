@@ -13,6 +13,10 @@ For every line, ask whether a capable model would do this correctly without bein
 
 The inverse is also a defect: a goal given without the rationale the reader needs to generalize it is under-written, not lean.
 
+## Most fixes are truncation, not deletion
+
+Cut-or-keep is the rare case. The common one is a line that earns its place but says far too much — a needed nudge wrapped in an explanation of what it means, why it is obviously good, or how to carry it out, all of which the reader infers. Truncate to the nudge: keep the instruction and the single clause of why it genuinely needs, and drop the rest. "Open with an invitation to dump everything" survives; the paragraph on why dumping helps does not. Keeping the why is one clause for a goal the reader could otherwise misapply, not a justification essay.
+
 ## The two-version comparison
 
 You cannot judge structure from inside a single run, because the output looks the same whether the model did its best work or settled for less. Step outside the run and compare. Write the smallest version of what you are building, around five lines, holding only the role, the outcome, the consumer of that outcome, and any rule serious enough that you can point to the damage its absence has caused. Then run the small version and the elaborate one on the same input and read the verdict.

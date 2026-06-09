@@ -31,7 +31,7 @@ For each load-bearing instruction in a capability prompt, ask whether a capable 
 - Mechanics for a tool the model already drives fluently, and downstream mechanics living in the wrong file.
 - A capability prompt restating identity or communication style the persona already establishes (this is the repetition case, not the carve-out), or any fact restated across sections that the reader already carries.
 
-The recommendation for a core-test finding is the cut itself, plus the one line of judgment the section was actually protecting if any survives.
+Most core-test findings are truncations, not deletions: usually keep the nudge and cut the explanation around it (what it means, why it is obviously good, how to do it), shrinking to the instruction plus the one clause of judgment it was protecting. Recommend outright removal only when the whole line is something the model already does.
 
 The lens cuts both ways. Also flag the inverse: a non-obvious goal in a capability prompt stated without the rationale the model needs to apply it to an unforeseen case is under-written, and the fix is to add the why, not to cut. This is distinct from persona, whose why is always investment (see the carve-out above).
 

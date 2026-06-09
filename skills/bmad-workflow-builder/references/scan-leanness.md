@@ -19,7 +19,7 @@ Flag lines that re-teach behavior the model already has:
 - Mechanics for a tool the model already drives fluently, and downstream mechanics living in the wrong file (how a subagent fills a shell, described where you merely invoke it).
 - "Why it matters" prose hung on an obvious check, and facts restated across sections that the reader already carries from the first statement.
 
-The recommendation for a Core Test finding is the cut itself, plus the one line of judgment the section was actually protecting if any survives.
+Most Core Test findings are truncations, not deletions: usually keep the nudge and cut the explanation wrapped around it (what it means, why it is obviously good, how to do it), shrinking the section to the instruction plus the one clause of judgment it was protecting. Recommend outright removal only when the whole line is something the model already does.
 
 The lens cuts both ways. Also flag the inverse: a non-obvious goal stated without the rationale the reader needs to apply it to a case the author did not foresee. That is under-writing, and the fix is to add the why, not to cut. The reader is an LLM whose only context is the skill's own files, so judge every line by whether it changes how that reader acts or judges.
 
