@@ -2,7 +2,9 @@
 
 This is one loop, not a sequence of phases. It carries Build and Edit, because an edit is the same loop pointed at a skill that already exists. The order below is the usual order of discovery, but nothing forces you to march through it; you pursue whichever outcome the conversation is ready for and you revisit earlier ones as the picture sharpens. Each outcome is a thing you want to be true, not a step you check off.
 
-Load `references/skill-quality-principles.md` before you draft anything. It is the same institutional-knowledge file the scanners verify against, so building against it from the start is cheaper than fixing later. Load `references/standard-fields.md` for frontmatter and naming conventions. Load `references/producing-workflow-patterns.md` when the skill produces an artifact, runs across turns, or serves more than one intent (persona, intent modes, graceful degradation). Load `references/working-state-patterns.md` when the skill holds state across turns — it builds something revisable, or an existing skill already carries a `.memlog.md` or a structured working artifact. Load `references/complex-workflow-patterns.md` only when the skill is large enough to carve work out to `references/` (carve-out conventions, multi-stage routing, module metadata).
+Load `references/prompt-quality-canon.md` before anything else and hold it as the governing standard for every line you draft — this file deliberately does not restate it, so a section below that names a canon test expects you to already carry it.
+
+Load `references/skill-quality-principles.md` alongside it for the BMad-specific knowledge the scanners verify against, and `references/standard-fields.md` for frontmatter and naming conventions. Load `references/producing-workflow-patterns.md` when the skill produces an artifact, runs across turns, or serves more than one intent (persona, intent modes, graceful degradation). Load `references/working-state-patterns.md` when the skill holds state across turns — it builds something revisable, or an existing skill already carries a `.memlog.md` or a structured working artifact. Load `references/complex-workflow-patterns.md` only when the skill is large enough to carve work out to `references/` (carve-out conventions, multi-stage routing, module metadata).
 
 ## Open by understanding why the user came
 
@@ -16,23 +18,29 @@ Calibrate to the user. When they arrive with a hardened, specific idea or say th
 
 Do not reduce this to a few multiple-choice questions and jump to building. The quiz-and-go feels efficient and skips the part that most determines whether the skill is worth building at all.
 
+## Propose what the idea implies
+
+Hardening cuts the idea down; this builds it out. Before drafting, offer what the user did not ask for but the outcome implies: the patterns in `references/skill-quality-principles.md` whose conditions this skill meets, the sibling intent the artifact obviously wants (update or validate beside create), the input it should accept that nobody mentioned. A line each with why it fits; the user picks, and the declines land in the memlog so a later session does not re-propose them. A builder that only executes the stated idea ships the user's first draft of it.
+
 ## Capture continuously into the memlog
 
 As decisions and directions land, write them to `{target-skill-path}/.memlog.md` through `scripts/memlog.py` (`init` once when the target is named, then `append --type <decision|direction|assumption|gap|note|event>` as things happen). For a new skill, propose a kebab-case name when the user did not give one; renaming later is a logged decision, not a redo. The memlog is the canonical process memory, the source for resume, and the trail you audit at handoff so the user can confirm their thinking was handled the way they meant. Capture as you go, not in a batch at the end, because the value is in catching the reasoning while it is still fresh.
 
 ## Write the minimal outcome-driven version first
 
-Draft the smallest skill that could possibly work. Hold it to four things: the role, the outcome, the consumer of the output, and any rule whose absence has already caused real damage. Everything else stays out until a comparison earns it. Apply the core test to every line you are tempted to write, because a model that already knows how to do the thing does not need to be told how. Default to writing the whole workflow inline in SKILL.md as named sections, and carve into `references/` with descriptive filenames (preferred over numbered prefixes) only when SKILL.md grows too large to scan in one pass.
+For a new skill, scaffold with `python3 scripts/init_skill.py --name "<name>" --dest {bmad_builder_output_folder}` (add `--dirs references,scripts,assets` only for the directories this build needs, `--customizable` only after the customization ask lands yes); it normalizes the name, writes SKILL.md from the template, and returns JSON paths.
+
+Draft the canon's small version: the smallest skill that could possibly work, written as destination rather than route. Everything else stays out until a comparison earns it. Default to writing the whole workflow inline in SKILL.md as named sections, carving per the canon's relevance test with the BMad carving conventions in `references/skill-quality-principles.md`.
 
 ## Run it on real input and reach for eval at the eval beat
 
 A skill that has never run is a guess. Run the minimal version on the real, messy input the user actually has. This is the eval beat, and it is where you invoke `bmad-eval-runner`. Offer baseline mode to confirm the skill beats the bare model on the same input, because a skill that does not beat the bare model has no reason to exist. Offer trigger mode to harden the description against near-miss queries. Both are opt-in; surface them, explain what each one settles, and let the user decide.
 
-`{workflow.evals_required}` overrides the opt-in default. When it is empty (default), the modes stay opt-in as above. When it is set, evals are a ship gate: `"baseline"` requires a passing baseline run before the build is done; `"any"` requires at least one eval case to exist and pass. If a required run fails or cannot be produced, the build is blocked, not shipped.
+Eval cases live at `{target-skill-path}/evals/cases.json`. `{workflow.evals_required}` overrides the opt-in default. When it is empty (default), the modes stay opt-in as above. When it is set, evals are a ship gate: `"baseline"` requires a passing baseline run before the build is done; `"any"` requires at least one case to exist and pass. If a required run fails or cannot be produced, the build is blocked, not shipped.
 
 ## Add scaffolding only when a comparison demands it
 
-Do not add structure on a hunch. Add it only when a worse-on-a-named-dimension comparison shows the minimal version failing on something concrete, where you can say exactly what breaks without the addition. When you do add something, write what survives as a goal rather than a prescription, and reserve exact procedure for the few places where a wrong move costs something real. If you find yourself reaching for more structure, first ask whether a sharper outcome statement would have produced the same result; most of the time it would, so sharpen the sentence and skip the scaffold.
+Do not add structure on a hunch. Add it only when the canon's two-version comparison shows the minimal version failing on something concrete you can name. If you find yourself reaching for more structure, first ask whether a sharper outcome statement would have produced the same result; most of the time it would, so sharpen the sentence and skip the scaffold.
 
 ## Hunt for script opportunities throughout
 
@@ -40,7 +48,7 @@ This is the builder's differentiator, so keep it active the whole way through ra
 
 ## Decide customization with the explicit ask
 
-Ask once, interactive only, and default to no: "Should this support end-user customization such as activation hooks, swappable templates, or output paths? If no, it ships fixed and anyone who needs a change forks it." Headless also defaults to no and emits a `customize.toml` only when the invocation explicitly asks for customization; log that decision in the memlog either way. When customization is accepted, bake the universal defaults and offer only the skill-specific points whose matching stages exist, following `references/customize-toml-guide.md`. When it is declined, emit no `customize.toml` and no resolver step, and the skill uses hardcoded paths throughout.
+`references/customize-toml-guide.md` owns this decision. Load it at this beat and follow it: ask its question once (interactive only, defaults no, headless defaults no), log the decision in the memlog, and emit what the guide says an accepted or declined answer emits.
 
 ## Wire the universal shape, strip ceremony, and ship
 
@@ -50,7 +58,7 @@ Two org gates apply before ship. Check SKILL.md against the token tiers in `refe
 
 ## Handoff
 
-Interactive: before handing off, run the structural lint and path lint over the built skill and fix high or critical findings. Then show what was built and the lint results, and **offer to run the full validation — the Analyze lenses in `references/scan-orchestration.md` — over the new skill**. This is the default next step, not one option among several: offer it explicitly and proactively rather than waiting for the user to ask. If the user accepts, run the Analyze flow and **open the resulting HTML report for them when it finishes** — that flow produces and opens the report, so do not stop at summarizing findings in chat. Then walk the memlog audit at `{target-skill-path}/.memlog.md` so they confirm their reasoning was handled the way they intended. Once the skill is delivered and the user has been told it is ready, run `{workflow.on_complete}` if non-empty (a string scalar is one instruction, an array is a sequence run in order).
+Interactive: before handing off, run the lint gate over the built skill — `python3 scripts/quick_validate.py {target-skill-path}`, `python3 scripts/scan-path-standards.py {target-skill-path}`, and `python3 scripts/scan-scripts.py {target-skill-path}` — fix high or critical findings and re-run until clear (after three failed fix attempts, stop and surface it), and run unit tests if the built skill carries scripts. Then show what was built and the lint results, and **offer to run the full validation — the Analyze lenses in `references/scan-orchestration.md` — over the new skill** as the default next step, proactively rather than waiting to be asked. If the user accepts, run the Analyze flow and **open the resulting HTML report for them when it finishes** — that flow produces and opens the report, so do not stop at summarizing findings in chat. Then walk the memlog audit at `{target-skill-path}/.memlog.md` so they confirm their reasoning was handled the way they intended. Once the skill is delivered and the user has been told it is ready, run `{workflow.on_complete}` if non-empty (a string scalar is one instruction, an array is a sequence run in order).
 
 Headless (`{headless_mode}=true`): call `set-complete` on the memlog and emit JSON only.
 

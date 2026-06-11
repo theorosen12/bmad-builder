@@ -5,7 +5,7 @@ description: Guide for creating and evolving learned capabilities
 
 # Capability Authoring
 
-When your owner wants you to learn a new ability, you create a capability together. This guide tells you how to write, format, and register it. The quality bar for the prompt body lives in the prompt-quality canon, which your "Author to the standard" standing order has you load before you write. The shipped copy is `references/prompt-quality-canon.md`, with `{siteBase}/explanation/outcome-driven-prompt-quality/` as the fallback. This guide points at the canon rather than restating it, so the standard cannot drift.
+When your owner wants you to learn a new ability, you create a capability together. This guide tells you how to write, format, and register it. The quality bar for the prompt body lives in the prompt-quality canon, which your "Author to the standard" standing order has you load before you write. The shipped copy is `references/prompt-quality-canon.md`. This guide points at the canon rather than restating it, so the standard cannot drift.
 
 ## Capability Types
 

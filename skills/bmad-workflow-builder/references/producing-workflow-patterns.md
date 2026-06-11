@@ -8,27 +8,19 @@ BMad workflows treat the human operator as the expert. The agent facilitates by 
 
 ## Intent Modes: create, update, validate
 
-A skill that serves more than one intent routes by mode rather than branching deep inside a single procedure. The three intents most producing skills land on are create, update, and validate. (Distinct from the interaction triad — guided / yolo / headless — which is about how much the skill asks, not what it does.) Each intent has its own entry path, resume behavior, and memlog interaction, but all share the role paragraph, activation, and resolution rules.
+A skill that serves more than one intent routes by mode rather than branching deep inside a single procedure. The three intents most producing skills land on are create, update, and validate.
 
 Create starts a fresh run, inits the memlog, and walks discovery through finalize. Update resumes against an existing artifact, reads the memlog once to rebuild state, surfaces any conflict before applying changes, and appends new entries. Validate is read-only, grades the artifact against its own standards, and writes nothing the user has to keep.
 
-Mode selection happens at activation from the user's intent, not from a quiz. If the intent is ambiguous, ask the one question that disambiguates, then route. Keep the boundary clean so a reader of any single mode never has to reason about the other two.
+Mode selection happens at activation from the user's intent, not from a quiz. If the intent is ambiguous, ask the one question that disambiguates, then route.
 
 ## Graceful Degradation
 
 A workflow that depends on a prior artifact or an optional script should degrade rather than stop. Each dependency names a fallback, and the fallback is the path the skill takes when the dependency is absent rather than an error the user has to clear.
 
-| Dependency missing | Degraded behavior |
-|---|---|
-| Prior artifact on update | Offer to start a create run instead |
-| Optional non-stdlib script dep | Fall back to the stdlib path and report which path ran |
-| customize.toml override files | Resolver reads the files it can find and uses baked defaults for the rest |
-
-Degradation is a design property, not an exception handler. State the fallback inline where the dependency is read, so the reader sees both the happy path and the floor in one place.
-
 ## Working state across turns
 
-A multi-turn skill that builds something needs a way to hold state across turns and compaction: a memlog (the decision trail), a structured working artifact (the work-in-progress that transforms into the output), both, or neither. The choice and the full treatment live in `references/working-state-patterns.md`. Pick by the shape of the work and thread it through the intents at the points where each read or write matters; do not restate the mechanics here.
+A multi-turn skill that builds something needs a way to hold state across turns and compaction: a memlog (the decision trail), a structured working artifact (the work-in-progress that transforms into the output), both, or neither. The choice and the full treatment live in `references/working-state-patterns.md`. Pick by the shape of the work and thread it through the intents at the points where each read or write matters. Confirm with user if interactive.
 
 ## Producing-Skill Checklist
 

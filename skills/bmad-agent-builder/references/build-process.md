@@ -9,7 +9,9 @@ description: The single Process loop for building or rebuilding a BMad agent. On
 
 This is one loop, not a sequence of phases. It carries Create and Rebuild, because a rebuild is the same loop pointed at an existing agent treated as a description of intent rather than a template to copy. The order below is the usual order of discovery, but nothing forces you to march through it; pursue whichever outcome the conversation is ready for and revisit earlier ones as the picture sharpens. Each outcome is a thing you want to be true, not a box to tick.
 
-Load `references/agent-quality-principles.md` before you draft anything, because it is the same bar the lenses verify against and building to it from the start is cheaper than fixing later. It cedes the universal core to `references/prompt-quality-canon.md`, so hold the canon's tests while you work and load it when you author or refine any capability. Load `references/agent-type-guidance.md` for the gradient and the routing questions, and `references/standard-fields.md` for field definitions, naming, and path rules.
+Load `references/prompt-quality-canon.md` before anything else and hold it as the governing standard for every capability-prompt line you draft — this file deliberately does not restate it, so a section below that names a canon test expects you to already carry it.
+
+Load `references/agent-quality-principles.md` alongside it for what agents add on top (the persona carve-out, the archetype bars, the capability fork, the config surface), `references/agent-type-guidance.md` for the gradient and the routing questions, and `references/standard-fields.md` for field definitions, naming, and path rules.
 
 ## Understand why the user came
 
@@ -17,22 +19,27 @@ Before you read a single artifact, understand who this agent is, how it should m
 
 Type emerges here from natural questions, not a menu. Ask whether the agent needs to remember between sessions, which separates stateless from memory; whether the user should be able to teach it new capabilities after install, which gates evolvable capabilities; and whether it should operate on its own when no one is watching, which adds PULSE and makes it autonomous. Confirm the read back in plain words, and for a memory agent confirm relationship depth, since a deep partnership wants a calibration First Breath while a focused domain tool wants a warmer but quicker configuration setup.
 
+## Propose the agent the vision implies
+
+The dump tells you what the user pictured; offer what they did not. Before drafting, propose the capabilities the mission implies but nobody named, the persona angle that would make this agent a specific character rather than a generic assistant, and push where the vision is thin — one agent or two, a recurring need or a one-off ask, a memory that would actually accrue or dead weight. A line each with why it fits; the user picks, and the declines land in the memlog so a later session does not re-propose them. An agent built only from the stated list ships the user's first draft of it.
+
 ## Capture into the memlog throughout
 
-As decisions and directions land, write them to `{target-agent-path}/.memlog.md` through `scripts/memlog.py`: `init --path {target-agent-path}/.memlog.md` once when the target is named, then `append --path {target-agent-path}/.memlog.md --type <decision|direction|assumption|gap|note|event> --text "..."` as things happen. For a new agent, propose a kebab-case name when the user did not give one; renaming later is a logged decision, not a redo. This `.memlog.md` is the builder's process trace and lives beside the built agent's SKILL.md. It is not the sanctum. The sanctum is the built agent's own runtime memory at `{project-root}/_bmad/memory/{skillName}/`, written by the agent at runtime, never by this log. A memlog entry records a build decision and sanctum content is the agent's living state, so neither ever holds the other's material. Capture as you go so the reasoning is caught while fresh, because the memlog is the resume source and the trail you walk with the user at handoff.
+As decisions and directions land, write them to `{target-agent-path}/.memlog.md` through `scripts/memlog.py`: `init --path {target-agent-path}/.memlog.md` once when the target is named, then `append --path {target-agent-path}/.memlog.md --type <decision|direction|assumption|gap|note|event> --text "..."` as things happen. For a new agent, propose a kebab-case name when the user did not give one; renaming later is a logged decision, not a redo. This `.memlog.md` is the builder's process trace beside the built agent's SKILL.md, never the agent's sanctum — a memlog entry records a build decision, sanctum content is the agent's living runtime state, and neither ever holds the other's material. Capture as you go so the reasoning is caught while fresh, because the memlog is the resume source and the trail you walk with the user at handoff.
 
 ## Write the minimal outcome-driven version first
 
-Draft the smallest agent that could work. Hold the persona and capabilities to the role, the core outcome, the consumer of the output, and any rule whose absence has already caused real damage. Apply the canon's core test to every capability-prompt line you are tempted to write, because a capable model given the persona and the outcome does not need to be told how. The persona is the exception the canon's leanness bar does not touch: write the voice, the communication-style examples, the domain framing, and the design rationale out in full, because the persona is the path the model takes through every capability and a flatter version is a worse outcome, not a leaner one.
+Draft the canon's small version of the agent: the smallest persona-plus-capabilities that could work, written as destination rather than route, with everything else staying out until a comparison earns it. The one exception is the persona carve-out from `references/agent-quality-principles.md`: write the voice, the communication-style examples, the domain framing, and the design rationale out in full.
 
 ### Fork on capability versus skill reference
 
-For each capability the agent needs, decide which of two forms it takes, applying the criteria identically now and at the agent's own evolve time:
+For each capability the agent needs, fork between referencing an installed skill and authoring an internal capability per the criteria in `references/agent-quality-principles.md`, applied identically now and at the agent's own evolve time. Always ask before installing anything, and when external skills are in play suggest `bmad-module-builder` so the agent ships bundled with its dependencies.
 
-- Reference an installed skill when a skill already covers the capability. Suggest the reference, and always ask before installing anything. When external skills are in play, suggest `bmad-module-builder` so the agent ships bundled with its dependencies.
-- Author an internal capability only when it is genuinely novel, or when it is tightly coupled to the persona such that a generic skill would lose the agent's voice or context.
+When you author an internal capability, route the authoring through the canon and the `assets/capability-authoring-template.md` mechanics, and give every internal prompt-type capability its frontmatter (name, description, code, added, type) and an outcome-focused body. `references/sample-capability-prompt.md` is the worked example of the bar.
 
-When you author an internal capability, route the authoring through the canon and the `assets/capability-authoring-template.md` mechanics, hold the canon's tests while you write the body, and give every internal prompt-type capability its frontmatter (name, description, code, added, type) and an outcome-focused body. The internal capability is a skill that happens to live inside an agent; the only thing that relaxes is that the persona supplies the how.
+## Show the draft before you wire it
+
+Present the minimal version while it is still cheap to change: the persona voice in its own words, the capability list with a line each, and how First Breath will feel for a memory agent. Name the places you are least sure of rather than presenting a finished thing, and iterate until the user recognizes their agent in it. The first time they see the agent must not be at handoff.
 
 ## Hunt for script opportunities throughout
 
@@ -46,19 +53,23 @@ An agent that has never run is a guess. At the eval beat, invoke the standalone 
 - Baseline mode confirms the agent beats the bare model on the same input, since an agent that does not has no reason to exist.
 - Quality or variant mode settles a finding about a single capability prompt by running a smaller version against the same input, which is how a defend-against-absence question gets answered rather than argued.
 
+Eval cases live at `{target-agent-path}/evals/cases.json`. `{agent.evals_required}` overrides the opt-in default: when empty (default) the modes stay opt-in as above; `"baseline"` requires a passing baseline run before the build is done; `"any"` requires at least one case to exist and pass. If a required run fails or cannot be produced, the build is blocked, not shipped.
+
 ## Decide customization with the explicit ask
 
-Ask once, interactive only, and default to no: "Should this agent expose override hooks such as activation steps or persistent facts so teams can customize it without forking?" Log the answer to the memlog either way. The archetype shapes the default. Memory and autonomous agents default to no because the sanctum is already their customization surface and a TOML override competes with it; offer the opt-in only when the user has a concrete pre-sanctum-load need such as an org-mandated compliance preload. Stateless agents are the natural candidate, so offer the opt-in there and accept either answer. Headless defaults to no unless the invocation explicitly asks for customization.
+Ask once, interactive only, and default to no: "Should this agent expose override hooks such as activation steps or persistent facts so teams can customize it without forking?" Log the answer to the memlog either way. `references/agent-quality-principles.md` owns the surface contract — the always-present `[agent]` metadata block every agent emits, the archetype defaults, and the forbidden mechanisms. The one build-time judgment beyond it: offer the opt-in to a memory or autonomous agent only on a concrete pre-sanctum-load need such as an org-mandated compliance preload, since the sanctum is already their customization surface.
 
-Every agent still emits a `customize.toml`, because its always-present `[agent]` metadata block (code, name, title, icon, description, agent_type) is the install-time roster contract the installer reads to populate `module.yaml`. customize.toml is the only build-time config surface, and First Breath and init-sanctum are runtime sanctum initialization rather than build config, so they stay out of it; `references/agent-quality-principles.md` carries the forbidden-mechanisms list. When the opt-in is yes, retain the override block, append any swappable scalars following the `*_template` / `*_output_path` / `on_<event>` conventions, and add the resolver activation step to SKILL.md so it reads scalars as `{agent.<name>}`. When it is no, emit metadata only and SKILL.md uses hardcoded paths.
+When the opt-in is yes, retain the override block, append any swappable scalars following the `*_template` / `*_output_path` / `on_<event>` conventions, and add the resolver activation step to SKILL.md so it reads scalars as `{agent.<name>}`. When it is no, emit metadata only and SKILL.md uses hardcoded paths.
 
 ## Strip ceremony and ship
 
-Confirm the agent passes its own leanness bar before handoff, because the builder has no standing to teach leanness while shipping bloat. The leanness pass cuts ceremony from capability prompts and never flattens the persona. Ship the canon copy into the built agent at its `references/prompt-quality-canon.md` exactly as the vendored scripts are copied, so an evolving agent resolves the standard from its own root. Run the lint gate over the built agent (`scripts/scan-path-standards.py` and `scripts/scan-scripts.py` in parallel, fixing high or critical findings and re-running), and run unit tests if the built agent carries scripts.
+Confirm the agent passes its own leanness bar before handoff, because the builder has no standing to teach leanness while shipping bloat. The leanness pass cuts ceremony from capability prompts and never flattens the persona. Copy `assets/prompt-quality-canon.md` into the built agent at `references/prompt-quality-canon.md`, so an evolving agent resolves the standard from its own root. Run the lint gate over the built agent (`scripts/scan-path-standards.py` and `scripts/scan-scripts.py` in parallel, fixing high or critical findings and re-running), and run unit tests if the built agent carries scripts. Verify the agent satisfies every directive in `{agent.build_standards}`; treat each as a required criterion, not a suggestion, and resolve any miss before handoff.
 
 ## The output tree
 
 Every agent shares one output tree. The archetype changes which parts are present and the SKILL.md weight, captured in the delta table below rather than three separate trees.
+
+Emit each file from its matching template in this builder's `assets/`, applying `references/template-substitution-rules.md` for tokens, conditionals, and template selection — deterministically, via `python3 scripts/process-template.py <template> -o <dest> --var key=value... --true <condition>...` (one `--var` per token, one `--true` per conditional that holds). The files that are seeded with real content rather than copied have guidance and worked samples — load each at the moment you author that file, not before: `references/mission-writing-guidance.md` for the species mission, `references/standing-order-guidance.md` for CREED standing orders, `references/first-breath-adaptation-guidance.md` with `references/sample-first-breath.md` for First Breath, `references/sample-memory-guidance.md` for the emitted memory-guidance.md, `references/sample-init-sanctum.py` for parameterizing the init script, and `references/sample-capability-authoring.md` for the emitted capability-authoring.md.
 
 ```
 {agent-name}/
@@ -96,7 +107,7 @@ The Quiet Rebirth in the runtime-headless row is the built autonomous agent waki
 
 ## Handoff
 
-Interactive: present what was built (location, structure, first-run behavior, and the capabilities registered by code and name), show the lint results, and walk the user through the memlog at `{target-agent-path}/.memlog.md` so they confirm their reasoning was handled as they meant. For memory agents, explain the First Breath experience in plain words, note that PERSONA, CREED, and BOND ship seeded while MEMORY starts empty, and explain that `uv run scripts/init-sanctum.py <project-root> <skill-path>` runs before the first conversation. For autonomous agents, also explain PULSE behavior and scheduling. Offer Analyze over the new agent as the natural next step.
+Interactive: present what was built (location, structure, first-run behavior, and the capabilities registered by code and name), show the lint results, and walk the user through the memlog at `{target-agent-path}/.memlog.md` so they confirm their reasoning was handled as they meant. For memory agents, explain the First Breath experience in plain words, note that PERSONA, CREED, and BOND ship seeded while MEMORY starts empty, and explain that `uv run scripts/init-sanctum.py <project-root> <skill-path>` runs before the first conversation. For autonomous agents, also explain PULSE behavior and scheduling. Offer Analyze over the new agent as the natural next step. Once the agent is delivered and the user has been told it is ready, run `{agent.on_complete}` if non-empty (a string scalar is one instruction, an array is a sequence run in order).
 
 Headless (`{headless_mode}=true`): call `set-complete` on the memlog and emit JSON only.
 

@@ -4,36 +4,62 @@
 # ///
 """Run eval cases through the configured platform adapter.
 
-A case is `input + rubric + optional state_prefix`. This runner does the
-runtime-specific part of an eval: it takes a case, builds the prompt the
-adapter understands, runs it in a clean working directory, and records the
-transcript plus timing and token usage. Grading happens elsewhere; the grader
-subagent reads the transcript and artifacts this runner leaves behind.
+A case is `input + rubric + optional state_prefix + optional files`. This
+runner does the runtime-specific part of an eval: it stages the skill under
+test and the case's fixture files into a clean working directory, builds the
+prompt the adapter understands, runs it, and records the transcript plus
+timing and token usage. Grading happens elsewhere; the grader subagent reads
+the transcript and artifacts this runner leaves behind.
 
 What this runner deliberately does NOT do:
   - No Docker, no PTY, no keychain staging, no dual-isolation strategy.
   - No hardcoded model. Everything runtime-specific comes from the adapter.
 
-The adapter seam (see references/platform-adapter.md) exposes exactly three
-things, read here from an adapter config file (JSON):
+Modes (--mode) decide which configs each case runs under:
 
-  invocation : argv template for running one prompt. The token "{prompt}" is
-               replaced with the case prompt; "{cwd}" is replaced with the
-               clean working directory. Example for a Claude Code runtime:
-                 ["claude", "-p", "{prompt}", "--output-format", "stream-json",
-                  "--verbose", "--dangerously-skip-permissions"]
-  auth_env   : name of the environment variable that carries auth (e.g.
-               "ANTHROPIC_API_KEY"). The runner passes it through unchanged.
-               No model id ever appears here.
-  transcript : how to read the run's output. One of:
-                 {"format": "stdout-jsonl"}  capture stdout as JSONL transcript
-                 {"format": "file", "path": "transcript.jsonl"}
-                                              adapter writes a file in cwd
+  quality  : one config, "skill" — the skill staged in the cwd.
+  baseline : two configs per case — "skill" (skill staged) and "bare"
+             (nothing staged), same input, so the bare-model floor is
+             measured under identical conditions.
+  variant  : two configs — "skill" (--skill-path) and "variant"
+             (--variant-path, the stripped or prior-version skill).
+
+Run layout: <run-dir>/<config>/<case-id>/ (plus /run-N/ when --runs > 1),
+so `aggregate_benchmark.py --baseline <run-dir>/bare --variant
+<run-dir>/skill` compares configs directly from the timing.json files.
+
+Skill staging: the skill directory is copied (symlink where possible) into
+<case-cwd>/<skill_dir>/<skill-name>/ before the adapter is invoked, where
+skill_dir comes from the adapter (default ".claude/skills"). Without this
+every config would measure the bare model.
+
+Fixtures: each path in a case's `files` list is staged into the case cwd at
+its own relative path. Sources resolve against --project-root, then the cases
+file's directory, then as absolute paths.
+
+Isolation: the subprocess env is built from scratch, never inherited. It
+holds PATH, a fresh empty HOME at <case>/.home, CLAUDE_CONFIG_DIR inside
+that HOME, the adapter's auth_env var ONLY if set non-empty in the host env
+(setting it to "" would break the runtime's own credential fallback), and any
+adapter `env_passthrough` keys present in the host env. Nothing else crosses.
+
+The adapter config file (JSON) — schema and discovery rules in
+references/platform-adapter.md, working example in
+assets/adapter-claude-code.json:
+
+  invocation      : argv template. "{prompt}" -> composed case prompt,
+                    "{cwd}" -> clean working directory.
+  auth_env        : env var name carrying auth (e.g. "ANTHROPIC_API_KEY").
+  transcript      : {"format": "stdout-jsonl"} or
+                    {"format": "file", "path": "transcript.jsonl"}.
+  skill_dir       : where the runtime discovers skills under the cwd.
+  env_passthrough : optional list of extra host env vars to forward.
 
 If no adapter config is found, the runner degrades gracefully: it stages every
-case (clean cwd, prompt with state_prefix applied) and writes a manifest, but
-records each result as "skipped: no runtime adapter configured" instead of
-crashing. A human or a configured runtime can then complete the run.
+case (clean cwd, skill, fixtures, prompt with state_prefix applied) and writes
+a manifest, but records each result as "skipped: no runtime adapter
+configured" instead of crashing. A human or a configured runtime can then
+complete the run.
 
 state_prefix handling: when a case carries a state_prefix, it is PREPENDED to
 the input to place the skill mid-workflow in one shot. The composed prompt is
@@ -42,12 +68,17 @@ recorded so the grader sees exactly what ran.
 Usage:
   python3 run_evals.py \\
     --cases CASES.json \\
+    --skill-path SKILL_DIR \\
     --output-dir DIR \\
+    [--mode quality|baseline|variant] \\
+    [--variant-path SKILL_DIR] \\
+    [--project-root DIR] \\
     [--adapter ADAPTER.json] \\
-    [--case-ids A1,B3] [--timeout SECS] [--workers N] [--quiet]
+    [--case-ids A1,B3] [--runs N] [--timeout SECS] [--workers N] [--quiet]
 
 CASES.json is either a list of cases or {"cases": [...]}. Each case:
-  {"id": "...", "input": "...", "rubric": [...], "state_prefix": "..."?}
+  {"id": "...", "input": "...", "rubric": [...],
+   "state_prefix": "..."?, "files": ["..."]?}
 """
 
 from __future__ import annotations
@@ -55,9 +86,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
@@ -113,9 +146,90 @@ def build_argv(invocation: list, prompt: str, cwd: str) -> list[str]:
     argv: list[str] = []
     for tok in invocation:
         tok = str(tok)
-        tok = tok.replace("{prompt}", prompt).replace("{cwd}", cwd)
+        tok = (tok.replace("{prompt}", prompt)
+               .replace("{query}", prompt)
+               .replace("{cwd}", cwd))
         argv.append(tok)
     return argv
+
+
+def build_case_env(adapter: Mapping | None, home_dir: Path,
+                   host_env: Mapping[str, str]) -> dict[str, str]:
+    """Build the subprocess environment from scratch — never from os.environ.
+
+    Inheriting the host env would leak shell config, tokens, and runtime
+    state into the clean room. The env holds exactly: PATH, a fresh HOME,
+    CLAUDE_CONFIG_DIR inside it, the adapter's auth var ONLY when set
+    non-empty in the host (an empty-string auth var breaks the runtime's own
+    credential fallback), and any adapter env_passthrough keys present in
+    the host env.
+    """
+    adapter = adapter or {}
+    env = {
+        "PATH": host_env.get("PATH", ""),
+        "HOME": str(home_dir),
+        "CLAUDE_CONFIG_DIR": str(home_dir / ".claude"),
+    }
+    auth_env = adapter.get("auth_env")
+    if auth_env:
+        val = host_env.get(str(auth_env))
+        if val:
+            env[str(auth_env)] = val
+    for key in adapter.get("env_passthrough") or []:
+        val = host_env.get(str(key))
+        if val is not None:
+            env[str(key)] = val
+    return env
+
+
+# --- staging: skill under test + fixtures ------------------------------------
+
+def stage_skill(skill_path: Path, cwd: Path, skills_subdir: str) -> Path:
+    """Place the skill where the runtime discovers skills inside the cwd.
+
+    Symlink when possible (cheap, and the skill is read-only to the run);
+    copy as the fallback.
+    """
+    dest_root = cwd / skills_subdir
+    dest_root.mkdir(parents=True, exist_ok=True)
+    dest = dest_root / skill_path.name
+    if not dest.exists():
+        try:
+            os.symlink(skill_path, dest)
+        except OSError:
+            shutil.copytree(skill_path, dest, dirs_exist_ok=True)
+    return dest
+
+
+def resolve_fixtures(files: list, project_root: Path,
+                     cases_dir: Path) -> list[tuple[Path, str]]:
+    """Map each `files` entry to (source, dest-relative-path).
+
+    The entry's own relative path is preserved inside the cwd, so a bare
+    filename lands at the workspace root and a nested path keeps its
+    directory structure — matching the path the case input references.
+    """
+    out: list[tuple[Path, str]] = []
+    for entry in files or []:
+        entry = str(entry)
+        for candidate in (
+            (project_root / entry).resolve(),
+            (cases_dir / entry).resolve(),
+            Path(entry).resolve(),
+        ):
+            if candidate.is_file():
+                out.append((candidate, entry))
+                break
+        else:
+            print(f"Warning: fixture not found: {entry}", file=sys.stderr)
+    return out
+
+
+def stage_fixtures(fixtures: list[tuple[Path, str]], cwd: Path) -> None:
+    for src, dest_rel in fixtures:
+        dest = cwd / dest_rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
 
 
 # --- case composition -------------------------------------------------------
@@ -206,12 +320,18 @@ def account_transcript(transcript_text: str) -> dict:
 
 # --- per-case execution -----------------------------------------------------
 
-def run_case(case: dict, run_dir: Path, adapter: dict | None,
-             timeout: int) -> dict:
+def run_case(case: dict, case_dir: Path, run_dir: Path,
+             adapter: dict | None, timeout: int, config: str,
+             skill_path: Path | None,
+             fixtures: list[tuple[Path, str]]) -> dict:
     case_id = str(case.get("id", "unnamed"))
-    case_dir = run_dir / case_id
     cwd = case_dir / "cwd"
     cwd.mkdir(parents=True, exist_ok=True)
+
+    stage_fixtures(fixtures, cwd)
+    if skill_path is not None:
+        skills_subdir = (adapter or {}).get("skill_dir", ".claude/skills")
+        stage_skill(skill_path, cwd, skills_subdir)
 
     prompt = compose_prompt(case)
     (case_dir / "prompt.txt").write_text(prompt, encoding="utf-8")
@@ -220,13 +340,14 @@ def run_case(case: dict, run_dir: Path, adapter: dict | None,
     if adapter is None:
         result = {
             "case_id": case_id,
+            "config": config,
             "status": "skipped",
             "reason": "no runtime adapter configured",
             "prompt_chars": len(prompt),
             "cwd": str(cwd.relative_to(run_dir)),
         }
         write_json(case_dir / "timing.json", {
-            "case_id": case_id, "status": "skipped",
+            "case_id": case_id, "config": config, "status": "skipped",
             "captured_at": utc_now_iso(),
         })
         return result
@@ -234,11 +355,9 @@ def run_case(case: dict, run_dir: Path, adapter: dict | None,
     transcript_path = case_dir / "transcript.jsonl"
     argv = build_argv(adapter["invocation"], prompt, str(cwd))
 
-    env = dict(os.environ)
-    auth_env = adapter.get("auth_env")
-    if auth_env:
-        # Pass the named auth var through unchanged; never inject a model id.
-        env[auth_env] = os.environ.get(auth_env, "")
+    home_dir = case_dir / ".home"
+    (home_dir / ".claude").mkdir(parents=True, exist_ok=True)
+    env = build_case_env(adapter, home_dir, os.environ)
 
     start = time.time()
     captured = b""
@@ -263,11 +382,12 @@ def run_case(case: dict, run_dir: Path, adapter: dict | None,
         # Adapter invocation command is not on PATH: degrade, do not crash.
         elapsed = time.time() - start
         write_json(case_dir / "timing.json", {
-            "case_id": case_id, "status": "adapter-missing",
+            "case_id": case_id, "config": config, "status": "adapter-missing",
             "elapsed_s": round(elapsed, 3), "captured_at": utc_now_iso(),
         })
         return {
             "case_id": case_id,
+            "config": config,
             "status": "adapter-missing",
             "reason": f"invocation command not found: {e}",
             "cwd": str(cwd.relative_to(run_dir)),
@@ -289,6 +409,7 @@ def run_case(case: dict, run_dir: Path, adapter: dict | None,
     # Capture timing/tokens immediately to timing.json (run-time snapshot).
     timing = {
         "case_id": case_id,
+        "config": config,
         "status": status,
         "elapsed_s": round(elapsed, 3),
         "return_code": return_code,
@@ -305,6 +426,7 @@ def run_case(case: dict, run_dir: Path, adapter: dict | None,
 
     return {
         "case_id": case_id,
+        "config": config,
         "status": status,
         "elapsed_s": round(elapsed, 3),
         "return_code": return_code,
@@ -337,12 +459,23 @@ def main(argv: list[str] | None = None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--cases", required=True, type=Path)
+    p.add_argument("--skill-path", required=True, type=Path,
+                   help="directory of the skill under test (contains SKILL.md)")
     p.add_argument("--output-dir", required=True, type=Path)
+    p.add_argument("--mode", choices=("quality", "baseline", "variant"),
+                   default="quality")
+    p.add_argument("--variant-path", type=Path, default=None,
+                   help="variant mode: the stripped or prior-version skill")
+    p.add_argument("--project-root", type=Path, default=None,
+                   help="base for resolving fixture paths; defaults to the "
+                        "cases file's directory")
     p.add_argument("--adapter", type=Path, default=None,
                    help="adapter config JSON; defaults to BMAD_EVAL_ADAPTER env "
                         "or adapter.json beside the cases file")
     p.add_argument("--case-ids", default=None,
                    help="comma-separated subset of case ids to run")
+    p.add_argument("--runs", type=int, default=1,
+                   help="repeats per case per config for the variance benchmark")
     p.add_argument("--timeout", type=int, default=600)
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--label", default="evals", help="label for the run id")
@@ -353,6 +486,37 @@ def main(argv: list[str] | None = None) -> int:
     if not cases_file.is_file():
         print(f"cases file not found: {cases_file}", file=sys.stderr)
         return 2
+
+    skill_path = args.skill_path.resolve()
+    if not (skill_path / "SKILL.md").is_file():
+        print(f"skill path has no SKILL.md: {skill_path}", file=sys.stderr)
+        return 2
+
+    if args.mode == "variant":
+        if args.variant_path is None:
+            print("--mode variant requires --variant-path", file=sys.stderr)
+            return 2
+        variant_path = args.variant_path.resolve()
+        if not (variant_path / "SKILL.md").is_file():
+            print(f"variant path has no SKILL.md: {variant_path}",
+                  file=sys.stderr)
+            return 2
+    else:
+        variant_path = None
+
+    project_root = (args.project_root.resolve() if args.project_root
+                    else cases_file.parent)
+
+    # Each config is (name, skill-to-stage-or-None). Baseline runs every case
+    # twice — skill staged and bare — so the floor is measured under
+    # identical conditions.
+    if args.mode == "baseline":
+        configs: list[tuple[str, Path | None]] = [
+            ("skill", skill_path), ("bare", None)]
+    elif args.mode == "variant":
+        configs = [("skill", skill_path), ("variant", variant_path)]
+    else:
+        configs = [("skill", skill_path)]
 
     cases = load_cases(cases_file)
     if args.case_ids:
@@ -379,6 +543,11 @@ def main(argv: list[str] | None = None) -> int:
     write_json(run_dir / "run.json", {
         "run_id": run_id,
         "cases_file": str(cases_file),
+        "skill_path": str(skill_path),
+        "variant_path": str(variant_path) if variant_path else None,
+        "mode": args.mode,
+        "configs": [name for name, _ in configs],
+        "runs_per_case": args.runs,
         "adapter": adapter_note,
         "started_at": utc_now_iso(),
         "case_count": len(cases),
@@ -390,14 +559,26 @@ def main(argv: list[str] | None = None) -> int:
 
     results: list[dict] = []
     if not args.quiet:
-        print(f"[run_evals] {len(cases)} cases, run_dir={run_dir}",
+        print(f"[run_evals] {len(cases)} cases x {len(configs)} configs x "
+              f"{args.runs} runs, mode={args.mode}, run_dir={run_dir}",
               file=sys.stderr)
+
+    jobs: list[tuple[str, dict, Path, Path | None]] = []
+    for config_name, config_skill in configs:
+        for c in cases:
+            base = run_dir / config_name / str(c.get("id", "unnamed"))
+            for i in range(max(1, args.runs)):
+                case_dir = base / f"run-{i + 1}" if args.runs > 1 else base
+                jobs.append((config_name, c, case_dir, config_skill))
 
     with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
         fut_to_case = {
-            pool.submit(run_case, c, run_dir, adapter,
-                        int(c.get("timeout", args.timeout))): c
-            for c in cases
+            pool.submit(run_case, c, case_dir, run_dir, adapter,
+                        int(c.get("timeout", args.timeout)), config_name,
+                        config_skill,
+                        resolve_fixtures(c.get("files", []), project_root,
+                                         cases_file.parent)): c
+            for config_name, c, case_dir, config_skill in jobs
         }
         for fut in as_completed(fut_to_case):
             c = fut_to_case[fut]
@@ -408,13 +589,15 @@ def main(argv: list[str] | None = None) -> int:
                        "reason": str(e)}
             results.append(res)
             if not args.quiet:
-                print(f"  [{res.get('status')}] case {res.get('case_id')} "
-                      f"({res.get('elapsed_s', 0)}s)", file=sys.stderr)
+                print(f"  [{res.get('status')}] {res.get('config', '?')}/"
+                      f"{res.get('case_id')} ({res.get('elapsed_s', 0)}s)",
+                      file=sys.stderr)
 
     summary = {
         "run_id": run_id,
         "completed_at": utc_now_iso(),
-        "total": len(cases),
+        "mode": args.mode,
+        "total": len(jobs),
         "executed": sum(1 for r in results if r.get("status") == "ok"),
         "skipped": sum(1 for r in results if r.get("status") == "skipped"),
         "failures": sum(1 for r in results

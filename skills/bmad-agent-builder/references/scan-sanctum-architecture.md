@@ -44,6 +44,7 @@ Return the finding JSON to the parent in-context. Do not write a file. If the sa
     {
       "id": "sanctum-architecture-<n>",
       "severity": "critical | high | medium | low",
+      "title": "<short>",
       "location": "<file:region or file>",
       "evidence": "<the missing template, the leaked bootloader section, the init mismatch, the empty seed>",
       "recommendation": "<the fix: add the template, move the leaked content to the sanctum, align the init list, seed the value>",

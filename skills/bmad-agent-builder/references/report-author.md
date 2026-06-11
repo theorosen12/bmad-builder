@@ -1,35 +1,62 @@
-# Report Author
+# Report Contract: Findings Schema and Render
 
-You receive the parent's merged island from the Analyze run and turn it into one HTML report. You are the only subagent that touches the report, and your whole job is to write a single JSON island into a fixed shell. You never run a lens, never read the agent under analysis, and never add a finding the parent did not hand you. If the parent gave you no findings, you produce a clean no-findings report rather than inventing work.
+There is no report-author subagent. You — the Analyze orchestrator — already hold every lens return in context, so you author the synthesis, write one `findings.json`, and let `scripts/render_report.py` produce the HTML deterministically. Never hand-write report HTML, and never edit the rendered file.
 
-## What you get and what you produce
+## Author the synthesis layer
 
-You get the merged island JSON the parent built, the subject (the agent name or path that was analyzed), and the run folder to write into (beside the agent's `.memlog.md`, under a timestamped analysis directory). The island already carries the merged findings and the agent blocks the parent assembled.
+The findings are the evidence; the synthesis is what a user must grasp in 30 seconds. All synthesis fields are yours to write:
 
-You produce `assets/report-shell.html` with its `report-data` island replaced by the parent's JSON, written to the run folder as `agent-analysis-report.html`. Return only that output path.
+- `verdict` — one line naming the overall state and the one or two findings that matter most. When the agent carries a rich persona, say it was treated as investment, not waste.
+- `grade` — `excellent` (no high or critical, few medium), `good` (some high or several medium), `fair` (multiple high), `poor` (any critical). Lowercase.
+- `summary` — 2-3 sentences: the agent's primary strength and primary opportunity. This is the first thing the user reads.
+- `themes` — findings clustered by shared root cause, not by file. Ask: "if I fixed X, how many findings across lenses would that resolve?" 3-5 themes; findings that fit no theme stay ungrouped in `findings` only. Each theme's `action` is one coherent fix instruction for the whole cluster, and `finding_ids` lists the constituent findings so the report can show them under the theme.
+- `strengths` — what works and must be preserved (the load-bearing persona belongs here), so a fix pass does not flatten it.
+- `recommendations` — ranked by leverage: rank 1 resolves the most findings for the least effort. `resolves` lists the finding ids it would clear.
 
-## The island contract
+## The agent blocks
 
-The shell reads exactly one element and parses it with `JSON.parse`. The element is:
+Optional portrait-and-context blocks, built from the pre-pass and what the lenses observed:
 
-```html
-<script type="application/json" id="report-data">{ ... }</script>
-```
+- `agent_profile` — `name`, `title`, `icon`, `agent_type` (straight from the pre-pass), one-line `mission`. Drawn from the agent's `[agent]` metadata.
+- `capabilities` — `{ name, kind, note }` per capability, where `kind` is the form (prompt, script, multi-file, external skill) and `note` is one line on what it does.
+- `detailed_analysis` — keyed by lens name, each value that lens's one-line `verdict`; preserves the per-lens read.
+- `sanctum` — only for memory and autonomous agents: `{ present: true, location, files, note }` where `location` is `{project-root}/_bmad/memory/{skillName}/` and `note` states that the sanctum is the built agent's runtime memory, distinct from the builder's `.memlog.md` — never blur the two. Omit the block (or set `present: false`) for a stateless agent.
+- `experience` — `journeys` as `{ name, steps }` for the main paths a user takes through the agent, and `headless` as one line on the agent's headless story.
 
-The object conforms to schema_version 1. It carries the merged findings plus the optional agent blocks:
+## Schema (schema_version 2)
+
+`findings.json` is one object:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "subject": "<agent name or path analyzed>",
   "generated": "<ISO date>",
   "verdict": "<one-line overall assessment>",
-  "summary": { "critical": 0, "high": 0, "medium": 0, "low": 0 },
+  "grade": "excellent | good | fair | poor",
+  "summary": "<2-3 sentence narrative>",
+  "standards": {
+    "canon": "<absolute path to this builder's references/prompt-quality-canon.md>",
+    "principles": "<absolute path to this builder's references/agent-quality-principles.md>",
+    "scripts": "<absolute path to this builder's references/script-standards.md>"
+  },
   "agent_profile": { "name": "", "title": "", "icon": "", "agent_type": "", "mission": "" },
   "capabilities": [{ "name": "", "kind": "", "note": "" }],
   "detailed_analysis": { "leanness": "<lens verdict>", "architecture": "<lens verdict>" },
   "sanctum": { "present": true, "location": "", "files": [], "note": "" },
   "experience": { "journeys": [{ "name": "", "steps": "" }], "headless": "" },
+  "themes": [
+    {
+      "title": "<root-cause name>",
+      "root_cause": "<what is happening and why it matters>",
+      "finding_ids": ["leanness-1", "determinism-2"],
+      "action": "<one coherent fix for the whole theme>"
+    }
+  ],
+  "strengths": ["<what works and should be preserved>"],
+  "recommendations": [
+    { "rank": 1, "action": "<what to do>", "resolves": ["leanness-1"] }
+  ],
   "findings": [
     {
       "id": "<lens>-<n>",
@@ -46,26 +73,24 @@ The object conforms to schema_version 1. It carries the merged findings plus the
 }
 ```
 
-How to fill it:
+Rules:
 
-- `schema_version` is always `1`.
-- `subject` is the agent the parent named, and `generated` is the current date in ISO form.
-- `verdict` is one line naming the overall state and the one or two findings that matter most, and it says the persona was treated as investment when the agent carries a rich one. This is your only synthesis; everything else is transcription.
-- `summary` counts the findings by severity, all four keys always present and any empty severity `0`. Derive the counts from the `findings` array so they match it exactly.
-- `findings` carries every finding the parent gave you, unchanged, keeping each finding's existing `id`, `lens`, and `severity`. Carry `proposed_smallest` and `predicted_delta` only on the leanness findings that supplied them, and omit those keys otherwise.
+- `standards` is always filled: resolve the three absolute paths from this builder's own `{skill-root}` at authoring time. The shell prepends them to every copied fix prompt, so the session that applies a fix holds the same bar that produced the findings.
+- `findings` carries every lens finding unchanged — keep each finding's `id`, `lens`, and `severity` so it stays traceable. Carry `proposed_smallest` and `predicted_delta` only when the leanness lens supplied them; omit the keys otherwise.
+- Severity counts are derived from the `findings` array by the script and the shell — there is no counts field to keep consistent.
+- Every key except `schema_version`, `subject`, `generated`, `verdict`, and `findings` is optional: omit a key entirely rather than writing an empty placeholder. A clean pass is a real report — empty `findings`, a grade that reflects it, and a verdict saying the lenses passed.
+- Keep `evidence` and `recommendation` to a sentence or two; the shell shows them in a collapsible row, not a document.
 
-The agent blocks (`agent_profile`, `capabilities`, `detailed_analysis`, `sanctum`, `experience`) are optional, and the shell's normalize() tolerates each one being absent. Pass through whatever the parent built and omit a block only when the parent gave you nothing for it. The `sanctum` block appears only for memory and autonomous agents; for a stateless agent the parent omits it or sets `present: false`, and the shell shows no sanctum panel. The sanctum block's `note` states that the sanctum is the built agent's runtime memory, which is a different thing from the builder's `.memlog.md` process log, so preserve that wording and never blur the two.
+## Write and render
 
-Write valid JSON. The shell parses it directly, so a trailing comma or an unescaped quote breaks the render into the visible error banner. Keep `evidence` and `recommendation` to a sentence or two each, because the shell shows them in a collapsible row rather than a document.
+1. Write the object to `{run-folder}/findings.json`.
+2. Render:
 
-## Never invent, always render
+   ```bash
+   python3 scripts/render_report.py {run-folder}/findings.json --shell assets/report-shell.html -o {run-folder}/agent-analysis-report.html --md {run-folder}/agent-analysis-report.md
+   ```
 
-You transcribe what the parent merged; you do not author findings or block content. If a finding is thin, leave it thin and let the parent decide; do not embellish evidence or sharpen a recommendation past what the lens returned. If the parent handed you no findings, write the object with an empty `findings` array, a `summary` of all zeros, and a verdict that says the lenses returned a clean pass. The shell renders that as an explicit no-findings panel, so an empty list is a real result rather than a blank page.
+   The script refuses bad JSON, a bad shape, or a placeholder subject — fix `findings.json` and re-run; never hand-edit the HTML. On success it prints one JSON line with the output paths and the severity counts to report.
+3. Open the HTML for the user. The markdown twin is the archival artifact of the same data.
 
-Because you always write `verdict`, `summary`, and `findings`, the shell has no path to a blank render. A malformed island surfaces as the shell's parse-error banner, so the cost of a JSON mistake is loud rather than silent, which is why the JSON has to be exactly right before you write it.
-
-## Injecting into the shell
-
-Read `assets/report-shell.html`, replace the entire contents between the island's opening and closing tags with the JSON object, and write the result to the run folder as `agent-analysis-report.html`. The shell's CSS and JS are fixed, so you change only the island. Do not touch the `<style>` or `<script>` blocks, and do not add any network reference, because the report has to open as a single self-contained file with no server.
-
-Confirm the island round-trips through a JSON parser before you finish, since the shell normalizes against the schema but cannot recover from invalid JSON. Then return the output path and nothing else.
+The shell fails loud: a malformed island shows the parse-error banner, an unfilled shell shows a placeholder banner, and an empty findings array with a real subject renders an explicit no-findings panel — never a blank page and never fabricated findings.

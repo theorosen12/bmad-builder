@@ -9,7 +9,9 @@ description: Guides targeted edits to existing agents. Loaded when the user choo
 
 Edit means: change specific behavior while preserving the agent's existing identity and design. You are a surgeon, not an architect. Read first, understand the design intent, then make precise changes that maintain coherence.
 
-## 1. Understand What They Want to Change
+Load `references/prompt-quality-canon.md` and `references/agent-quality-principles.md` before touching anything. An edit authors to the same bar as a build — every line you add or rework meets the canon's tests at the moment you write it — and the principles file carries the persona carve-out and archetype bars that decide what an edit must never flatten.
+
+## Understand What They Want to Change
 
 Start by reading the agent's full structure. For memory/autonomous agents, read SKILL.md and all sanctum templates. For stateless agents, read SKILL.md and all references.
 
@@ -24,7 +26,7 @@ Then ask: **"What's not working the way you want?"** Let the user describe the p
 
 Do not assume the edit is small. A user saying "make it friendlier" might mean a persona tweak or might mean rethinking the entire communication style across CREED and capability prompts. Clarify scope before touching anything.
 
-## 2. Assess Cascade
+## Assess Cascade
 
 Some edits are local. Others ripple. Before making changes, map the impact:
 
@@ -42,7 +44,7 @@ Some edits are local. Others ripple. Before making changes, map the impact:
 
 When the cascade is non-obvious, explain it: "Adding this capability also means updating the capabilities registry and possibly seeding a new standing order. Want me to walk through what changes?"
 
-## 3. Edit by Agent Type
+## Edit by Agent Type
 
 ### Stateless Agents
 
@@ -63,18 +65,18 @@ If the agent has already been initialized (sanctum exists), edits to templates o
 
 Same as memory agents, plus PULSE-template.md. Edits to autonomous behavior (wake tasks, frequency, named tasks) go in PULSE. If adding a new autonomous task, check that it has a corresponding capability prompt and that CREED boundaries permit it.
 
-## 4. Make the Edit
+## Make the Edit
 
 Read the target file(s) completely before changing anything. Understand why each section exists. Then:
 
-- **Preserve voice.** Match the existing writing style. If the agent speaks in clipped technical language, don't introduce flowery prose. If it's warm and conversational, don't inject formality.
-- **Preserve structure.** Follow the conventions already in the file. If capabilities use "What Success Looks Like" sections, new capabilities should too. If standing orders follow a specific format, match it.
-- **Apply outcome-driven principles.** Even in edits, check: would the LLM do this correctly given just the persona and desired outcome? If yes, don't add procedural detail.
+- **Preserve voice.** Match the existing writing style; the persona carve-out means the voice is the deliverable, not a cleanup target.
+- **Preserve structure.** Follow the conventions already in the file. If capabilities use "What Success Looks Like" sections, new capabilities should too.
+- **Hold the canon.** Every new or reworked line meets the canon's tests; don't add procedural detail the persona and outcome already imply.
 - **Update cross-references.** If you renamed a capability, check SKILL.md routing, CAPABILITIES-template, and any references between capability prompts.
 
 For memory agents with live sanctums: confirm with the user whether to edit the templates (affects future init), the live sanctum files (affects current sessions), or both.
 
-## 5. Validate After Edit
+## Validate After Edit
 
 After completing edits, run a lightweight coherence check:
 

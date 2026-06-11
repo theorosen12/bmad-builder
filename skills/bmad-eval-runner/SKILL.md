@@ -20,9 +20,9 @@ Each mode answers a different question about a skill. Pick the one that matches 
 | quality | Does the output meet the named rubric? | `references/grader.md`, `references/eval-format.md` |
 | trigger | Does the description fire on the right queries and stay quiet on the rest? | `references/platform-adapter.md`, `scripts/run_triggers.py` |
 
-Baseline runs the input twice in the same turn, once with the skill and once against the bare model, so the bare model is the long-term floor. Variant runs the full skill against a stripped smallest-version of itself to settle whether a section is doing real work. Quality grades one config's output against a rubric with the read-only grader. Trigger measures real firing through the adapter and can optimize the description across rounds; the optimization loop lives in `references/description-optimization.md`.
+Baseline runs every case twice — once with the skill staged into the clean working directory and once with nothing staged — so the bare model is measured as the long-term floor under identical conditions. Variant runs the full skill against a stripped smallest-version of itself to settle whether a section is doing real work. Quality grades one config's output against a rubric with the read-only grader. Trigger measures real firing through the adapter and can optimize the description across rounds; the optimization loop lives in `references/description-optimization.md`.
 
-A case is `input + rubric + optional state_prefix`. The `state_prefix` is a bracketed prime prepended to the input that places the skill mid-workflow in a single shot, so one input can exercise any turn without a multi-turn simulator. The full case format and the strong-versus-weak expectation taxonomy are in `references/eval-format.md`.
+A case is `input + rubric + optional state_prefix + optional fixture files`. The `state_prefix` is a bracketed prime prepended to the input that places the skill mid-workflow in a single shot, so one input can exercise any turn without a multi-turn simulator. The full case format and the strong-versus-weak expectation taxonomy are in `references/eval-format.md`.
 
 ## Args
 
@@ -35,6 +35,8 @@ A case is `input + rubric + optional state_prefix`. The `state_prefix` is a brac
 - `--runs <n>`: repeats per case for the variance benchmark. Default: 1 for a single check, higher when the user wants a stable mean.
 - `--headless` / `-H`: non-interactive; emit final JSON only.
 
+These map directly onto the script CLIs below; anything not listed there (case subsets, timeouts, workers) is in the script docstrings.
+
 ## On activation
 
 1. Resolve config the way `bmad-workflow-builder` does (`{project-root}/_bmad/config.yaml` then `config.user.yaml`, falling back to `bmb/config.yaml`). Resolve `{user_name}`, `{communication_language}`, `{bmad_builder_reports}` and apply them through the session.
@@ -45,7 +47,7 @@ A case is `input + rubric + optional state_prefix`. The `state_prefix` is a brac
 
 4. Locate the skill and verify `<skill-path>/SKILL.md` exists. Halt with a clear error if it does not.
 
-5. Load the adapter for the current runtime from `references/platform-adapter.md`. This gives you the invocation command, the auth env-var to forward, and the transcript schema to read.
+5. Resolve the adapter config per the discovery rules in `references/platform-adapter.md` (explicit `--adapter`, `BMAD_EVAL_ADAPTER`, `adapter.json` beside the cases file). When nothing is configured and the current runtime is Claude Code, use `{skill-root}/assets/adapter-claude-code.json`.
 
 6. Discover the cases file. Look at `--evals` first, then `<skill-path>/evals/`, then `<skill-path>/../../evals/<skill-name>/`, then `<project-root>/evals/<skill-name>/`, then anywhere under `<project-root>/evals/`. Take the first match. If nothing is found, halt and say so; the runner does not invent cases.
 
@@ -53,19 +55,38 @@ A case is `input + rubric + optional state_prefix`. The `state_prefix` is a brac
 
 ## Run execution
 
-Run each case in a clean working directory so the host shell config, prior runs, and ancestor instruction files do not bias the result. The clean-cwd setup is part of the adapter seam; there is no container, no terminal emulation, and no credential staging beyond forwarding the adapter's auth env-var.
+Each case runs in a clean working directory with the skill under test staged into it and an environment built from scratch, so the host shell config, prior runs, and ancestor instruction files do not bias the result. The isolation contract lives in `references/platform-adapter.md`; there is no container, no terminal emulation, and no credential staging.
 
-For baseline, variant, and quality modes, call `python3 {skill-root}/scripts/run_evals.py` with the resolved arguments and the adapter. The script applies any `state_prefix` to the input before invoking, runs the configured invocations (skill, bare model, or variant), and writes a per-case folder. It captures timing and token counts the moment each invocation completes and writes them to `timing.json` immediately, so a later crash never loses the measurement.
+For baseline, variant, and quality modes:
 
-For trigger mode, call `python3 {skill-root}/scripts/run_triggers.py`. It stages a synthetic skill where the runtime discovers skills, sends each query through the adapter, and detects the skill-load event. Each query runs several times for stability. When the user wants to optimize the description rather than just measure it, follow `references/description-optimization.md`.
+```
+python3 {skill-root}/scripts/run_evals.py \
+  --cases <cases-file> --skill-path <skill> --output-dir <dir> \
+  --mode quality|baseline|variant [--variant-path <skill>] \
+  [--adapter <adapter.json>] [--runs N]
+```
 
-For quality mode, spawn the grader described in `references/grader.md` per case. The grader is read-only against the run folder, returns `{text, passed, evidence}` per expectation, gives no partial credit, and flags weak or non-discriminating assertions. Relay that feedback.
+The script stages the skill and any case fixtures, applies any `state_prefix` to the input, runs each config (baseline = skill staged AND bare; variant = skill AND `--variant-path`), and writes `<run-dir>/<config>/<case-id>/`. It captures timing and token counts the moment each invocation completes and writes them to `timing.json` immediately, so a later crash never loses the measurement.
 
-When `--runs` is greater than one, call `python3 {skill-root}/scripts/aggregate_benchmark.py` to produce the mean, sample standard deviation, min, max, and the delta between configs.
+For trigger mode:
+
+```
+python3 {skill-root}/scripts/run_triggers.py \
+  --skill-path <skill> --queries <queries-file> --output-dir <dir> \
+  [--adapter <adapter.json>] [--runs-per-query N]
+```
+
+It stages a synthetic skill where the runtime discovers skills, sends each query through the adapter, and detects the skill-load tool call. Each query runs several times for stability. When the user wants to optimize the description rather than just measure it, follow `references/description-optimization.md`.
+
+For quality mode, spawn the grader described in `references/grader.md` per case, passing the case's rubric, transcript path, artifacts dir (the case's `cwd/`), and a `grading_path` of `<case-folder>/grading.json`. The grader writes that file, gives no partial credit, and flags weak or non-discriminating assertions; relay that feedback. If a grader subagent errors, mark that case `grading_error` — never substitute a default verdict.
+
+When `--runs` is greater than one, call `python3 {skill-root}/scripts/aggregate_benchmark.py --baseline <run-dir>/<config-a> --variant <run-dir>/<config-b>` to produce the mean, sample standard deviation, min, max, and the delta between configs (`--runs <run-dir>/<config>` for a single config's spread).
+
+When a run fails or comes back weak and the user wants the skill improved from the results, follow `references/self-improvement.md`.
 
 ## Artifacts
 
-Every run writes a dated run folder under the output dir, and those artifacts are permanent. Each case folder holds its prompt, transcript, any files the skill wrote, `timing.json`, and the grading when quality mode ran. Never delete, overwrite, or rotate a run folder; disk usage is the user's call. The run's `.memlog.md` records the decisions and deltas so a resumed or audited run reads back cleanly.
+Every run writes a dated run folder under the output dir, and those artifacts are permanent. Each case folder holds its prompt, transcript, the `cwd/` with any files the skill wrote, `timing.json`, and `grading.json` when quality mode ran. Never delete, overwrite, or rotate a run folder; disk usage is the user's call. The run's `.memlog.md` records the decisions and deltas so a resumed or audited run reads back cleanly.
 
 Tell the user where the run folder is when you finish.
 

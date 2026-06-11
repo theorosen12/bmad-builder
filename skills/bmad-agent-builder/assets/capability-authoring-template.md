@@ -1,13 +1,32 @@
 ---
 name: capability-authoring
-description: Mechanics for creating and registering learned capabilities
+description: How to author, register, and evolve learned capabilities
 ---
 
 # Capability Authoring
 
-When your owner wants you to learn a new ability, you create a capability together. This guide covers the mechanics: the shapes a capability can take, the frontmatter each prompt carries, the creation flow, and how a new capability gets registered.
+When your owner wants you to learn a new ability, you create a capability together. The mechanics are below; first, the one thing that decides whether the capability is any good.
 
-The quality bar is not here. Your "Author to the standard" standing order has you load the prompt-quality canon before you write or refine anything, so hold its tests while you work. The shipped copy is `references/prompt-quality-canon.md`, with `{siteBase}/explanation/outcome-driven-prompt-quality/` as the fallback. This file does not restate those tests, so that there is one authority and it cannot drift.
+## Write the destination, not the route
+
+Know your own default. Asked to author a capability, you will script it — numbered steps, question lists, a template with mandatory sections — because elaborate scaffolding feels like diligence and reads like quality. That instinct is the central defect to resist. A script is your imagined transcript of one good session; real sessions diverge from it, and a capability that scripts the path spends your future self's intelligence on compliance instead of the problem.
+
+Write the destination instead. A capability prompt holds four things: the **outcome** (the artifact or change that must exist when it has done its job), the **consumer** (who must act on that outcome, and what they can or cannot be assumed to know), the **bar** (what the consumer needs to be true of it), and the **non-inferables** — what your future self cannot infer on its own: owner specifics worth pulling from MEMORY.md and BOND.md, wiring like paths and formats, and any rule with real consequences behind it. Then stop. The outcome and its consumer imply the process. Do not restate your stance: your persona is already in the room when a capability runs, and it supplies the voice and the relationship — the capability only adds what this ability needs on top.
+
+A complete capability body, not an excerpt:
+
+```text
+The outcome is a pitch the owner can deliver tomorrow: claims they can
+defend, one through-line, no slide that exists out of fear. You are
+stress-testing the argument, not polishing words — wordsmithing comes
+last. Push where it is weak: the number that will not survive a
+question, the benefit with no evidence, the ask that got buried.
+Check MEMORY.md for what this owner's audiences have punished before.
+```
+
+Everything a scripted version would add — a pitch-structure walkthrough, a ten-question intake, a slide template — subtracts adaptivity. The owner who arrives with a finished deck gets pressure-testing instead of an intake interview precisely because nothing scripted the opening.
+
+This section is the working standard, synced from the prompt-quality canon. For the full canon — the cut tests, the two-version comparison, the retirement test — load your copy at `references/prompt-quality-canon.md`.
 
 ## Capability Types
 
@@ -29,6 +48,8 @@ capabilities/
 ├── {example-script}.md          # When to run, what to do with results
 └── {example-script}.py          # The actual computation
 ```
+
+Keep scripts to one job each, have them read and write within the sanctum, and never hardcode paths — accept the sanctum path as an argument.
 
 ### Multi-file
 A folder with multiple files for a more involved capability, such as a mini-workflow with several steps plus reference material or templates.
@@ -65,7 +86,7 @@ type: prompt | script | multi-file | external
 ---
 ```
 
-The body is the capability prompt itself. Author it against the canon you loaded.
+The body is the capability prompt itself, written to the standard above.
 
 ## Creating a Capability (The Flow)
 
@@ -80,4 +101,4 @@ The body is the capability prompt itself. Author it against the canon you loaded
 
 ## Refining and Retiring
 
-When you refine a capability after feedback, update the file in place and log the refinement in the session log. When a capability is no longer useful, remove its row from CAPABILITIES.md but keep the file so the owner can bring it back, and note the retirement in the session log. Whether a capability still earns its place is a canon question, so apply the canon's retirement test rather than a rule restated here.
+When you refine a capability after feedback, update the file in place and log the refinement in the session log. When a capability is no longer useful, remove its row from CAPABILITIES.md but keep the file so the owner can bring it back, and note the retirement in the session log. Whether a capability still earns its place is the canon's retirement test: when it stops beating what you would do bare, retire it rather than patch it.

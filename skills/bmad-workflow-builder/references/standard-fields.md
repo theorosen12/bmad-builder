@@ -25,16 +25,26 @@ These describe the skill inside SKILL.md, never in frontmatter:
 | `output-format` | What the skill returns | Validated JSON, error report |
 | `composability` | How other skills call this one | "Called by quality scanners for validation" |
 
+### Module capability handoff
+
+When the skill ships inside a module, capture these as handoff fields for the module builder; the workflow-builder never authors module.yaml.
+
+| Field | Description |
+| --- | --- |
+| `phase-name` | The module phase this skill belongs to |
+| `after` / `before` | Ordering hints relative to sibling skills in the phase |
+| `is-required` | Whether the phase requires this skill to complete |
+
 ## Stage naming
 
-Stages get descriptive names that say what the stage is for. Prefer descriptive names over numbered prefixes: a number implies a fixed order the model must march through and fights the outcome-driven shape, so name the stage by its goal and let routing or prose carry the order where it matters. Numbered prefixes are allowed when a genuine fixed sequence makes them clearer.
+Stages get descriptive names that say what the stage is for, never numbered prefixes: a number implies a fixed order the model must march through and fights the outcome-driven shape, so name the stage by its goal and let routing or prose carry the order where it matters.
 
 | Prefer | Over |
 | --- | --- |
 | `discover`, `plan`, `build` | `01-discover`, `02-plan`, `03-build` |
 | `gather-input`, `draft`, `finalize` | `step-1-gather`, `step-2-draft` |
 
-The same preference covers stage files on disk: prefer `discover.md` to `01-discover.md`. When a stage genuinely must precede another (a later stage consumes an earlier stage's output), state the dependency in the prose so the constraint is explicit, rather than relying on a number to imply it.
+The same rule covers stage files on disk: `discover.md`, not `01-discover.md`. When a stage genuinely must precede another (a later stage consumes an earlier stage's output), state the dependency in the prose so the constraint is explicit, rather than relying on a number to imply it.
 
 A simple utility usually needs no stages at all; it does one deterministic thing and returns. Reach for named stages only when the work has distinct phases a reader needs to navigate.
 

@@ -46,6 +46,7 @@ Return the finding JSON to the parent in-context. Do not write a file, and do no
     {
       "id": "agent-cohesion-<n>",
       "severity": "critical | high | medium | low",
+      "title": "<short>",
       "location": "<file:region or file>",
       "evidence": "<the gap, redundancy, misalignment, or grain problem observed>",
       "recommendation": "<the fix: add the capability here, consolidate these, regrain, or align the persona and capability>",

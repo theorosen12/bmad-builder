@@ -13,19 +13,26 @@ several times (runs-per-query) so the trigger rate is stable, not a coin flip.
 Detection lives behind the adapter. "Did the skill load" is a runtime-specific
 signal, so the adapter declares how skills are staged and how a load shows up in
 the transcript. The adapter config (see references/platform-adapter.md) adds two
-trigger-specific keys to the three core ones:
+trigger-specific keys to the core ones:
 
-  invocation : argv template; "{query}" is replaced with the query text,
-               "{cwd}" with the staging dir.
-  auth_env   : auth env-var name, passed through unchanged. No model id.
+  invocation : argv template; "{prompt}" (or "{query}") is replaced with the
+               query text, "{cwd}" with the staging dir.
+  auth_env   : auth env-var name, forwarded only when set non-empty on the
+               host. No model id.
   skill_dir  : path under the staging cwd where a skill is discovered, e.g.
                ".claude/skills". The runner writes the synthetic skill there.
-  load_signal: how a load appears in the transcript. One of:
-                 {"type": "tool-name", "name": "Skill"}
-                     a tool_use whose name matches and whose input mentions the
-                     synthetic skill's unique name
-                 {"type": "string", "match": "{skill_name}"}
-                     the unique skill name appears anywhere in the transcript
+  load_signal: which tool_use events count as a load:
+                 {"skill_tool": "Skill", "read_tool": "Read"}  (defaults)
+               A load is a tool_use of skill_tool whose input names the
+               synthetic skill, or a read_tool whose file_path falls inside
+               the synthetic skill's directory. Whole-transcript substring
+               matching is NOT supported: the runtime's init event lists
+               every discovered skill, so a substring match reports 100%
+               trigger rate regardless of the description.
+
+Each query runs in a built-from-scratch environment (PATH, fresh empty HOME,
+CLAUDE_CONFIG_DIR inside it, auth var only when set, adapter env_passthrough
+keys) so the host's installed skills, memory, and config cannot bias firing.
 
 If no adapter is configured the runner degrades gracefully: it stages each query
 and records "skipped: no runtime adapter configured" rather than crashing.
@@ -135,9 +142,40 @@ def load_adapter(path: Path) -> dict:
 def build_argv(invocation: list, query: str, cwd: str) -> list[str]:
     out: list[str] = []
     for tok in invocation:
-        tok = str(tok).replace("{query}", query).replace("{cwd}", cwd)
+        tok = (str(tok).replace("{prompt}", query)
+               .replace("{query}", query)
+               .replace("{cwd}", cwd))
         out.append(tok)
     return out
+
+
+def build_case_env(adapter: dict | None, home_dir: Path,
+                   host_env: dict) -> dict[str, str]:
+    """Build the subprocess environment from scratch — never from os.environ.
+
+    Inheriting the host env would leak shell config, tokens, and runtime
+    state into the clean room. The env holds exactly: PATH, a fresh HOME,
+    CLAUDE_CONFIG_DIR inside it, the adapter's auth var ONLY when set
+    non-empty in the host (an empty-string auth var breaks the runtime's own
+    credential fallback), and any adapter env_passthrough keys present in
+    the host env.
+    """
+    adapter = adapter or {}
+    env = {
+        "PATH": host_env.get("PATH", ""),
+        "HOME": str(home_dir),
+        "CLAUDE_CONFIG_DIR": str(home_dir / ".claude"),
+    }
+    auth_env = adapter.get("auth_env")
+    if auth_env:
+        val = host_env.get(str(auth_env))
+        if val:
+            env[str(auth_env)] = val
+    for key in adapter.get("env_passthrough") or []:
+        val = host_env.get(str(key))
+        if val is not None:
+            env[str(key)] = val
+    return env
 
 
 # --- synthetic skill staging ------------------------------------------------
@@ -168,43 +206,56 @@ def write_synthetic_skill(skills_dir: Path, skill_name: str,
 
 # --- load detection (behind the adapter) ------------------------------------
 
+def validate_load_signal(load_signal: dict | None) -> None:
+    """Reject substring-style load signals before any query runs."""
+    if (load_signal or {}).get("type") == "string":
+        raise ValueError(
+            "load_signal type 'string' is not supported: the runtime's init "
+            "event lists every discovered skill, so a whole-transcript "
+            "substring match reports 100% trigger rate regardless of the "
+            "description. Use tool-call detection "
+            '({"skill_tool": ..., "read_tool": ...}).'
+        )
+
+
 def detect_load(transcript_text: str, load_signal: dict, clean_name: str) -> bool:
-    """Did the synthetic skill load? Interpreted per the adapter's load_signal."""
-    sig = load_signal or {"type": "string", "match": "{skill_name}"}
-    sig_type = sig.get("type", "string")
+    """Did the synthetic skill load? Only tool_use events count.
 
-    if sig_type == "string":
-        needle = str(sig.get("match", "{skill_name}")).replace(
-            "{skill_name}", clean_name)
-        return needle in transcript_text
+    The init event of a stream-json transcript lists every discovered skill
+    by name, so the name appearing somewhere in the transcript proves
+    nothing. A load is a skill-invocation tool call naming the synthetic
+    skill, or a read of a file inside the synthetic skill's directory (its
+    SKILL.md) — the two ways a runtime actually pulls a skill into context.
+    """
+    validate_load_signal(load_signal)
+    sig = load_signal or {}
+    skill_tool = sig.get("skill_tool", "Skill")
+    read_tool = sig.get("read_tool", "Read")
 
-    if sig_type == "tool-name":
-        want_name = sig.get("name", "Skill")
-        for raw in transcript_text.splitlines():
-            raw = raw.strip()
-            if not raw:
+    for raw in transcript_text.splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            evt = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(evt, dict) or evt.get("type") != "assistant":
+            continue
+        msg = evt.get("message", {})
+        content = msg.get("content", []) if isinstance(msg, dict) else []
+        for item in content:
+            if not isinstance(item, dict) or item.get("type") != "tool_use":
                 continue
-            try:
-                evt = json.loads(raw)
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(evt, dict):
-                continue
-            content = []
-            if evt.get("type") == "assistant":
-                content = evt.get("message", {}).get("content", [])
-            for item in content:
-                if not isinstance(item, dict) or item.get("type") != "tool_use":
-                    continue
-                if item.get("name") != want_name:
-                    continue
-                inp = json.dumps(item.get("input", {}))
-                if clean_name in inp:
-                    return True
-        return False
-
-    # Unknown signal type: fall back to substring match, never crash.
-    return clean_name in transcript_text
+            name = item.get("name")
+            inp = item.get("input", {})
+            if not isinstance(inp, dict):
+                inp = {}
+            if name == skill_tool and clean_name in json.dumps(inp):
+                return True
+            if name == read_tool and clean_name in str(inp.get("file_path", "")):
+                return True
+    return False
 
 
 # --- per-query execution ----------------------------------------------------
@@ -217,10 +268,9 @@ def run_query_once(query: str, skill_name: str, description: str,
     unique = uuid.uuid4().hex[:8]
     clean_name = write_synthetic_skill(skills_dir, skill_name, description, unique)
 
-    env = dict(os.environ)
-    auth_env = adapter.get("auth_env")
-    if auth_env:
-        env[auth_env] = os.environ.get(auth_env, "")
+    home_dir = stage_dir / ".home"
+    (home_dir / ".claude").mkdir(parents=True, exist_ok=True)
+    env = build_case_env(adapter, home_dir, dict(os.environ))
 
     argv = build_argv(adapter["invocation"], query, str(stage_dir))
     try:
@@ -285,10 +335,12 @@ def main(argv: list[str] | None = None) -> int:
     if adapter_path is not None:
         try:
             adapter = load_adapter(adapter_path)
+            validate_load_signal(adapter.get("load_signal"))
             adapter_note = str(adapter_path)
         except Exception as e:
             print(f"adapter config invalid ({e}); degrading to skip-only",
                   file=sys.stderr)
+            adapter = None
             adapter_note = f"invalid: {e}"
 
     run_id = new_run_id(f"{skill_name}-triggers")

@@ -57,6 +57,7 @@ Return exactly this JSON to the parent and nothing else:
     {
       "id": "determinism-<n>",
       "severity": "critical | high | medium | low",
+      "title": "<short>",
       "location": "<file:region or file>",
       "evidence": "<the leak you observed, quoting the operation>",
       "recommendation": "<which way it leaks and the fix; for determinism leaks, name the determinism test, the signal-verb scan, or the pre-pass JSON pattern from script-opportunities-reference>",

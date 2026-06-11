@@ -40,11 +40,3 @@ Once the intent is routed, execute each entry in `{workflow.activation_steps_app
 | Analyze | Run the quality scanners over a skill and produce a report | `references/scan-orchestration.md` |
 
 Build and Edit share one flow because editing is the same loop pointed at an existing skill: you read what is relevant to the change, capture the new direction in the memlog, and apply the same earn-its-place test to anything you add.
-
-## Discovery
-
-Discovery happens through the open floor in activation, not a quiz. Understand why the user came before you read any artifact, and mine the conversation history first for the tools, the sequence, the corrections, and the observed inputs and outputs the user has already described. Capture intent before you ingest files, because what the user wants determines which parts of an existing skill or reference even matter. Ask only the few gaps that the dump left open.
-
-## The scanner lenses
-
-Analyze runs five lenses as parallel subagents, each loading `references/skill-quality-principles.md` and returning lean structured findings to you in-context: `references/scan-leanness.md`, `references/scan-architecture.md`, `references/scan-determinism.md`, `references/scan-customization.md`, and `references/scan-enhancement.md`. You consolidate their returns and hand the merged findings to the single `references/report-author.md` subagent. The full mechanics, including the deterministic pre-pass that feeds the scanners, live in `references/scan-orchestration.md`.

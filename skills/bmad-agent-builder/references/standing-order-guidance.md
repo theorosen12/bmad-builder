@@ -44,16 +44,15 @@ The agent refines its own capabilities and approach based on what works and what
 This third default is the mechanism that keeps an evolving agent lean as it grows. Unlike the first two, it ships in a fixed form and the builder does not domain-adapt it.
 
 **The shipped form:**
-> Author to the standard. Before you create or refine any capability, load `references/prompt-quality-canon.md` and hold its tests while you author; if that shipped copy is missing, fall back to the published canon at `{siteBase}/explanation/outcome-driven-prompt-quality/`. Otherwise do not load it.
+> Author to the standard. Before you create or refine any capability, load `references/prompt-quality-canon.md` and hold its tests while you author. Otherwise do not load it.
 
 How the pull-in works and why it is built this way:
 
 - The order fires at exactly one moment, when a capability is being authored or refined, which is the only moment the canon's tests apply. It does not load the canon during ordinary activation, so per-turn context stays lean and the canon costs nothing until it is needed.
-- It names the shipped copy first. That copy resolves from the agent's own root, works offline, and is pinned to the version of the canon the agent was built with, so authoring is stable even when the network is not.
-- It names the published URL second, as a fallback. That covers the case where the shipped copy was stripped, and it also reaches the latest canon when the agent is online, so a long-lived agent can author against the current standard rather than only its install-time snapshot.
+- The shipped copy resolves from the agent's own root, works offline, and is pinned to the version of the canon the agent was built with.
 - The canon itself is never copied into CREED, INDEX, or CAPABILITIES. Only this thin pointer threads through them. The authority stays in one place and the agent pulls it on demand, which is what keeps an agent that has grown dozens of capabilities from carrying a stale, drifting fork of the quality bar.
 
-The capability-authoring reference carries only the mechanics of creating a capability and defers the quality bar to the canon by the same pointer, so the two never duplicate each other.
+The capability-authoring reference opens with the canon's working essence and carries the mechanics of creating a capability; for the full tests it points at the same shipped copy rather than restating them.
 
 ## Discovering Domain-Specific Standing Orders
 

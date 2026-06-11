@@ -50,6 +50,7 @@ Return exactly this JSON to the parent and nothing else. The `id` numbers sequen
     {
       "id": "customization-<n>",
       "severity": "critical | high | medium | low",
+      "title": "<short>",
       "location": "<file:region or file>",
       "evidence": "<what you observed: the hardcoded value, the sanctum-conflict field, the PULSE scalar, the other config mechanism>",
       "recommendation": "<the fix: lift to a named scalar, trim to metadata-only, defer to the sanctum, rewire to {agent.<name>}, or remove the non-customize.toml mechanism>",

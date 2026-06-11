@@ -35,7 +35,7 @@ These fields appear in memory agent SKILL.md files, which use a lean bootloader 
 
 ### Sanctum Template Seed Fields (CREED, BOND, PERSONA templates)
 
-These are content blocks the builder fills during Phase 5 Build. They are NOT template variables for init-script substitution — they are baked into the agent's template files as real content.
+These are content blocks the builder fills when emitting the sanctum templates. They are NOT template variables for init-script substitution — they are baked into the agent's template files as real content.
 
 | Field                       | Destination Template    | Description                                                  |
 | --------------------------- | ----------------------- | ------------------------------------------------------------ |
@@ -117,39 +117,11 @@ Teams and users override without editing `customize.toml`:
 
 Both use the same `[agent]` block shape. Merge order: base (skill's `customize.toml`) → team → user.
 
-### Memory / autonomous agents — prefer sanctum over this surface
-
-For memory and autonomous agents, the sanctum (PERSONA.md, CREED.md, BOND.md, CAPABILITIES.md) is the primary behavior-customization surface. It's calibrated at First Breath and evolves over time through owner edits and teaching. The `[agent]` override surface is usually empty for these archetypes — opt in only when there is a specific need (e.g. org-mandated pre-sanctum-load compliance step) that the sanctum cannot express.
+The archetype defaults for when to emit the override surface at all live in `references/agent-quality-principles.md`.
 
 ## Overview Section Format
 
-The Overview is the first section after the title — it primes the AI for everything that follows.
-
-**3-part formula:**
-
-1. **What** — What this agent does
-2. **How** — How it works (role, approach, modes)
-3. **Why/Outcome** — Value delivered, quality standard
-
-**Templates by agent type:**
-
-**Companion agents:**
-
-```markdown
-This skill provides a {role} who helps users {primary outcome}. Act as {displayName} — {key quality}. With {key features}, {displayName} {primary value proposition}.
-```
-
-**Workflow agents:**
-
-```markdown
-This skill helps you {outcome} through {approach}. Act as {role}, guiding users through {key stages/phases}. Your output is {deliverable}.
-```
-
-**Utility agents:**
-
-```markdown
-This skill {what it does}. Use when {when to use}. Returns {output format} with {key feature}.
-```
+The Overview is the first section after the title — it primes the AI for everything that follows. Cover what the agent does, how it works (role, approach, modes), and the outcome it delivers, written as the agent's own destination rather than a description of the system.
 
 ## SKILL.md Description Format
 

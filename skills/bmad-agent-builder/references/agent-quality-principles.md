@@ -2,7 +2,7 @@
 
 The build-plus-scan bar for agents. Loaded at build time so the author works to the standard from the start, and at analysis time so every lens verifies against the same standard.
 
-The universal core lives in the canon, not here. For the core test, the two-version comparison, the deeper floor, writing what survives as a goal, progressive disclosure, the cheaper signals, and the habit, load `references/prompt-quality-canon.md` (shipped copy, resolves from the agent-builder root) or its published fallback at `{siteBase}/explanation/outcome-driven-prompt-quality/`. Everything below is what agents add on top of that core, because an agent is not a workflow and a few things change.
+The universal core lives in the canon, not here. For writing the destination, the tests, the two-version comparison, the deeper floor, the cheaper signals, and the habit, load `references/prompt-quality-canon.md` (shipped copy, resolves from the agent-builder root). Everything below is what agents add on top of that core, because an agent is not a workflow and a few things change.
 
 ## Persona is the deliverable
 

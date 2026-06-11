@@ -30,7 +30,7 @@ When stages earn their place, name them descriptively and route by intent. The s
 | Customer FAQ | Surface devil's-advocate customer questions | `references/customer-faq.md` |
 ```
 
-The intent routing table is what makes the split worth its cost, because the model reads the user's intent and jumps straight to the stage that serves it rather than walking a fixed sequence. Stage order is a routing decision SKILL.md makes per run rather than something baked into the file names, which is why descriptive names are preferred over numbered prefixes.
+The intent routing table is what makes the split worth its cost, because the model reads the user's intent and jumps straight to the stage that serves it rather than walking a fixed sequence. Stage order is a routing decision SKILL.md makes per run rather than something baked into the file names, which is why stage files carry descriptive names, never numbered prefixes.
 
 ## Module Metadata Reference
 
@@ -42,6 +42,6 @@ Before finalizing a carved-out workflow (in addition to the producing-skill chec
 
 - [ ] Default reconsidered: would this fit inline as named sections in a single SKILL.md within budget?
 - [ ] Resolution rules block stamped at the top of SKILL.md when multiple internal files are referenced
-- [ ] Carve-outs in `references/` prefer descriptive names over numbered prefixes
+- [ ] Carve-outs in `references/` use descriptive names, never numbered prefixes
 - [ ] Each carved file works standalone for compaction survival
 - [ ] Multi-stage routing earned its place against a flat SKILL.md, with an intent routing table

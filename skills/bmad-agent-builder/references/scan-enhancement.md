@@ -38,6 +38,7 @@ Return the finding JSON to the parent in-context. Do not write a file, and do no
     {
       "id": "enhancement-<n>",
       "severity": "critical | high | medium | low",
+      "title": "<short>",
       "location": "<file:region or file>",
       "evidence": "<what was observed, the user archetype or journey arc, and which pattern>",
       "recommendation": "<add this pattern here, or remove this over-applied pattern and name what is lost>",

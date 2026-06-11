@@ -23,6 +23,8 @@ The memlog is typed, append-only, and written through `scripts/memlog.py` to a `
 
 ### Entry types and the CLI
 
+The CLI ships with the skill that calls it. When a built skill adopts a memlog, copy `memlog.py` from this builder's `scripts/` into the built skill's `scripts/` at emit — the bare `scripts/memlog.py` path resolves from the built skill's own root, so an uncopied CLI fails on the first `init`.
+
 - `init --path <file>` creates the log.
 - `append --path <file> --type <type> --text <text>` adds one typed entry; `<type>` is one of `decision`, `direction`, `assumption`, `gap`, `note`, `event`.
 - `set-complete --path <file>` marks the workflow done.
