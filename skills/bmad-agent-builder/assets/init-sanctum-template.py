@@ -160,7 +160,7 @@ def generate_capabilities_md(capabilities: list[dict], evolvable: bool) -> str:
             'Tell me "I want you to be able to do X" and we\'ll create it together.',
             "I'll write the prompt, save it to `capabilities/`, and register it here.",
             "Next session, I'll know how.",
-            "Load `./references/capability-authoring.md` for the full creation framework.",
+            "Load `references/capability-authoring.md` for the full creation framework.",
         ])
 
     lines.extend([
@@ -205,8 +205,8 @@ def main():
     sanctum_refs = sanctum_path / "references"
     sanctum_scripts = sanctum_path / "scripts"
 
-    # Fully qualified path for CAPABILITIES.md references
-    sanctum_refs_path = "./references"
+    # Relative path for CAPABILITIES.md references (agent loads from within sanctum)
+    sanctum_refs_path = "references"
 
     # Check if sanctum already exists
     if sanctum_path.exists():

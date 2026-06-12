@@ -36,25 +36,4 @@ A glaring persona contradiction or a missing core capability the persona promise
 
 ## What you return
 
-Return the finding JSON to the parent in-context. Do not write a file, and do not pad the list. If the agent coheres and nothing is missing, return an empty `findings` array with a verdict that says so.
-
-```json
-{
-  "lens": "agent-cohesion",
-  "verdict": "<one line: does this agent feel authentic and purposeful>",
-  "findings": [
-    {
-      "id": "agent-cohesion-<n>",
-      "severity": "critical | high | medium | low",
-      "title": "<short>",
-      "location": "<file:region or file>",
-      "evidence": "<the gap, redundancy, misalignment, or grain problem observed>",
-      "recommendation": "<the fix: add the capability here, consolidate these, regrain, or align the persona and capability>",
-      "proposed_smallest": null,
-      "predicted_delta": null
-    }
-  ]
-}
-```
-
-Only the leanness lens fills `proposed_smallest` and `predicted_delta`; leave them null.
+Return per `references/lens-contract.md` with `"lens": "agent-cohesion"`. The verdict says whether the agent feels authentic and purposeful; recommendations name the fix shape (add the capability, consolidate, regrain, or align persona and capability).

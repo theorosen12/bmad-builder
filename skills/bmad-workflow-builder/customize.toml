@@ -55,5 +55,5 @@ evals_required = ""
 # Tiered: aim under _desired; between _desired and _budget warns the user; over
 # _budget is a hard finding the builder resolves by progressive disclosure
 # (lifting sections to references/ or assets/) until it is back under budget.
-skill_md_token_desired = 1200
-skill_md_token_budget = 2000
+skill_md_token_desired = 2000
+skill_md_token_budget = 3000

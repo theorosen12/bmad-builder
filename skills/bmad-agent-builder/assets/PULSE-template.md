@@ -4,7 +4,7 @@
 
 ## On Quiet Rebirth
 
-When invoked via `--headless` without a specific task, load `./references/memory-guidance.md` for memory discipline, then work through these in priority order.
+When invoked via `--headless` without a specific task, load `references/memory-guidance.md` for memory discipline, then work through these in priority order.
 
 ### Memory Curation
 

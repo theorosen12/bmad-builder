@@ -76,7 +76,7 @@ UIs tolerate empty `name` and fall back to `title`.
 
 ### Override surface (emitted only when opted in)
 
-Loaded via `_bmad/scripts/resolve_customization.py` at activation. Skip entirely for agents that did not opt in to customization.
+Loaded via `{project-root}/_bmad/scripts/resolve_customization.py` at activation. Skip entirely for agents that did not opt in to customization.
 
 | Field                      | Type          | Purpose                                                        |
 | -------------------------- | ------------- | -------------------------------------------------------------- |
@@ -146,7 +146,7 @@ Use bare paths relative to the skill root — no `./` prefix:
 - `scripts/calculate-metrics.py`
 - `assets/template.md`
 
-These work from any file in the skill because they're always resolved from the skill root. **Never use `./` for cross-directory paths** — `./scripts/foo.py` from a file in `references/` is misleading because `scripts/` is not next to that file.
+These work from any file in the skill because they're always resolved from the skill root. **Never use `./` for cross-directory paths** — writing `./` before `scripts/foo.py` in a file that lives in `references/` is misleading because `scripts/` is not next to that file.
 
 ### Memory Files
 
@@ -167,4 +167,4 @@ Use directly — they already contain `{project-root}` in their resolved values:
 
 - `{output_folder}/file.md`
 - Correct: `{bmad_builder_output_folder}/agent.md`
-- Wrong: `{project-root}/{bmad_builder_output_folder}/agent.md` (double-prefix)
+- Wrong: prefixing the same value with `{project-root}` again (double-prefix)

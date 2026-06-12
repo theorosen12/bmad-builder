@@ -10,6 +10,10 @@ Load `references/skill-quality-principles.md` alongside it for the BMad-specific
 
 Before you read a single artifact, understand what the user is actually trying to get done and what "good" looks like to them. The open-floor invitation in activation does most of this work, so read what they dumped and mine the conversation history for the tools, the sequence, the corrections, and the inputs and outputs they have already shown you. Then ask only the gaps that remain. On an edit, this means reading the part of the existing skill the change touches and ignoring the rest, rather than re-deriving the whole spec.
 
+## Ground it in real expertise
+
+A skill drafted from the model's general knowledge ships generic procedure; the value is in what only this project knows. Ask for the sources that carry it: runbooks and internal docs, incident reports and their resolutions, code-review comments, version-control history, or a transcript of the task done by hand once — the corrections the user made along the way are exactly the gotchas the skill exists to encode. And when the skill is extracted from one worked example, make it teach the method rather than that instance's answer: the approach must generalize to the next input even where individual details stay specific.
+
 ## Harden the idea before you build it
 
 A skill is cheap to generate and expensive to live with, so push on the idea before drafting rather than building the first description you hear. Pressure-test the shape: is this one skill or three, is it a skill at all or a one-off the user could just ask for directly, what is the single outcome and who consumes it, what real input does it run on, and where would it be thin or fail. Push back where the idea is half-formed, because a builder that accepts a vague idea ships a vague skill.
@@ -35,6 +39,8 @@ Draft the canon's small version: the smallest skill that could possibly work, wr
 ## Run it on real input and reach for eval at the eval beat
 
 A skill that has never run is a guess. Run the minimal version on the real, messy input the user actually has. This is the eval beat, and it is where you invoke `bmad-eval-runner`. Offer baseline mode to confirm the skill beats the bare model on the same input, because a skill that does not beat the bare model has no reason to exist. Offer trigger mode to harden the description against near-miss queries. Both are opt-in; surface them, explain what each one settles, and let the user decide.
+
+Read the transcripts, not just the outputs. Three trace shapes each name their own fix: the model trying several approaches before one works means an instruction is too vague; the model following an instruction that does not apply to the input means it is too broad; the model stalling among alternatives means no default was named.
 
 Eval cases live at `{target-skill-path}/evals/cases.json`. `{workflow.evals_required}` overrides the opt-in default. When it is empty (default), the modes stay opt-in as above. When it is set, evals are a ship gate: `"baseline"` requires a passing baseline run before the build is done; `"any"` requires at least one case to exist and pass. If a required run fails or cannot be produced, the build is blocked, not shipped.
 

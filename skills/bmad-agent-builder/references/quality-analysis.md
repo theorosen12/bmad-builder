@@ -50,7 +50,7 @@ Hold that object. `agent_type` and `is_memory_agent` decide whether the conditio
 
 ## Dispatch the lenses in parallel
 
-Hand each lens the pre-pass JSON and `{target-agent-path}`, and run them as parallel subagents. Each lens loads `references/agent-quality-principles.md` (which cedes the universal core to `references/prompt-quality-canon.md`), stays in its lane, and returns its findings to you in-context. No lens writes a file or a per-subagent analysis document.
+Hand each lens the pre-pass JSON and `{target-agent-path}`, and run them as parallel subagents. Each lens loads the bar its own spec file names plus `references/lens-contract.md`, stays in its lane, and returns its findings to you in-context. No lens writes a file or a per-subagent analysis document.
 
 Six base lenses run for every agent:
 
@@ -71,28 +71,7 @@ One conditional lens runs only when the pre-pass classified the agent as memory 
 
 Read `is_memory_agent` from the pre-pass. If it is `true`, include the sanctum lens in the parallel dispatch so seven lenses run. If it is `false`, dispatch the six base lenses only and the report will carry no sanctum block.
 
-Every lens returns the same JSON shape (schema_version 1):
-
-```json
-{
-  "lens": "leanness | architecture | determinism | customization | enhancement | agent-cohesion | sanctum-architecture",
-  "verdict": "<one line for this lens>",
-  "findings": [
-    {
-      "id": "<lens>-<n>",
-      "severity": "critical | high | medium | low",
-      "title": "<short>",
-      "location": "<file:region or file>",
-      "evidence": "<what was observed>",
-      "recommendation": "<the fix, including a cut where it applies>",
-      "proposed_smallest": "<leanness only, else null>",
-      "predicted_delta": "<leanness only, else null>"
-    }
-  ]
-}
-```
-
-Only the leanness lens fills `proposed_smallest` and `predicted_delta`. Those two fields let you route a defend-against-absence finding to the eval-runner's variant mode for a real cut-or-keep verdict rather than a guess; that routing happens in the build flow, not here.
+Every lens returns the JSON in `references/lens-contract.md`. Only the leanness lens fills `proposed_smallest` and `predicted_delta`; those two fields let you route a defend-against-absence finding to the eval-runner's variant mode for a real cut-or-keep verdict rather than a guess, and that routing happens in the build flow, not here.
 
 ## Synthesize and render
 
@@ -100,7 +79,68 @@ Merge the lens returns into one findings list, keeping each finding's `id` so it
 
 Two org gates fold in here: if `{agent.build_standards}` is non-empty, check the agent against each directive (`skill:`, `file:`, or plain text) and add any miss as a conformance finding; if `{agent.evals_required}` is set, confirm `{target-agent-path}/evals/cases.json` satisfies it (`"baseline"` or `"any"`) and add a high-severity finding when it does not.
 
-Then author the report yourself per the contract in `references/report-author.md`: the synthesis layer (grade, summary, themes, strengths, recommendations — cluster findings by shared root cause, not by file) and the agent blocks (`agent_profile`, `capabilities`, `detailed_analysis` from each lens's one-line verdict, `sanctum` only for memory/autonomous agents, `experience`). You hold every finding in context, so no subagent is involved. Write the island object to `{run-folder}/findings.json` and render:
+Then author the report yourself. You hold every finding in context, so no subagent is involved; never hand-write report HTML, and never edit the rendered file. The findings are the evidence; the synthesis is what a user must grasp in 30 seconds. All synthesis fields are yours to write:
+
+- `verdict` — one line naming the overall state and the one or two findings that matter most. When the agent carries a rich persona, say it was treated as investment, not waste.
+- `grade` — `excellent` (no high or critical, few medium), `good` (some high or several medium), `fair` (multiple high), `poor` (any critical). Lowercase.
+- `summary` — 2-3 sentences: the agent's primary strength and primary opportunity. This is the first thing the user reads.
+- `themes` — findings clustered by shared root cause, not by file. Ask: "if I fixed X, how many findings across lenses would that resolve?" 3-5 themes; findings that fit no theme stay ungrouped in `findings` only. Each theme's `action` is one coherent fix instruction for the whole cluster, and `finding_ids` lists the constituent findings.
+- `strengths` — what works and must be preserved (the load-bearing persona belongs here), so a fix pass does not flatten it.
+- `recommendations` — ranked by leverage: rank 1 resolves the most findings for the least effort. `resolves` lists the finding ids it would clear.
+
+The agent blocks are optional portrait-and-context blocks, built from the pre-pass and what the lenses observed:
+
+- `agent_profile` — `name`, `title`, `icon`, `agent_type` (straight from the pre-pass), one-line `mission`. Drawn from the agent's `[agent]` metadata.
+- `capabilities` — `{ name, kind, note }` per capability, where `kind` is the form (prompt, script, multi-file, external skill) and `note` is one line on what it does.
+- `detailed_analysis` — keyed by lens name, each value that lens's one-line `verdict`.
+- `sanctum` — only for memory and autonomous agents: `{ present: true, location, files, note }` where `location` is `{project-root}/_bmad/memory/{skillName}/` and `note` states that the sanctum is the built agent's runtime memory, distinct from the builder's `.memlog.md`. Omit the block (or set `present: false`) for a stateless agent.
+- `experience` — `journeys` as `{ name, steps }` for the main paths a user takes through the agent, and `headless` as one line on the agent's headless story.
+
+`findings.json` is one object (schema_version 2):
+
+```json
+{
+  "schema_version": 2,
+  "subject": "<agent name or path analyzed>",
+  "generated": "<ISO date>",
+  "verdict": "<one-line overall assessment>",
+  "grade": "excellent | good | fair | poor",
+  "summary": "<2-3 sentence narrative>",
+  "standards": {
+    "canon": "<absolute path to this builder's references/prompt-quality-canon.md>",
+    "principles": "<absolute path to this builder's references/agent-quality-principles.md>",
+    "scripts": "<absolute path to this builder's references/script-standards.md>"
+  },
+  "agent_profile": { "name": "", "title": "", "icon": "", "agent_type": "", "mission": "" },
+  "capabilities": [{ "name": "", "kind": "", "note": "" }],
+  "detailed_analysis": { "leanness": "<lens verdict>", "architecture": "<lens verdict>" },
+  "sanctum": { "present": true, "location": "", "files": [], "note": "" },
+  "experience": { "journeys": [{ "name": "", "steps": "" }], "headless": "" },
+  "themes": [
+    {
+      "title": "<root-cause name>",
+      "root_cause": "<what is happening and why it matters>",
+      "finding_ids": ["leanness-1", "determinism-2"],
+      "action": "<one coherent fix for the whole theme>"
+    }
+  ],
+  "strengths": ["<what works and should be preserved>"],
+  "recommendations": [
+    { "rank": 1, "action": "<what to do>", "resolves": ["leanness-1"] }
+  ],
+  "findings": ["<every lens finding unchanged, per references/lens-contract.md>"]
+}
+```
+
+Rules:
+
+- `standards` is always filled: resolve the three absolute paths from this builder's own `{skill-root}` at authoring time. The shell prepends them to every copied fix prompt, so the session that applies a fix holds the same bar that produced the findings.
+- `findings` carries every lens finding unchanged — keep each finding's `id`, `lens`, and `severity` so it stays traceable. Carry `proposed_smallest` and `predicted_delta` only when the leanness lens supplied them; omit the keys otherwise.
+- Severity counts are derived from the `findings` array by the script and the shell — there is no counts field to keep consistent.
+- Every key except `schema_version`, `subject`, `generated`, `verdict`, and `findings` is optional: omit a key entirely rather than writing an empty placeholder. A clean pass is a real report.
+- Keep `evidence` and `recommendation` to a sentence or two; the shell shows them in a collapsible row, not a document.
+
+Write the island object to `{run-folder}/findings.json` and render:
 
 ```bash
 python3 scripts/render_report.py {run-folder}/findings.json --shell assets/report-shell.html -o {run-folder}/agent-analysis-report.html --md {run-folder}/agent-analysis-report.md

@@ -72,7 +72,7 @@ Your CAPABILITIES.md is already populated with your built-in abilities. Present 
 - They can **modify or remove** any built-in capability — these are starting points, not permanent
 {if-evolvable}- They can **teach you new capabilities** anytime — "I want you to be able to do X" and you'll create it together
 - Give **concrete examples** of capabilities they might want to add later: {example-learned-capabilities}
-- Load `./references/capability-authoring.md` if they want to add one during First Breath
+- Load `references/capability-authoring.md` if they want to add one during First Breath
 {/if-evolvable}
 
 {if-pulse}

@@ -22,7 +22,7 @@ For memory and autonomous agents the sanctum (PERSONA, CREED, BOND, CAPABILITIES
 - PULSE-in-toml. For an autonomous agent, PULSE.md owns wake behavior, named task routing, frequency, and quiet hours. Any customize.toml scalar named like `pulse_interval`, `headless_task`, `wake_frequency`, or `quiet_hours` is high abuse, because the autonomous-behavior surface is PULSE, not the customize surface.
 - Toggle farms. A boolean scalar such as `include_examples = true` usually means the author never decided what the agent does and pushed the decision onto every installer, so pick a default and cut the toggle. One toggle is medium, three or more booleans in one file is high because the surface is doing the job a separate variant agent should do.
 - Opaque scalars. A scalar named `style_config`, `format_options`, or a `mode` that is really a path hides what it controls, so rename it using the `<purpose>_template`, `<purpose>_output_path`, and `on_<event>` conventions. Usually low.
-- Identity-in-config. `name` and `title` are read-only at runtime. If they are declared with no comment saying so, a user will try to override them via `_bmad/custom/` and get confused when nothing changes, so add the comment. Low. Separately, a populated `name` on a memory or autonomous agent that uses First Breath naming is medium, because the name should be learned at First Breath, so suggest `name = ""`.
+- Identity-in-config. `name` and `title` are read-only at runtime. If they are declared with no comment saying so, a user will try to override them via `{project-root}/_bmad/custom/` and get confused when nothing changes, so add the comment. Low. Separately, a populated `name` on a memory or autonomous agent that uses First Breath naming is medium, because the name should be learned at First Breath, so suggest `name = ""`.
 
 ## Opportunity side
 
@@ -40,25 +40,4 @@ A surface that breaks the contract or makes overrides silently no-op is high, wh
 
 ## What you return
 
-Return exactly this JSON to the parent and nothing else. The `id` numbers sequentially within your lens. When the surface is sound and customize.toml is the only mechanism, return an empty `findings` array and say so in the verdict.
-
-```json
-{
-  "lens": "customization",
-  "verdict": "<one line: archetype, too thin / too loud / about right, and whether customize.toml is the sole mechanism>",
-  "findings": [
-    {
-      "id": "customization-<n>",
-      "severity": "critical | high | medium | low",
-      "title": "<short>",
-      "location": "<file:region or file>",
-      "evidence": "<what you observed: the hardcoded value, the sanctum-conflict field, the PULSE scalar, the other config mechanism>",
-      "recommendation": "<the fix: lift to a named scalar, trim to metadata-only, defer to the sanctum, rewire to {agent.<name>}, or remove the non-customize.toml mechanism>",
-      "proposed_smallest": null,
-      "predicted_delta": null
-    }
-  ]
-}
-```
-
-Only the leanness lens fills `proposed_smallest` and `predicted_delta`; leave them null.
+Return per `references/lens-contract.md` with `"lens": "customization"`. The verdict names the archetype, too thin / too loud / about right, and whether customize.toml is the sole mechanism present.

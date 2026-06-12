@@ -48,7 +48,7 @@ When the cascade is non-obvious, explain it: "Adding this capability also means 
 
 ### Stateless Agents
 
-Everything lives in SKILL.md and `./references/`. Edits are straightforward. The main risk is breaking the balance between persona context and capability prompts. Remember: persona informs HOW, capabilities describe WHAT. If the edit blurs this line, correct it.
+Everything lives in SKILL.md and `references/`. Edits are straightforward. The main risk is breaking the balance between persona context and capability prompts. Remember: persona informs HOW, capabilities describe WHAT. If the edit blurs this line, correct it.
 
 ### Memory Agents
 

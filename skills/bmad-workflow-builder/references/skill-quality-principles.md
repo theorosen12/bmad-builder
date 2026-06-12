@@ -43,6 +43,7 @@ Default: write the entire workflow as named sections in SKILL.md (`## Discovery`
 - Progression conditions, where they exist, must be testable ("when X is captured, route to Y"). "When ready" is vague.
 - The file uses `{communication_language}` (and `{document_output_language}` if it produces a doc).
 - There are NO exit hooks in the system. Don't add `## On Exit` sections, because they would never run.
+- **Gotchas stay in SKILL.md.** A rule whose trigger the model cannot recognize — a soft-delete column that poisons queries, a health endpoint that lies, three names for one ID — never carves to a reference however branch-specific it is, because the model cannot load a file for a situation it does not know it is in. When a user corrects a running skill, the cheapest durable fix is appending that correction as a gotcha line.
 
 ## Headless mode
 When a skill supports headless invocation, the memlog absorbs every assumption made without the user: intent inference, proposed names, customization defaults, conflict resolutions, lint-fix calls, anything the user would have weighed in on interactively. Append these as typed `assumption` and `decision` entries through `scripts/memlog.py` as they happen. The JSON return is the smallest set of paths the caller needs (typically `skill` plus the memlog path, plus the report path for analysis flows); the memlog carries the reasoning. `status` is `complete` or `blocked`; on `blocked`, include a one-line `reason` and still return the memlog path so the caller can read the detail. Without this discipline, headless silently buries its calls and the audit trail breaks on the next session.
@@ -56,7 +57,7 @@ When a skill supports headless invocation, the memlog absorbs every assumption m
 ## Length guidance
 Length is measured in tiktoken tokens through `scripts/count_tokens.py` (`cl100k_base`, with a chars/4 fallback when tiktoken is unavailable). There is no line-count gate anywhere. The canon's tests still apply to every line; budgets are a guardrail, not the goal.
 
-SKILL.md is tiered against two org-configurable thresholds, `{workflow.skill_md_token_desired}` (default 1200) and `{workflow.skill_md_token_budget}` (default 2000):
+SKILL.md is tiered against two org-configurable thresholds, `{workflow.skill_md_token_desired}` (default 2000) and `{workflow.skill_md_token_budget}` (default 3000). The hard tier sits deliberately under the Agent Skills spec's 5,000-token recommendation, and the budget is a drift guardrail, not the leanness bar — the canon's tests still cut a ceremonial line in a 900-token file:
 
 - **Under desired** — on target; no action.
 - **Between desired and budget** — warn the user that SKILL.md is getting heavy and name the section most worth lifting, but do not block.
@@ -81,10 +82,12 @@ Institutional names for patterns the LLM won't generate by default:
 - **Parallel review lenses**: Fan out two or three review subagents (skeptic, opportunity-spotter, a contextually-chosen lens) before finalizing a significant artifact.
 - **Three-mode architecture**: Guided, Yolo, Headless. Not every skill needs all three, but considering it during design prevents lock-in.
 - **Graceful degradation**: Subagent-dependent features fall back to sequential when subagents are unavailable.
+- **Plan-validate-execute**: For batch or destructive operations, produce an intermediate plan artifact, validate it against the source of truth with a script whose errors name the fix ("field 'signature_date' not found — available: …"), and only then execute. The validation script is the load-bearing piece, because it lets the model self-correct before anything irreversible runs.
 - **Working state across turns**: a multi-turn skill that builds something holds state as a memlog (the decision trail), a structured working artifact (the work-in-progress that transforms into the output), both, or neither. The choice and the full treatment live in `references/working-state-patterns.md`.
 
 ## Writing
 - One term per concept; pick it and stick to it.
+- A default, not a menu: when several tools or approaches would work, name one and demote the alternatives to an escape-hatch clause ("use X; for scanned input use Y"). A list of equal options makes the model spend its turn choosing instead of working.
 - Third person in descriptions ("Processes files", not "I help process files").
 - Descriptive file names (`form-validation-rules.md`, not `doc2.md`).
 

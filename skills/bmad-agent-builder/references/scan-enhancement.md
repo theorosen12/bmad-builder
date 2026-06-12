@@ -28,25 +28,4 @@ A missing pattern that leaves a real user stuck is high. An over-applied pattern
 
 ## Return
 
-Return the finding JSON to the parent in-context. Do not write a file, and do not invent findings to fill the list. If the agent carries the right patterns and none are over-applied, return an empty `findings` array with a verdict that says so.
-
-```json
-{
-  "lens": "enhancement",
-  "verdict": "<one line>",
-  "findings": [
-    {
-      "id": "enhancement-<n>",
-      "severity": "critical | high | medium | low",
-      "title": "<short>",
-      "location": "<file:region or file>",
-      "evidence": "<what was observed, the user archetype or journey arc, and which pattern>",
-      "recommendation": "<add this pattern here, or remove this over-applied pattern and name what is lost>",
-      "proposed_smallest": null,
-      "predicted_delta": null
-    }
-  ]
-}
-```
-
-Only the leanness lens fills `proposed_smallest` and `predicted_delta`; leave them null.
+Return per `references/lens-contract.md` with `"lens": "enhancement"`. Titles name add or remove, `evidence` names the user archetype or journey arc and the pattern involved, and a removal recommendation states what is lost (which should be little or nothing if the flag is right).

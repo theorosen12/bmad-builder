@@ -47,25 +47,4 @@ A leak that will fail or mislead at runtime is critical, for example a regex cla
 
 ## What you return
 
-Return exactly this JSON to the parent and nothing else:
-
-```json
-{
-  "lens": "determinism",
-  "verdict": "<one line on whether work sits where it belongs>",
-  "findings": [
-    {
-      "id": "determinism-<n>",
-      "severity": "critical | high | medium | low",
-      "title": "<short>",
-      "location": "<file:region or file>",
-      "evidence": "<the leak you observed, quoting the operation>",
-      "recommendation": "<which way it leaks and the fix; for determinism leaks, name the determinism test, the signal-verb scan, or the pre-pass JSON pattern from script-opportunities-reference>",
-      "proposed_smallest": null,
-      "predicted_delta": null
-    }
-  ]
-}
-```
-
-`proposed_smallest` and `predicted_delta` stay null; only the leanness lens fills them. The `id` numbers sequentially within your lens (`determinism-1`, `determinism-2`). When you find no leaks, return an empty `findings` array and say so in the verdict rather than inventing borderline cases.
+Return per `references/lens-contract.md` with `"lens": "determinism"`. Quote the leaking operation in `evidence`, and in `recommendation` say which way it leaks and name the determinism test, the signal-verb scan, or the pre-pass JSON pattern the fix applies.

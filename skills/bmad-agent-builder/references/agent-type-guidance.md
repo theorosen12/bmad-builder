@@ -60,28 +60,9 @@ After determining the agent type, assess relationship depth. This informs which 
 
 Confirm your assessment with the user: "It sounds like this is more of a [long-term creative partnership / focused domain tool] — does that feel right?"
 
-## Customization by Archetype
+## Customization and Naming by Archetype
 
-This is the authority on which customization default each archetype gets. The mechanism itself, that `customize.toml` is the sole build-time config surface and what is forbidden in it, lives in `references/agent-quality-principles.md`; this section only decides the override-surface default per type.
-
-The opt-in override surface is offered or declined by archetype:
-
-- **Stateless agent** — the natural candidate. Offer the opt-in during the customization decision and accept either answer, since swappable reference docs, output paths, and pre/post-activation steps are reasonable for a stateless expert.
-
-- **Memory agent** — the sanctum is the primary behavior-customization surface, calibrated by First Breath and evolved by the owner, so a TOML override surface competes with it. **Default the opt-in to no.** Opt in only when the user has a specific pre-sanctum-load need, such as an org-mandated compliance preload, that the sanctum cannot express.
-
-- **Autonomous agent** — same as memory, and PULSE already owns autonomous behavior. Default to no; opt in only with cause.
-
-### First-Breath-Named Agents
-
-Memory and autonomous agents whose name is learned during First Breath ship with `name = ""` in `customize.toml`. The owner fills the name post-activation by adding a stanza to `{project-root}/_bmad/custom/config.toml`:
-
-```toml
-[agents.creative-muse]
-name = "Zephyr"
-```
-
-The installer and any roster-consuming UIs tolerate empty `name` and fall back to `title` for display until the owner fills it in. Do not prompt the user for a name at build time for these archetypes — the First Breath experience is where the name is born.
+The customization surface contract — the archetype opt-in defaults, the always-present `[agent]` metadata block, and the forbidden mechanisms — lives in `references/agent-quality-principles.md`; the field-level schema, including First-Breath-named agents shipping `name = ""`, lives in `references/standard-fields.md`. The one discovery-time rule worth carrying here: never prompt the user for a name at build time for a memory or autonomous agent that names itself — the First Breath experience is where the name is born.
 
 ## Edge Cases
 

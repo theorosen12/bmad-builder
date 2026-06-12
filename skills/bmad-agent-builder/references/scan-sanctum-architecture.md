@@ -34,25 +34,4 @@ Missing Three Laws or Sacred Truth, a missing standard template, a missing init 
 
 ## What you return
 
-Return the finding JSON to the parent in-context. Do not write a file. If the sanctum is architecturally sound, return an empty `findings` array with a verdict that says so.
-
-```json
-{
-  "lens": "sanctum-architecture",
-  "verdict": "<one line: is the sanctum complete, consistent, and seeded>",
-  "findings": [
-    {
-      "id": "sanctum-architecture-<n>",
-      "severity": "critical | high | medium | low",
-      "title": "<short>",
-      "location": "<file:region or file>",
-      "evidence": "<the missing template, the leaked bootloader section, the init mismatch, the empty seed>",
-      "recommendation": "<the fix: add the template, move the leaked content to the sanctum, align the init list, seed the value>",
-      "proposed_smallest": null,
-      "predicted_delta": null
-    }
-  ]
-}
-```
-
-Only the leanness lens fills `proposed_smallest` and `predicted_delta`; leave them null.
+Return per `references/lens-contract.md` with `"lens": "sanctum-architecture"`. The verdict says whether the sanctum is complete, consistent, and seeded.

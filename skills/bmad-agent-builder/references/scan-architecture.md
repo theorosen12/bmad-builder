@@ -48,25 +48,4 @@ Anything that breaks execution or violates a stated promise is critical or high.
 
 ## Return
 
-Return the finding JSON to the parent in-context. Write no file, and invent no findings to fill the list. If the agent is sound on this lens, return an empty `findings` array with a verdict that says so.
-
-```json
-{
-  "lens": "architecture",
-  "verdict": "<one line>",
-  "findings": [
-    {
-      "id": "architecture-<n>",
-      "severity": "critical | high | medium | low",
-      "title": "<short>",
-      "location": "<file:region or file>",
-      "evidence": "<what was observed>",
-      "recommendation": "<the fix>",
-      "proposed_smallest": null,
-      "predicted_delta": null
-    }
-  ]
-}
-```
-
-`proposed_smallest` and `predicted_delta` stay null; only the leanness lens fills them.
+Return per `references/lens-contract.md` with `"lens": "architecture"`.
