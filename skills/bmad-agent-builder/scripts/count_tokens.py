@@ -1,5 +1,5 @@
-# vendored from bmad-workflow-builder/scripts; canonical source there
 #!/usr/bin/env python3
+# vendored from bmad-workflow-builder/scripts; canonical source there
 # /// script
 # requires-python = ">=3.9"
 # dependencies = ["tiktoken"]
