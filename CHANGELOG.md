@@ -1,21 +1,43 @@
 # Changelog
 
-## [Unreleased]
+## [2.0.0] - 2026-06-13
 
-### ♻️ Refactoring
+This is a near-total rebuild of the BMad builders around one conviction: **the prompt is the product, and its quality has to be testable, not asserted.** Three efforts land together and reinforce each other.
 
-* **Memory-agent continuity reframe** — Reworked the memory and autonomous agent architecture around continuity of self instead of per-session rebirth. The agent is born once at First Breath and is one continuous self thereafter; the between-session context reset is treated as sleep, not death, and the sanctum is its real, persistent memory reloaded on waking. The Sacred Truth, bootloader, and docs now say the agent wakes rather than is reborn, and it never fabricates what it didn't store.
-* **One-pass `wake.py` sanctum loader** — Every memory and autonomous agent now ships a `wake.py` that loads its whole sanctum in a single pass on activation and determines the mode. Replaces the previous multi-step INDEX-then-batch load.
-* **Four-step "Invoke & hold" activation** — The bootloader activation is now a four-step spine: Wake (run `wake.py`) → Become yourself → Bind standing rules for the whole session → Execute the proper mode (Waking / First Breath / Pulse).
-* **New bootloader directives** — Added a **Stay in Character** directive (the agent never narrates its own machinery) and a **Persistent Memory (Critical Directive)** (capture to the sanctum as-you-go, not just at session close, since owners often end a session with no signal).
+**One bar, stated once.** Quality used to live as drifting prose scattered across dozens of scanner and reference files. It now lives in a single canonical source — the Outcome-Driven Prompt Quality canon — and every builder, lens, and fix prompt points at it instead of restating it. The payoff is concrete: the hot files shrank by thousands of tokens, the universal tests stopped contradicting each other, and **every skill a builder emits now passes its own lint gate** (the path-convention defect that made every freshly-built agent fail its own standards is gone).
+
+**Eval-driven, platform-agnostic, lean.** The Workflow Builder and Eval Runner were rebuilt from the ground up; the Agent Builder was realigned to match. Builders are leaner, customization flows through one mechanism (`customize.toml`), length is measured in tokens rather than lines, and the Eval Runner can now actually close the loop — grading a skill's behavior against the eval author's expectations across four modes, behind a single platform-adapter seam.
+
+**Continuity of self.** Memory agents are no longer "reborn" each session. An agent is born once, at First Breath, and is one continuous self thereafter; the context reset is sleep, not death, and the sanctum is its real, persistent memory reloaded on waking. This is the model every future agent now inherits.
 
 ### 💥 Breaking Changes
 
-* **`--pulse` replaces the built agent's `--headless`** — Autonomous agents now wake on a schedule via `--pulse` (and `--pulse {task-name}` for named task routing), and "Quiet Rebirth" is now "Pulse Mode" / Quiet Waking. The builder's own `--headless` flag for non-interactive builds is unchanged.
+* **Workflow Builder and Eval Runner rebuilt** — The build flow moved from the fixed 5-phase lockstep to a single Process loop; the rigid report-data schema and the `generate-html-report.py` / `extract-report-json.py` pipeline were retired in favor of scanners that return lean JSON in-context plus one report-author filling a stable HTML shell. Skills built with the prior version remain valid, but the build *process* and its outputs differ. The Eval Runner dropped Docker, PTY, keychain staging, and dual isolation in favor of a lean, standalone-or-builder-invoked design.
+* **`customize.toml` is the sole customization mechanism** — Installer questions and `module.yaml` authoring are no longer part of net-new builds; the build flow asks once and defaults to no. Both builders now ship their *own* `customize.toml` with wired org knobs (build standards, eval ship-gate, SKILL.md token tiers).
+* **`--pulse` replaces the built agent's `--headless`** — Autonomous agents now wake on a schedule via `--pulse` (and `--pulse {task-name}` for named task routing); "Quiet Rebirth" is now "Pulse Mode" / Quiet Waking. The builder's own `--headless` flag for non-interactive *builds* is unchanged.
+* **`memlog` replaces `.decision-log.md`** — Build decisions are recorded through a typed, append-only `memlog.py` rather than a free-form decision log.
+* **Token budgets replace line counts** — Length is now measured with `count_tokens.py` (tiktoken) everywhere; line-count rules are gone.
+
+### 🎁 Highlights
+
+* **The prompt-quality canon** — `prompt-quality-canon.md` is the single statement of the universal quality tests (the core test, "who reads this," "most fixes are truncation not deletion," the two-version comparison, progressive disclosure). It ships embedded in both builders, kept byte-identical by `test_canon_sync.py`, pulled in on demand, and published as a docs page. Lenses and fix prompts cite it rather than carrying their own copies.
+* **Every emitted skill passes its own lint** — The cross-directory `./` path defect that made every shipped template, sample, and init script fail `scan-path-standards` (33 findings) is fixed; all paths are normalized to the bare skill-root convention, including the strings the init scripts generate into a sanctum.
+* **Eval Runner closes the loop** — Four modes (baseline skill-vs-bare-model, variant full-vs-stripped, quality, trigger), a turn-simulation case format (input + rubric + optional state prefix), a bounded self-improvement loop, and a platform-adapter seam that puts everything runtime-specific (invocation command, auth env var, transcript schema, trigger signals) behind one file. No hardcoded model list anywhere.
+* **Deterministic report v2** — Scanners return lean findings JSON in-context; a single report-author fills a self-contained HTML shell with one JSON island that cannot render blank, with multi-select and copy-to-paste-back fix prompts. Fix prompts now carry the same standards preamble that produced the findings, so the session applying a fix holds the bar that found it.
+* **Continuity-of-self agents** — A one-pass `wake.py` loads an agent's whole sanctum on activation and routes it to Waking / First Breath / Pulse; the bootloader activation is a four-step "Invoke & hold" spine (Wake → Become yourself → Bind standing rules for the whole session → Execute the proper mode); new **Stay in Character** and **Persistent Memory (Critical Directive)** directives keep the agent in persona and capturing memory as-you-go rather than only at session close.
+
+### ♻️ Refactoring
+
+* **Reference corpus consolidation** — Workflow Builder references went 18 → 17 files and the Agent Builder 26 → 23; a single `lens-contract.md` in each builder states the lens return schema once and all twelve lens files point at it. Three agent samples that were 80–88% line-identical stale copies of their own templates were deleted, with `build-process` rewired to emit from the templates directly.
+* **Lenses load their own lane's spec** — Customization lenses load the toml guide, determinism lenses load the script standards; per-lens subagent context dropped by roughly half. `skill-quality-principles.md` was cut to pure BMad institutional knowledge (the canon-restating sections are gone), and the memlog treatment was relocated off the hot file into `working-state-patterns.md`.
+* **Agent Builder realigned to the rebuild** — Eight quality-scan files folded into six base lenses plus a conditional sanctum-architecture lens; `memlog.py`, `count_tokens.py`, and `prepass.py` vendored in; the template+renderer report path replaced by the self-contained HTML shell; `template-substitution-rules.md` rewritten (legacy `{if-memory}`/`{if-headless}` archaeology removed).
+* **Continuity reframe across templates, validators, samples, and docs** — The Sacred Truth, bootloader, sample agents (code-coach, creative-muse, sentinel, dream-weaver), and validators were regenerated to the new model; `prepass.py` regexes and quality refs were reframed (rebirth → waking, headless-wake → pulse-wake) so new agents are not false-flagged.
+* **Conventions tightened** — Path resolution collapsed into a "Resolution rules" block in both builders; the no-numbered-prefix rule demoted from hard rule to soft preference; `config.yaml` reading is no longer taught to net-new skills.
 
 ### 📚 Documentation
 
-* Updated `agent-memory-and-personalization.md`, `what-are-bmad-agents.md`, `customization-for-authors.md`, and `builder-commands.md` to describe the continuity-of-self model, the `wake.py` loader, the four-step activation, the Stay-in-Character and Persistent-Memory directives, and `--pulse`.
+* **New** `explanation/outcome-driven-prompt-quality.md` — the published source of the prompt-quality canon, synced with the shipped copy.
+* Updated `agent-memory-and-personalization.md`, `what-are-bmad-agents.md`, `customization-for-authors.md`, and `builder-commands.md` for the continuity-of-self model, the `wake.py` loader, the four-step activation, the Stay-in-Character and Persistent-Memory directives, and `--pulse`.
 
 ## [1.8.1] - 2026-05-17
 
