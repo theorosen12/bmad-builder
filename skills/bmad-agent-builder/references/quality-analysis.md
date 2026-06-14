@@ -17,7 +17,7 @@ Each analyze run owns `{target-agent-path}/.analysis/<YYYY-MM-DD-HHmm>/` (create
 
 ## Headless mode
 
-If `{headless_mode}=true`, skip user interaction, take safe defaults, note any warning rather than asking, and emit the structured JSON described under Present. This is the builder's own headless mode and has nothing to do with a built autonomous agent's runtime Quiet Rebirth; the two share a flag name and nothing else.
+If `{headless_mode}=true`, skip user interaction, take safe defaults, note any warning rather than asking, and emit the structured JSON described under Present. This is the builder's own headless mode and has nothing to do with a built autonomous agent's runtime Pulse Mode (`--pulse`); the two are different flags entirely.
 
 ## Pre-scan check
 
@@ -57,7 +57,7 @@ Six base lenses run for every agent:
 | Lens | File | Owns |
 | --- | --- | --- |
 | Leanness | `references/scan-leanness.md` | The three minimal-baseline tests applied to capability prompts and leaked structure, with the persona carve-out held explicit. The only lens that fills `proposed_smallest` and `predicted_delta`. |
-| Architecture | `references/scan-architecture.md` | Frontmatter, topology, progressive disclosure, headless soundness, ordering, parallelization, read-avoidance. |
+| Architecture | `references/scan-architecture.md` | Frontmatter, topology, progressive disclosure, activation soundness (the four-step waking spine and Pulse Mode), ordering, parallelization, read-avoidance. |
 | Determinism | `references/scan-determinism.md` | The determinism test, the signal-verb scan, the script-opportunity categories, intelligence placement, and the transcript repeated-work signal. |
 | Customization | `references/scan-customization.md` | The customize.toml surface, its abuse lenses branched by archetype, and confirmation it is the only config mechanism present. |
 | Enhancement | `references/scan-enhancement.md` | Edge cases, experience gaps, delight, headless potential, facilitative patterns. |

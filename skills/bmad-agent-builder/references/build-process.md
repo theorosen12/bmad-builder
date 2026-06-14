@@ -69,7 +69,7 @@ Confirm the agent passes its own leanness bar before handoff, because the builde
 
 Every agent shares one output tree. The archetype changes which parts are present and the SKILL.md weight, captured in the delta table below rather than three separate trees.
 
-Emit each file from its matching template in this builder's `assets/`, applying `references/template-substitution-rules.md` for tokens, conditionals, and template selection — deterministically, via `python3 scripts/process-template.py <template> -o <dest> --var key=value... --true <condition>...` (one `--var` per token, one `--true` per conditional that holds). The templates are the single source for every emitted file, including `assets/init-sanctum-template.py`, `assets/memory-guidance-template.md`, and the two First Breath templates. The files whose content you author rather than substitute have guidance — load each at the moment you author that file, not before: `references/mission-writing-guidance.md` for the species mission, `references/standing-order-guidance.md` for CREED standing orders, `references/first-breath-adaptation-guidance.md` for deriving the First Breath territories, and `references/sample-capability-authoring.md` for the emitted capability-authoring.md.
+Emit each file from its matching template in this builder's `assets/`, applying `references/template-substitution-rules.md` for tokens, conditionals, and template selection — deterministically, via `python3 scripts/process-template.py <template> -o <dest> --var key=value... --true <condition>...` (one `--var` per token, one `--true` per conditional that holds). The templates are the single source for every emitted file, including `assets/init-sanctum-template.py`, `assets/wake-template.py`, `assets/memory-guidance-template.md`, and the two First Breath templates. The files whose content you author rather than substitute have guidance — load each at the moment you author that file, not before: `references/mission-writing-guidance.md` for the species mission, `references/standing-order-guidance.md` for CREED standing orders, `references/first-breath-adaptation-guidance.md` for deriving the First Breath territories, and `references/sample-capability-authoring.md` for the emitted capability-authoring.md.
 
 ```
 {agent-name}/
@@ -90,20 +90,22 @@ Emit each file from its matching template in this builder's `assets/`, applying 
 │   ├── CAPABILITIES-template.md   # Capability registry (memory/autonomous)
 │   └── PULSE-template.md          # Autonomous only
 └── scripts/
+    ├── wake.py                    # Memory/autonomous only, loads the whole sanctum in one pass on activation
     └── init-sanctum.py            # Memory/autonomous only, scaffolds the sanctum deterministically
 ```
 
 | Concern | Stateless | Memory | Autonomous |
 | --- | --- | --- | --- |
-| SKILL.md weight | Full identity: overview, mission, persona, principles, conventions, on-activation, capabilities table | Lean bootloader (~400 tokens as a guardrail): identity seed, Three Laws, Sacred Truth, mission, activation routing | Same lean bootloader, plus the Quiet Rebirth activation path |
+| SKILL.md weight | Full identity: overview, mission, persona, principles, conventions, on-activation, capabilities table | Lean bootloader (~400 tokens as a guardrail): identity seed, Three Laws, Sacred Truth, Stay in Character, the Persistent Memory directive, mission, the four-step activation routing | Same lean bootloader, plus the Pulse Mode activation path |
 | Sanctum | None | INDEX, PERSONA, CREED, BOND, MEMORY, CAPABILITIES at `{project-root}/_bmad/memory/{skillName}/` | Same sanctum |
 | First Breath | None | Calibration or configuration, seeded with domain territories | Same, and PULSE is explained on first activation |
 | PULSE | None | None | PULSE.md: default wake behavior, named task routing, frequency, quiet hours |
+| wake.py | None | Present, parameterized to the agent | Present |
 | init-sanctum.py | None | Present, parameterized to the agent | Present |
-| Activation | Single flow: load config, greet, present capabilities | Three paths: no sanctum runs init then First Breath; normal batch-loads the sanctum and becomes itself; runtime headless runs the Quiet Rebirth | Same three paths; the runtime headless path is the Quiet Rebirth where memory curation is always the first priority |
+| Activation | Single flow: load config, greet, present capabilities | `wake.py` routes the mode: no sanctum → First Breath Mode; otherwise Waking Mode loads the whole sanctum in one pass and becomes itself. The standing rules (Three Laws, Stay in Character, Persistent Memory) bind for the whole session, not just the open | Same, plus Pulse Mode (`--pulse`): the scheduled headless wake where memory curation is always the first priority |
 | customize override surface | Offered, either answer accepted | Default no | Default no |
 
-The Quiet Rebirth in the runtime-headless row is the built autonomous agent waking on its own schedule. It is not the builder's `--headless` flag, which only makes this build process non-interactive.
+The Pulse Mode in the runtime row is the built autonomous agent waking on its own schedule via `--pulse`. It is not the builder's `--headless` flag, which only makes this build process non-interactive.
 
 ## Handoff
 

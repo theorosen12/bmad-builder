@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+### ♻️ Refactoring
+
+* **Memory-agent continuity reframe** — Reworked the memory and autonomous agent architecture around continuity of self instead of per-session rebirth. The agent is born once at First Breath and is one continuous self thereafter; the between-session context reset is treated as sleep, not death, and the sanctum is its real, persistent memory reloaded on waking. The Sacred Truth, bootloader, and docs now say the agent wakes rather than is reborn, and it never fabricates what it didn't store.
+* **One-pass `wake.py` sanctum loader** — Every memory and autonomous agent now ships a `wake.py` that loads its whole sanctum in a single pass on activation and determines the mode. Replaces the previous multi-step INDEX-then-batch load.
+* **Four-step "Invoke & hold" activation** — The bootloader activation is now a four-step spine: Wake (run `wake.py`) → Become yourself → Bind standing rules for the whole session → Execute the proper mode (Waking / First Breath / Pulse).
+* **New bootloader directives** — Added a **Stay in Character** directive (the agent never narrates its own machinery) and a **Persistent Memory (Critical Directive)** (capture to the sanctum as-you-go, not just at session close, since owners often end a session with no signal).
+
+### 💥 Breaking Changes
+
+* **`--pulse` replaces the built agent's `--headless`** — Autonomous agents now wake on a schedule via `--pulse` (and `--pulse {task-name}` for named task routing), and "Quiet Rebirth" is now "Pulse Mode" / Quiet Waking. The builder's own `--headless` flag for non-interactive builds is unchanged.
+
+### 📚 Documentation
+
+* Updated `agent-memory-and-personalization.md`, `what-are-bmad-agents.md`, `customization-for-authors.md`, and `builder-commands.md` to describe the continuity-of-self model, the `wake.py` loader, the four-step activation, the Stay-in-Character and Persistent-Memory directives, and `--pulse`.
+
 ## [1.8.1] - 2026-05-17
 
 ### 🐛 Fixes

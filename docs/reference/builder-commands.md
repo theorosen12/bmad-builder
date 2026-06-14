@@ -114,7 +114,7 @@ Requirements differ by agent type. Stateless agents need identity and capabiliti
 | Requirement              | Description                                                                    |
 | ------------------------ | ------------------------------------------------------------------------------ |
 | **PULSE behaviors**      | Default wake behavior, domain-specific autonomous tasks                        |
-| **Named task routing**   | Tasks invoked via `--headless {task-name}` or `-H {task-name}`                 |
+| **Named task routing**   | Tasks invoked via `--pulse {task-name}`                                        |
 | **Frequency & quiet hours** | How often to wake, when not to                                              |
 
 ### Workflow Builder: Phase 2-3 Details
@@ -174,11 +174,12 @@ The output structure depends on the agent type.
 │   └── PULSE-template.md          # Autonomous agents only
 ├── agents/               # Subagent definitions (if needed)
 └── scripts/
+    ├── wake.py           # Loads the whole sanctum in one pass on activation
     ├── init-sanctum.py   # Creates sanctum folder, copies templates, generates CAPABILITIES.md
     └── tests/
 ```
 
-The seed templates contain real content from the discovery phases, not placeholders. The init script is parameterized with the skill name, file lists, and evolvable flag.
+The seed templates contain real content from the discovery phases, not placeholders. The `wake.py` and init scripts are parameterized with the skill name, file lists, and evolvable flag.
 
 **Workflow builder** output remains the same regardless of agent type:
 

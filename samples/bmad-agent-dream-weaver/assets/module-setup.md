@@ -19,7 +19,7 @@ Both config scripts use an anti-zombie pattern — existing entries for this mod
 1. Read `./assets/module.yaml` for module metadata and variable definitions (the `code` field is the module identifier)
 2. Check if `{project-root}/_bmad/config.yaml` exists — if a section matching the module's code is already present, inform the user this is an update (reconfiguration)
 
-If the user provides arguments (e.g. `accept all defaults`, `--headless`, or inline values like `user name is BMad, I speak Swahili`), map any provided values to config keys, use defaults for the rest, and skip interactive prompting. Still display the full confirmation summary at the end.
+If the user provides arguments (e.g. `accept all defaults`, `--pulse`, or inline values like `user name is BMad, I speak Swahili`), map any provided values to config keys, use defaults for the rest, and skip interactive prompting. Still display the full confirmation summary at the end.
 
 ## Collect Configuration
 

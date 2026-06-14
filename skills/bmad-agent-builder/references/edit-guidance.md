@@ -34,13 +34,13 @@ Some edits are local. Others ripple. Before making changes, map the impact:
 - Fixing wording in a capability prompt
 - Adjusting a standing order's examples
 - Updating BOND territory labels
-- Tweaking the greeting or session close
+- Tweaking the greeting or the Persistent Memory directive
 
 **Cascading edits (touch multiple files):**
 - Adding a capability: new reference file + CAPABILITIES-template entry + possibly CREED update if it changes what the agent watches for
 - Changing the agent's core identity: SKILL.md seed + PERSONA-template + possibly CREED philosophy + capability prompts that reference the old identity
 - Switching agent type (e.g., stateless to memory): this is a rebuild, not an edit. Redirect to the build process.
-- Adding/removing autonomous mode: adding or removing PULSE-template, updating SKILL.md activation routing, updating init-sanctum.py
+- Adding/removing autonomous mode: adding or removing PULSE-template, updating SKILL.md activation routing (the Pulse Mode `--pulse` path), updating wake.py and init-sanctum.py
 
 When the cascade is non-obvious, explain it: "Adding this capability also means updating the capabilities registry and possibly seeding a new standing order. Want me to walk through what changes?"
 
@@ -52,9 +52,9 @@ Everything lives in SKILL.md and `references/`. Edits are straightforward. The m
 
 ### Memory Agents
 
-The bootloader SKILL.md is intentionally lean (~30 lines of content). Resist the urge to add detail there. Most edits belong in sanctum templates:
+The bootloader SKILL.md is intentionally lean (~400 tokens as a guardrail). It legitimately carries the identity seed, the Three Laws, the Sacred Truth, Stay in Character, the Persistent Memory directive, the mission, and the four-step activation routing — but resist the urge to add anything beyond that. Most edits belong in sanctum templates:
 
-- Persona changes go in PERSONA-template.md, not SKILL.md (the bootloader carries only the identity seed)
+- Persona changes go in PERSONA-template.md, not SKILL.md (the bootloader carries only the identity seed, not the full persona)
 - Values and behavioral rules go in CREED-template.md
 - Relationship tracking goes in BOND-template.md
 - Capability registration goes in CAPABILITIES-template.md

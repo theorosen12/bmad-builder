@@ -12,7 +12,7 @@ The add direction. At each capability and at each moment of the agent's flow, fi
 
 The subtract direction. Find where a pattern is over-applied for the work in front of it. A multi-step ceremony wired onto a capability that only ever does one thing. A facilitative open-floor opening on an agent whose single job is a fast lookup. An onboarding flourish that fires every session instead of once. Each of these earned its name elsewhere and is paying rent here for nothing, so recommend the removal and name what the agent loses, which should be little if the flag is right. The one thing you never subtract is persona voice, communication-style examples, domain framing, or warmth, because the persona is the deliverable and a flatter agent is a worse agent, not a leaner one.
 
-For memory and autonomous agents the user journey is two arcs: First Breath (the birth conversation) and Rebirth (every normal session). Assess both. For autonomous agents the Quiet Rebirth headless path is a third arc, where the agent wakes, curates memory, executes, and exits without a human present. Weigh whether that path is sound and whether memory curation is the first priority on a quiet rebirth.
+For memory and autonomous agents the user journey is two arcs: First Breath (the birth conversation) and Waking (every normal session). Assess both. For autonomous agents Pulse Mode (`--pulse`) is a third arc, where the agent wakes on a schedule, curates memory, executes, and exits without a human present. Weigh whether that path is sound and whether memory curation is the first priority in Pulse Mode.
 
 ## Stay in your lane
 

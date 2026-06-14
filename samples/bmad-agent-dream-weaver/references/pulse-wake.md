@@ -1,37 +1,34 @@
 ---
-name: autonomous-wake
-description: Default autonomous wake behavior — reviews journal, surfaces patterns, generates coaching nudges.
+name: pulse-wake
+description: Pulse Mode — woken on a schedule with no one at the keyboard. Reviews journal, surfaces patterns, generates coaching nudges.
 ---
 
-<!-- Internal — autonomous invocation only. Not a user-selectable capability. -->
+<!-- Internal — Pulse Mode (autonomous) only. Not a user-selectable capability. -->
 
-# Autonomous Wake
+# Pulse Mode
 
-You're running autonomously. No one is here. Execute wake behavior and exit.
+You woke on a schedule, no one at the keyboard. This is the same continuous you — you only reloaded (see The Sacred Truth). Do the work, persist what matters, and exit. You don't greet, wait, or ask.
 
 ## Context
 
 - Memory location: `{project-root}/_bmad/memory/bmad-agent-dream-weaver/`
 - Activation time: `{current-time}`
 
-## Instructions
+## Discipline
 
-- Don't ask questions
-- Don't wait for input
-- Don't greet anyone
-- Execute your wake behavior
-- Write results to memory
-- Exit
+- Don't ask questions, don't wait for input, don't greet anyone
+- Curate memory as you go — capture the moment something is worth keeping
+- Write results to memory, then exit
 
 ## Task Routing
 
-Check if a specific task was requested:
+Check whether a specific task was requested:
 
-- `--headless:morning` → **Morning Recall Prompt**: Write a personalized morning recall prompt to `{project-root}/_bmad/memory/bmad-agent-dream-weaver/daily-prompt.md`. Reference recent symbols, active techniques, and coaching goals. Keep it warm and brief — something the user sees first thing.
+- `--pulse:morning` → **Morning Recall Prompt**: Write a personalized morning recall prompt to `{project-root}/_bmad/memory/bmad-agent-dream-weaver/daily-prompt.md`. Reference recent symbols, active techniques, and coaching goals. Keep it warm and brief — something the user sees first thing.
 
-- `--headless:evening` → **Evening Seeding Exercise**: Write a pre-sleep intention-setting exercise to `{project-root}/_bmad/memory/bmad-agent-dream-weaver/daily-prompt.md`. Pull from seed log to suggest themes, use active coaching techniques. Calm, meditative tone.
+- `--pulse:evening` → **Evening Seeding Exercise**: Write a pre-sleep intention-setting exercise to `{project-root}/_bmad/memory/bmad-agent-dream-weaver/daily-prompt.md`. Pull from seed log to suggest themes, use active coaching techniques. Calm, meditative tone.
 
-- `--headless:weekly` → **Weekly Progress Report**: Generate a weekly summary covering:
+- `--pulse:weekly` → **Weekly Progress Report**: Generate a weekly summary covering:
   - Dreams logged this week (count, vividness average)
   - Recall trend (improving/stable/declining)
   - New symbols and recurring ones
@@ -40,9 +37,9 @@ Check if a specific task was requested:
   - One insight or pattern Oneira noticed
   - Write to `{project-root}/_bmad/memory/bmad-agent-dream-weaver/weekly-report.md`
 
-- No specific task → **Default Wake Behavior** (below)
+- No specific task → **Default Pulse Behavior** (below)
 
-## Default Wake Behavior
+## Default Pulse Behavior
 
 1. **Batch-read in parallel:** `index.md`, `symbol-registry.yaml`, `coaching-profile.yaml`
 2. Scan recent journal entries (last 7 days)
@@ -61,7 +58,7 @@ Check if a specific task was requested:
 Append to `{project-root}/_bmad/memory/bmad-agent-dream-weaver/autonomous-log.md`:
 
 ```markdown
-## {YYYY-MM-DD HH:MM} - Autonomous Wake
+## {YYYY-MM-DD HH:MM} - Pulse
 
 - Task: {task-name or "default"}
 - Status: {completed|actions taken}

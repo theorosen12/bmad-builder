@@ -12,11 +12,12 @@ gradient (stateless, memory, autonomous), counts tokens for SKILL.md and every
 in-tree file, and sets the gate that turns the conditional sanctum lens on.
 
 Detection rests on the sanctum, the built agent's runtime memory at
-`{project-root}/_bmad/memory/{skillName}/`. An agent that reads a sanctum on
-rebirth is a memory agent; one that also carries live wake behavior (a PULSE
-file or a headless wake reference with named-task routing) is autonomous; one
-with no sanctum at all is stateless. This is the BUILT agent's memory, never
-the builder's process log (.memlog.md), and the two are kept apart here.
+`{project-root}/_bmad/memory/{skillName}/`. An agent that reloads a sanctum on
+waking is a memory agent; one that also carries live wake behavior (a PULSE
+file or a pulse/autonomous wake reference with named-task routing) is
+autonomous; one with no sanctum at all is stateless. This is the BUILT agent's
+memory, never the builder's process log (.memlog.md), and the two are kept
+apart here.
 
 Lengths come from tokens, never line counts. The count uses count_tokens.py
 (imported as a sibling, then shelled out, then a chars // 4 fallback) so the
@@ -131,11 +132,11 @@ def iter_files(root: Path):
 
 
 def has_sanctum(root: Path, skill_text: str) -> bool:
-    """True when the agent reads a runtime sanctum on rebirth (a memory agent).
+    """True when the agent reloads a runtime sanctum on waking (a memory agent).
 
     The sanctum is the built agent's memory at `_bmad/memory/{skillName}/`. We
     treat any of these as a sanctum signal: the SKILL referencing that memory
-    path, the Sacred-Truth / rebirth bootloader language, an init-sanctum
+    path, the Sacred-Truth / waking bootloader language, a wake or init-sanctum
     scaffolder, or the sanctum template assets (PERSONA / CREED / BOND / MEMORY
     / INDEX / CAPABILITIES). This is the built agent's memory, distinct from the
     builder's .memlog.md, which is never a sanctum signal.
@@ -144,12 +145,13 @@ def has_sanctum(root: Path, skill_text: str) -> bool:
         return True
     if re.search(r"\bsanctum\b", skill_text, re.IGNORECASE):
         return True
-    if "Sacred Truth" in skill_text and re.search(r"\brebirth\b", skill_text, re.IGNORECASE):
+    if "Sacred Truth" in skill_text and re.search(r"\b(waking|wake)\b", skill_text, re.IGNORECASE):
         return True
 
-    for script in root.glob("scripts/init-sanctum*"):
-        if script.is_file():
-            return True
+    for pattern in ("scripts/wake*", "scripts/init-sanctum*"):
+        for script in root.glob(pattern):
+            if script.is_file():
+                return True
 
     sanctum_seed = re.compile(
         r"^(PERSONA|CREED|BOND|MEMORY|INDEX|CAPABILITIES)-template\.md$"
@@ -166,15 +168,15 @@ def has_autonomous_wake(root: Path, skill_text: str) -> bool:
     """True when a memory agent also carries live autonomous wake behavior.
 
     Autonomous is memory plus a PULSE-driven wake: a deployed PULSE.md, a
-    headless-wake reference, or SKILL wake routing (named-task headless routing,
-    a default wake behavior, quiet hours, or a wake frequency).
+    pulse/autonomous-wake reference, or SKILL wake routing (named-task pulse
+    routing, a default wake behavior, quiet hours, or a wake frequency).
 
-    The standard memory bootloader already routes `--headless` to a Quiet
-    Rebirth that loads PULSE.md, and ships a PULSE template asset, in every
-    memory agent. Those are seeds, not live wake behavior, so neither the
-    bootloader's Quiet-Rebirth line nor a PULSE template asset counts here. The
-    wake behavior must be deployed: a real PULSE.md, a wake reference file, or
-    SKILL routing that names tasks or schedules a recurring wake.
+    The standard memory bootloader already names a Pulse Mode (`--pulse`) path
+    that loads PULSE.md, and ships a PULSE template asset, in every memory
+    agent. Those are seeds, not live wake behavior, so neither the bootloader's
+    Pulse-Mode line nor a PULSE template asset counts here. The wake behavior
+    must be deployed: a real PULSE.md, a wake reference file, or SKILL routing
+    that names tasks or schedules a recurring wake.
     """
     if (root / "PULSE.md").is_file():
         return True
@@ -183,13 +185,13 @@ def has_autonomous_wake(root: Path, skill_text: str) -> bool:
     if refs.is_dir():
         for ref in refs.iterdir():
             name = ref.name.lower()
-            if ref.is_file() and ("headless-wake" in name or "autonomous-wake" in name):
+            if ref.is_file() and ("pulse-wake" in name or "autonomous-wake" in name):
                 return True
 
     wake_signals = [
-        r"--headless:\{",                 # named-task headless routing
-        r"-H:\{",                          # short-flag named-task routing
-        r"default headless wake",
+        r"--pulse:\{",                    # named-task pulse routing
+        r"-p:\{",                          # short-flag named-task routing
+        r"default pulse wake",
         r"default wake behavior",
         r"\bquiet hours\b",
         r"wake frequency",

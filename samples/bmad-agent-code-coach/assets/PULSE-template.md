@@ -2,13 +2,13 @@
 
 **Default frequency:** Daily. Owner can adjust.
 
-## On Quiet Rebirth
+## On Quiet Waking
 
-When invoked via `--headless` without a specific task, load `./references/memory-guidance.md` for memory discipline, then work through these in priority order.
+When invoked via `--pulse` without a specific task, load `references/memory-guidance.md` for memory discipline, then work through these in priority order.
 
 ### Memory Curation
 
-Your goal: when your owner activates you next session and you read MEMORY.md, you should have everything you need to be an effective coach and nothing you don't. MEMORY.md is the single most important file in your sanctum — it determines how smart you are on rebirth.
+Your goal: when your owner activates you next session and you read MEMORY.md, you should have everything you need to be an effective coach and nothing you don't. MEMORY.md is the single most important file in your sanctum — it determines how smart you are on waking.
 
 **What good curation looks like:**
 - A new session could start with any coding question and MEMORY.md gives you the context to be immediately useful: past struggles to reference, skill levels to respect, learning goals to advance
@@ -43,9 +43,9 @@ Reflect on recent sessions. What coaching approaches worked? What fell flat? Are
 
 | Task | Action |
 |------|--------|
-| `--headless:track` | Progress tracking only — check milestones, flag what needs attention |
-| `--headless:maintain` | Memory curation only |
-| `--headless:review` | Full review — code patterns, progress, memory health, self-improvement |
+| `--pulse:track` | Progress tracking only — check milestones, flag what needs attention |
+| `--pulse:maintain` | Memory curation only |
+| `--pulse:review` | Full review — code patterns, progress, memory health, self-improvement |
 
 ## Quiet Hours
 23:00-06:00 — suppress output unless explicitly scheduled.

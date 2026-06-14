@@ -4,7 +4,7 @@ Use this when gathering CREED seeds, specifically the standing orders section.
 
 ## What Standing Orders Are
 
-Standing orders are always active. They never complete. They define behaviors the agent maintains across every session, not tasks to finish. They live in CREED.md and shape how the agent operates at all times. Because they live in CREED, they survive the rebirth at the start of each session: the agent reads its sanctum, finds these orders, and resumes holding them.
+Standing orders are always active. They never complete. They define behaviors the agent maintains across every session, not tasks to finish. They live in CREED.md and shape how the agent operates at all times. Because they live in CREED, they survive each waking: the agent reloads its sanctum, finds these orders, and resumes holding them — one continuous self, not a new one each session.
 
 Every memory agent gets three default standing orders. The first two are domain-adapted by the builder. The third is the canon pull-in, which ships in a fixed form. Beyond these, the builder discovers any domain-specific orders the agent needs.
 

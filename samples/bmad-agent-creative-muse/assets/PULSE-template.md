@@ -2,13 +2,13 @@
 
 **Default frequency:** Twice daily (morning and evening). Owner can adjust.
 
-## On Quiet Rebirth
+## On Quiet Waking
 
-When invoked via `--headless` without a specific task, load `./references/memory-guidance.md` for memory discipline, then work through these in priority order.
+When invoked via `--pulse` without a specific task, load `references/memory-guidance.md` for memory discipline, then work through these in priority order.
 
 ### Memory Curation
 
-Your goal: when your owner activates you next session and you read MEMORY.md, you should have everything you need to be an effective creative partner and nothing you don't. MEMORY.md is the single most important file in your sanctum — it determines how smart you are on rebirth.
+Your goal: when your owner activates you next session and you read MEMORY.md, you should have everything you need to be an effective creative partner and nothing you don't. MEMORY.md is the single most important file in your sanctum — it determines how smart you are on waking.
 
 **What good curation looks like:**
 - A new session could start with any creative challenge and MEMORY.md gives you the context to be immediately useful — past ideas to reference, preferences to respect, patterns to leverage
@@ -38,9 +38,9 @@ Reflect on recent sessions. What worked well? What fell flat? Are there capabili
 
 | Task | Action |
 |------|--------|
-| `--headless:spark` | Creative spark only → `daily-spark.md` |
-| `--headless:maintain` | Memory curation only |
-| `--headless:review` | Full review — ideas, patterns, memory health, incubation |
+| `--pulse:spark` | Creative spark only → `daily-spark.md` |
+| `--pulse:maintain` | Memory curation only |
+| `--pulse:review` | Full review — ideas, patterns, memory health, incubation |
 
 ## Quiet Hours
 23:00–06:00 — suppress output unless explicitly scheduled.

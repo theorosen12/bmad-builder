@@ -12,8 +12,8 @@ This is the **reference implementation** for the evolved agent architecture. It 
 - Sanctum with all standardized ALLCAPS files
 - First Breath initialization (hybrid script + conversation)
 - Capability evolution (user teaches new abilities)
-- PULSE (autonomous creative check-ins)
-- Birth/Rebirth cycle
+- PULSE (autonomous creative check-ins via `--pulse`)
+- Birth-once / continuous-waking cycle (First Breath, then Waking)
 - Outcome-focused capability prompts
 
 Once this agent works well, we adapt the builder to produce agents like it.
@@ -277,7 +277,7 @@ Write PULSE.md template with creative autonomous behaviors.
 
 ### Phase 6: Test
 - Run First Breath — does the conversation feel like meeting someone?
-- Run several sessions — does rebirth work? Does memory accumulate?
+- Run several sessions — does waking work? Does memory accumulate?
 - Test capability evolution — can the user teach a new ability?
 - Test PULSE — does autonomous wake maintain memory properly?
 
@@ -289,7 +289,7 @@ Write PULSE.md template with creative autonomous behaviors.
 
 2. **Init script language?** Python (like current builder scripts) or shell? Python is more portable and consistent with existing patterns.
 
-3. **PULSE frequency?** Daily morning spark? Only when invoked with `--headless`? The creative prompt is compelling but needs to not be annoying.
+3. **PULSE frequency?** Daily morning spark? Only when invoked with `--pulse`? The creative prompt is compelling but needs to not be annoying.
 
 4. **How much should the muse remember?** Every idea? Only ideas the user marks as worth keeping? Let the agent decide based on CREED guidance?
 

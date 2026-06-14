@@ -33,13 +33,13 @@ Everything lives in a single SKILL.md with supporting references. No memory dire
 
 ### Memory Agents
 
-A lean bootloader SKILL.md (~30 lines) points to a **sanctum**: a set of persistent files the agent reads on every launch to become itself again. The sanctum holds the agent's identity, values, understanding of its owner, curated knowledge, and capability registry. On first launch, a **First Breath** conversation lets the agent discover who you are and calibrate itself to your needs.
+A lean bootloader SKILL.md (~30 lines) points to a **sanctum**: a set of persistent files the agent reloads each time it wakes. The sanctum holds the agent's identity, values, understanding of its owner, curated knowledge, and capability registry. A bundled `wake.py` loads the whole sanctum in one pass on activation. On first launch, a **First Breath** conversation lets the agent discover who you are and calibrate itself to your needs.
 
-Memory agents treat every session as a rebirth. They don't fake continuity; they read their sanctum files and become themselves again. If they don't remember something, they say so and check the files.
+A memory agent is one continuous self, born once at First Breath. The between-session context reset is sleep, not death: it wakes and reloads its long-term memory from the sanctum rather than starting over. It doesn't fake continuity; if it didn't store something, it says so and checks the files.
 
 ### Autonomous Agents
 
-Everything a memory agent has, plus a PULSE file that defines what the agent does when no one's watching. Autonomous agents can wake on a schedule (cron, background task) and perform maintenance, from curating memory to checking on projects to running domain-specific tasks. With a human present, they're conversational. Headless, they work independently and exit.
+Everything a memory agent has, plus a PULSE file that defines what the agent does when no one's watching. Autonomous agents can wake on a schedule (cron, background task) via the `--pulse` flag and perform maintenance, from curating memory to checking on projects to running domain-specific tasks. With a human present, they're conversational. In Pulse Mode, they work independently and exit.
 
 ## Capabilities: Internal, External, and Scripts
 
@@ -66,7 +66,7 @@ Memory agents store their persistent state in a **sanctum** at `_bmad/memory/<ag
 | **BOND.md**         | Owner understanding, preferences, things to remember/avoid  |
 | **MEMORY.md**       | Curated long-term knowledge (kept under 200 lines)          |
 | **CAPABILITIES.md** | Built-in + learned capabilities registry                    |
-| **INDEX.md**        | Map of the sanctum structure (loaded first on every rebirth)|
+| **INDEX.md**        | Map of the sanctum structure (loaded first on every wake)   |
 
 :::tip[Memory Lives Outside the Skill]
 Agent memory is stored in your project, not inside the skill folder. This keeps agents from modifying their own instructions and makes your data portable. The same agent can be used across different projects, each generating its own memory space.

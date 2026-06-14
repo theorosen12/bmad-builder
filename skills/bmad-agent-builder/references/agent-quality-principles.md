@@ -18,9 +18,9 @@ Agents sit on a gradient surfaced as feature decisions, not a menu of separate a
 
 Stateless ships everything in one SKILL.md: overview, mission, identity, communication style, principles, conventions, on-activation, and the capabilities routing table. The whole identity is present at activation, so the leanness bar applies to the capability prompts while the persona content earns its place by the carve-out above.
 
-Memory ships a lean bootloader SKILL.md carrying only the identity seed, the Three Laws, the Sacred Truth, the mission, and the activation routing. Everything else lives in the sanctum. The bar here is that communication style, detailed principles, capability menus, and session-close logic must not leak into the SKILL.md, because that content belongs in the sanctum and a bootloader that carries it is a pruning failure.
+Memory ships a lean bootloader SKILL.md carrying the identity seed, the Three Laws, the Sacred Truth, Stay in Character, the Persistent Memory directive, the mission, and the four-step activation routing. Everything else lives in the sanctum. The bar here is that communication style, detailed principles, and capability menus must not leak into the SKILL.md, because that content belongs in the sanctum and a bootloader that carries it is a pruning failure. There is no separate session-close section: session close folds into the Persistent Memory directive (capture as you go plus a consolidating pass at close), and the detailed memory guidance loads on the first memory-touch.
 
-Autonomous is the memory agent plus PULSE.md for default wake behavior, named task routing, frequency, and quiet hours, and it gains the headless Quiet Rebirth activation path. The bar adds that PULSE owns autonomous behavior and nothing PULSE-shaped belongs anywhere else.
+Autonomous is the memory agent plus PULSE.md for default wake behavior, named task routing, frequency, and quiet hours, and it gains the Pulse Mode (`--pulse`) activation path. The bar adds that PULSE owns autonomous behavior and nothing PULSE-shaped belongs anywhere else.
 
 ## The bootloader is lean by design, not under-built
 
@@ -28,14 +28,14 @@ A memory or autonomous bootloader SKILL.md is supposed to be small, around four 
 
 ## The sanctum dimensions
 
-The sanctum is the built agent's runtime memory, the place it reads on every rebirth to become itself again, living at `{project-root}/_bmad/memory/{skillName}/`. This is a different thing from the builder's process log, the memlog, which is the builder's own trace written to `.memlog.md` beside the agent's SKILL.md while authoring. The two never blur. When this file or any file you write says memory of the sanctum, it means the agent's runtime memory and never the builder's log.
+The sanctum is the built agent's runtime memory, the place it reloads on every waking to become itself again, living at `{project-root}/_bmad/memory/{skillName}/`. This is a different thing from the builder's process log, the memlog, which is the builder's own trace written to `.memlog.md` beside the agent's SKILL.md while authoring. The two never blur. When this file or any file you write says memory of the sanctum, it means the agent's runtime memory and never the builder's log.
 
 The sanctum is held to these dimensions:
 
 - All six standard templates exist: INDEX, PERSONA, CREED, BOND, MEMORY, CAPABILITIES. PERSONA, CREED, and BOND carry meaningful seeds rather than empty placeholders, and MEMORY starts empty because it fills at runtime.
 - First Breath carries the universal calibration and configuration mechanics plus domain-specific territory beyond the universal set, and the birthday ceremony is present.
 - CREED carries its standing orders domain-adapted with concrete examples, including the canon pull-in standing order so an evolving agent authors new capabilities to the current standard.
-- init-sanctum.py exists, its skill name matches the skill, and its template list matches the templates actually shipped in assets.
+- wake.py exists and loads the whole sanctum in one pass on every activation, and init-sanctum.py exists with First Breath owning the scaffolding step that runs it. Both match the skill name, and init-sanctum.py's template list matches the templates actually shipped in assets.
 - After init runs, the sanctum is self-contained: the agent depends on the skill bundle only for First Breath and init, never for normal operation.
 
 ## Internal capability versus a reference to an installed skill
