@@ -1,0 +1,10 @@
+{
+  "name": "bmad-builder",
+  "version": "2.1.0",
+  "description": "Build AI agents, workflows, and modules from a conversation. Four skills (Agent Builder, Workflow Builder, Module Builder, Setup) guide you from idea to production-ready skill structure. Part of the BMad Method ecosystem.",
+  "author": {
+    "name": "Brian (BMad) Madison"
+  },
+  "homepage": "https://github.com/bmad-code-org/bmad-builder",
+  "license": "MIT"
+}
